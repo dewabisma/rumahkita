@@ -1,0 +1,47 @@
+---
+description: Read and update project mistake memory so corrections are not repeated.
+alwaysApply: true
+---
+
+# Project Memory
+
+## Read before acting
+
+At the start of any task (including orchestration and subagent work), read `.cursor/memory/mistakes.md`.
+
+- Apply every entry that matches the current task category or context.
+- When delegating via Task, include **relevant memory entries** in the subagent prompt.
+- If a memory entry conflicts with a new user instruction, follow the user and ask whether to update the memory entry.
+
+## When the user flags a mistake
+
+Treat these as memory-save triggers (and similar phrasing):
+
+- "that's a mistake" / "that's wrong"
+- "remember this" / "add to memory"
+- "don't do that again"
+- "you got this wrong"
+- "save this correction"
+
+When triggered:
+
+1. **Do not argue** — treat the user's correction as authoritative.
+2. **Extract** a concise mistake + correct behavior + context.
+3. **Check** existing entries in `mistakes.md` for duplicates or overlap.
+   - If an entry already covers it, update that entry's **Do instead** or **Context** instead of adding a duplicate.
+   - Otherwise append a new `MEM-###` entry at the bottom of the **Entries** section.
+4. **Confirm** briefly what was saved (ID, mistake, do-instead).
+
+Recording memory is **not** implementation work — the orchestrator (or any agent when not in a readonly phase) may edit `mistakes.md` directly.
+
+## During the pipeline
+
+- **Research / critique / implement / review:** Honor memory entries; proposals and code must not repeat past mistakes.
+- **Review loop rejections:** If the user says a rejection reflects a lasting project preference, offer to save it to memory.
+- **After handoff:** If the user corrects the result, save to memory before doing follow-up work.
+
+## Entry quality
+
+- One lesson per entry; keep each bullet short and actionable.
+- Prefer project-specific guidance over generic advice.
+- Use categories that help future matching: `state-management`, `navigation`, `ui`, `testing`, `workflow`, `packages`, `architecture`.
