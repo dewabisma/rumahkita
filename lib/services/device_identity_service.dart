@@ -8,6 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:uuid/uuid.dart';
 
+export 'package:rumah/services/sync_service.dart'
+    show TailscaleMeshService, TailscalePeer;
+
 class DeviceIdentityService {
   DeviceIdentityService({
     FlutterSecureStorage? secureStorage,
@@ -47,56 +50,6 @@ class DeviceIdentityService {
   Future<void> bindTailscaleNode(String nodeKey) async {
     _cachedNodeKey = nodeKey;
     await _secureStorage.write(key: _nodeKeyKey, value: nodeKey);
-  }
-}
-
-class TailscalePeer {
-  const TailscalePeer({
-    required this.nodeKey,
-    required this.hostName,
-    required this.online,
-  });
-
-  final String nodeKey;
-  final String hostName;
-  final bool online;
-}
-
-/// Skeleton wrapper isolating tailscale package API churn.
-class TailscaleMeshService {
-  TailscaleMeshService({required this.stateDirectory});
-
-  final String stateDirectory;
-  bool _isUp = false;
-  final List<TailscalePeer> _peers = [];
-
-  bool get isUp => _isUp;
-
-  List<TailscalePeer> get peers => List.unmodifiable(_peers);
-
-  Future<void> up({String? authKey}) async {
-  // Phase 0 skeleton — real tailscale integration deferred to device testing.
-    _isUp = true;
-    _peers
-      ..clear()
-      ..addAll([
-        const TailscalePeer(
-          nodeKey: 'skeleton-peer',
-          hostName: 'skeleton-peer',
-          online: true,
-        ),
-      ]);
-  }
-
-  Future<void> down() async {
-    _isUp = false;
-    _peers.clear();
-  }
-
-  void setPeersForTesting(List<TailscalePeer> peers) {
-    _peers
-      ..clear()
-      ..addAll(peers);
   }
 }
 

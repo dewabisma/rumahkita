@@ -16,7 +16,6 @@ import 'package:rumah/sync/merge_engine.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/sync_op_factory.dart';
 import 'package:rumah/sync/sync_operation.dart';
-import 'package:uuid/uuid.dart';
 
 class SyncTestHarness {
   SyncTestHarness({

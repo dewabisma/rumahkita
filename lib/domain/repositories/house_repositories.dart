@@ -1,9 +1,18 @@
 import 'package:rumah/domain/entities/house_entities.dart';
+import 'package:rumah/domain/entities/join_invite_payload.dart';
 
 abstract class HouseRepository {
   Future<House> createHouse({
     required String displayName,
     required String creatorMemberId,
+  });
+
+  Future<String> generateJoinCredential(String houseId);
+
+  Future<JoinInvitePayload> buildInvite({
+    required String houseId,
+    required String hostNodeKey,
+    required String hostMagicDns,
   });
 }
 
@@ -23,7 +32,10 @@ abstract class HousemateRepository {
     required String tailscaleNodeKey,
     required String nickname,
     required int rotationOrderIndex,
+    String? joinCredential,
   });
+
+  Future<int> nextRotationIndex(String houseId);
 }
 
 abstract class AuditLogRepository {

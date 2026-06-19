@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';

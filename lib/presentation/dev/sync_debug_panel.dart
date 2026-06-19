@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/domain/enums/member_status.dart';
+import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/sync/peer_allowlist.dart';
 import 'package:uuid/uuid.dart';
 
@@ -69,7 +70,6 @@ class _SyncDebugPanelState extends ConsumerState<SyncDebugPanel> {
       _status = 'House created';
     });
     await _loadContext();
-    await ref.read(syncCoordinatorProvider).refreshPendingCount();
   }
 
   Future<void> _addAuditEntry() async {
@@ -85,7 +85,6 @@ class _SyncDebugPanelState extends ConsumerState<SyncDebugPanel> {
           justificationNotes: 'Phase 0 vertical slice',
         );
     setState(() => _status = 'Audit entry appended');
-    await ref.read(syncCoordinatorProvider).refreshPendingCount();
   }
 
   Future<int> _computeAllowlistSize() async {
@@ -110,50 +109,46 @@ class _SyncDebugPanelState extends ConsumerState<SyncDebugPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final coordinator = ref.watch(syncCoordinatorProvider);
+    final sync = ref.watch(syncServiceProvider);
+    final pending = ref.watch(pendingOpCountProvider).asData?.value ?? 0;
 
-    return ListenableBuilder(
-      listenable: coordinator,
-      builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('rumahkita — Dev Sync')),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Status: $_status'),
-              const SizedBox(height: 8),
-              Text('house_id: ${_houseId ?? '(none)'}'),
-              Text('device_id: ${_deviceId ?? '(loading)'}'),
-              Text('allowlist size: $_allowlistSize'),
-              Text('pending ops: ${coordinator.pendingOpCount}'),
-              Text(
-                'last merge: ${coordinator.lastMergeResult?.appliedOpIds.length ?? 0} applied',
-              ),
-              Text('last error: ${coordinator.lastError ?? '(none)'}'),
-              const SizedBox(height: 8),
-              Text('peers: ${coordinator.connectedPeers.length}'),
-              ...coordinator.connectedPeers.map(
-                (p) => Text('  • ${p.hostName} (${p.nodeKey})'),
-              ),
-              if (_joinCredential != null) ...[
-                const SizedBox(height: 8),
-                const Text('join_credential:'),
-                SelectableText(_joinCredential!),
-              ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _createHouse,
-                child: const Text('Create House'),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _addAuditEntry,
-                child: const Text('Add Test Audit Entry'),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('rumahkita — Dev Sync')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text('Status: $_status'),
+          const SizedBox(height: 8),
+          Text('house_id: ${_houseId ?? '(none)'}'),
+          Text('device_id: ${_deviceId ?? '(loading)'}'),
+          Text('allowlist size: $_allowlistSize'),
+          Text('pending ops: $pending'),
+          Text(
+            'last merge: ${sync.lastMergeResult?.appliedOpIds.length ?? 0} applied',
           ),
-        );
-      },
+          Text('last error: ${sync.lastError ?? '(none)'}'),
+          const SizedBox(height: 8),
+          Text('peers: ${sync.connectedPeers.length}'),
+          ...sync.connectedPeers.map(
+            (p) => Text('  • ${p.hostName} (${p.nodeKey})'),
+          ),
+          if (_joinCredential != null) ...[
+            const SizedBox(height: 8),
+            const Text('join_credential:'),
+            SelectableText(_joinCredential!),
+          ],
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _createHouse,
+            child: const Text('Create House'),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _addAuditEntry,
+            child: const Text('Add Test Audit Entry'),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/domain/entities/house_entities.dart';
+import 'package:rumah/domain/entities/join_invite_payload.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/repositories/house_repositories.dart';
 import 'package:rumah/sync/hlc.dart';
@@ -182,6 +183,7 @@ class DriftHouseRepository implements HouseRepository {
     );
   }
 
+  @override
   Future<String> generateJoinCredential(String houseId) async {
     final secretRow = await (_db.select(_db.houseJoinSecrets)
           ..where((t) => t.houseId.equals(houseId)))
@@ -191,6 +193,22 @@ class DriftHouseRepository implements HouseRepository {
       houseSecret: secretRow.secretBase64,
     );
     return credential.encode();
+  }
+
+  @override
+  Future<JoinInvitePayload> buildInvite({
+    required String houseId,
+    required String hostNodeKey,
+    required String hostMagicDns,
+  }) async {
+    final joinCredential = await generateJoinCredential(houseId);
+    return JoinInvitePayload(
+      payloadVersion: joinInvitePayloadVersion,
+      houseId: houseId,
+      hostNodeKey: hostNodeKey,
+      hostMagicDns: hostMagicDns,
+      joinCredential: joinCredential,
+    );
   }
 }
 
@@ -249,6 +267,7 @@ class DriftHousemateRepository implements HousemateRepository {
     required String tailscaleNodeKey,
     required String nickname,
     required int rotationOrderIndex,
+    String? joinCredential,
   }) async {
     final createOp = _sync.opFactory.housemateCreate(
       opId: _uuid.v4(),
@@ -269,10 +288,25 @@ class DriftHousemateRepository implements HousemateRepository {
       tailscaleNodeKey: tailscaleNodeKey,
       senderMemberId: memberId,
       ops: [createOp, rotationOp],
+      joinCredential: joinCredential,
     );
     return _toEntity(await (_db.select(_db.housematesSync)
           ..where((t) => t.memberId.equals(memberId)))
         .getSingle());
+  }
+
+  @override
+  Future<int> nextRotationIndex(String houseId) async {
+    final rows = await (_db.select(_db.housematesSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .get();
+    final indices = rows
+        .map((r) => r.rotationOrderIndex)
+        .whereType<int>();
+    if (indices.isEmpty) {
+      return 0;
+    }
+    return indices.reduce((a, b) => a > b ? a : b) + 1;
   }
 
   Housemate _toEntity(HousematesSyncData row) => Housemate(

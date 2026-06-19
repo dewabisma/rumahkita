@@ -4,9 +4,11 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
+import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
 import 'package:rumah/domain/repositories/house_repositories.dart';
+import 'package:rumah/domain/repositories/local_settings_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
-import 'package:rumah/services/sync_coordinator.dart';
+import 'package:rumah/services/sync_service.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
@@ -22,7 +24,9 @@ class AppState {
     required this.houseRepository,
     required this.housemateRepository,
     required this.auditLogRepository,
-    required this.syncCoordinator,
+    required this.localSettingsRepository,
+    required this.syncService,
+    required this.meshService,
     required this.joinCredentialService,
   });
 
@@ -32,7 +36,9 @@ class AppState {
   final DriftHouseRepository houseRepository;
   final HousemateRepository housemateRepository;
   final AuditLogRepository auditLogRepository;
-  final SyncCoordinator syncCoordinator;
+  final LocalSettingsRepository localSettingsRepository;
+  final SyncService syncService;
+  final TailscaleMeshService meshService;
   final JoinCredentialService joinCredentialService;
 }
 
@@ -58,19 +64,32 @@ final auditLogRepositoryProvider = Provider<AuditLogRepository>(
   (ref) => ref.watch(appStateProvider).auditLogRepository,
 );
 
-final syncCoordinatorProvider = Provider<SyncCoordinator>(
-  (ref) => ref.watch(appStateProvider).syncCoordinator,
+final localSettingsRepositoryProvider = Provider<LocalSettingsRepository>(
+  (ref) => ref.watch(appStateProvider).localSettingsRepository,
+);
+
+final syncServiceProvider = Provider<SyncService>(
+  (ref) => ref.watch(appStateProvider).syncService,
+);
+
+final meshServiceProvider = Provider<TailscaleMeshService>(
+  (ref) => ref.watch(appStateProvider).meshService,
 );
 
 final joinCredentialServiceProvider = Provider<JoinCredentialService>(
   (ref) => ref.watch(appStateProvider).joinCredentialService,
 );
 
+/// Backward-compatible alias for dev panel during migration.
+final syncCoordinatorProvider = syncServiceProvider;
+
 Future<AppState> createAppState({
   AppDatabase? testDatabase,
   bool startSync = true,
   String? testDeviceId,
   String? testNodeKey,
+  TailscaleMeshService? testMeshService,
+  TailscaleSyncTransport? testTransport,
 }) async {
   final db = testDatabase ?? await openAppDatabase();
   final identity = DeviceIdentityService();
@@ -97,6 +116,7 @@ Future<AppState> createAppState({
         .write(LocalUserSettingsCompanion(tailscaleNodeId: Value(nodeKey)));
   }
 
+  final localSettingsRepository = DriftLocalSettingsRepository(db: db);
   final mergeEngine = MergeEngine(db);
   final sideEffectHandler = CeremonyMergeSideEffectHandler(db);
   final syncWriteCoordinator = SyncWriteCoordinator(
@@ -111,12 +131,13 @@ Future<AppState> createAppState({
   final dir = testDatabase != null
       ? null
       : await getApplicationSupportDirectory();
-  final meshService = TailscaleMeshService(
-    stateDirectory: dir != null
-        ? p.join(dir.path, 'tailscale')
-        : '/tmp/rumah-test-tailscale',
-  );
-  final transport = TailscaleSyncTransport();
+  final meshService = testMeshService ??
+      TailscaleMeshService(
+        stateDirectory: dir != null
+            ? p.join(dir.path, 'tailscale')
+            : '/tmp/rumah-test-tailscale',
+      );
+  final transport = testTransport ?? TailscaleSyncTransport();
 
   final houseRepository = DriftHouseRepository(
     db: db,
@@ -132,16 +153,17 @@ Future<AppState> createAppState({
     sync: syncWriteCoordinator,
   );
 
-  final syncCoordinator = SyncCoordinator(
+  final syncService = SyncService(
     db: db,
     syncWriteCoordinator: syncWriteCoordinator,
     meshService: meshService,
     transport: transport,
     joinCredentialService: joinCredentialService,
+    localSettings: localSettingsRepository,
   );
 
   if (startSync) {
-    await syncCoordinator.start();
+    await syncService.start();
   }
 
   return AppState(
@@ -151,7 +173,9 @@ Future<AppState> createAppState({
     houseRepository: houseRepository,
     housemateRepository: housemateRepository,
     auditLogRepository: auditLogRepository,
-    syncCoordinator: syncCoordinator,
+    localSettingsRepository: localSettingsRepository,
+    syncService: syncService,
+    meshService: meshService,
     joinCredentialService: joinCredentialService,
   );
 }

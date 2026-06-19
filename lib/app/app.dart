@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:rumah/presentation/dev/sync_debug_panel.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rumah/app/router.dart';
 import 'package:rumah/theme/app_theme.dart';
 
-class RumahApp extends StatelessWidget {
+class RumahApp extends ConsumerWidget {
   const RumahApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'rumahkita',
       theme: AppTheme.defaultTheme(context),
-      home: const SyncDebugPanel(),
+      scaffoldMessengerKey: ref.watch(rootScaffoldMessengerKeyProvider),
+      routerConfig: router,
     );
   }
 }
