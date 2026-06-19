@@ -113,26 +113,13 @@ class User {
 }
 ```
 
-## Visual Design & Theming (Material 3)
-* **Visual Design:** Build beautiful and intuitive user interfaces that follow modern design guidelines.
-* **Typography:** Stress and emphasize font sizes to ease understanding, e.g., hero text, section headlines.
-* **Background:** Apply subtle noise texture to the main background to add a premium, tactile feel.
-* **Shadows:** Multi-layered drop shadows create a strong sense of depth; cards have a soft, deep shadow to look "lifted."
-* **Icons:** Incorporate icons to enhance the user’s understanding and the logical navigation of the app.
-* **Interactive Elements:** Buttons, checkboxes, sliders, lists, charts, graphs, and other interactive elements have a shadow with elegant use of color to create a "glow" effect.
-* **Centralized Theme:** Define a centralized `ThemeData` object to ensure a consistent application-wide style.
-* **Light and Dark Themes:** Implement support for both light and dark themes using `theme` and `darkTheme`.
-* **Color Scheme Generation:** Generate harmonious color palettes from a single color using `ColorScheme.fromSeed`.
+## Visual Design & Theming
 
-```dart
-final ThemeData lightTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: Colors.deepPurple,
-    brightness: Brightness.light,
-  ),
-  textTheme: GoogleFonts.outfitTextTheme(),
-);
-```
+For presentation and theme code, follow **`docs/design.md`** and `.cursor/rules/design.mdc` (rumahkita design system).
+
+* **Tokens:** Use `AppColors`, `AppTextTheme`, and `AppSizeTheme` via `context.themeColors`, `context.themeText`, and `context.themeSpacing` — not ad-hoc colors or `ColorScheme.fromSeed`.
+* **Tone:** Warm, nurturing, low-stress. Soft pastels; no harsh alert reds or corporate dashboard styling.
+* **Centralized theme:** Extend `lib/theme/app_theme.dart`; keep widget code free of hardcoded palette values.
 
 ## Layout Best Practices
 * **Expanded:** Use to make a child widget fill the remaining available space along the main axis.

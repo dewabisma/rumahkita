@@ -1,0 +1,46 @@
+---
+description: Rumahkita visual identity and UX patterns — read before any UI work.
+globs: lib/presentation/**,lib/theme/**
+alwaysApply: false
+---
+
+# Rumahkita Design System
+
+**Source of truth:** `docs/design.md` — read it before building or changing UI.
+
+## Tokens (use these, don't invent colors/fonts)
+
+- **Colors:** `context.themeColors` from `lib/theme/app_colors.dart` (`AppColors`)
+- **Typography:** `context.themeText` from `lib/theme/app_text_styles.dart` (`AppTextTheme` — Fredoka headings, Nunito body)
+- **Spacing & radii:** `context.themeSpacing` from `lib/theme/app_spacing.dart` (`AppSizeTheme` — card radius ≥ 16px)
+- **Theme wiring:** extend via `lib/theme/app_theme.dart`; do not use `ColorScheme.fromSeed` or ad-hoc palettes in widgets
+
+## Personality
+
+- **Nurturing companion** — warm, honest, never scolding. Reflect home health; don't assign blame.
+- **Micro-copy:** communal and gentle (e.g. "This chore needs a little love" not "Task Overdue").
+- **Layout:** soft, organic, spacious. Generous rounded corners; fluid transitions. No sharp corporate dashboards.
+
+## Color semantics
+
+| Token | Meaning |
+| --- | --- |
+| Cozy Linen | Backgrounds |
+| Sprout Green | Success, approval, thriving |
+| Sunny Butter | Active/draft, inline deltas |
+| Drooping Leaf Brown | Caution/rejection — **never harsh red** |
+
+Map semantic states to `success`, `active`, `caution` — not `Colors.red` / `Colors.blue`.
+
+## UX patterns (see design.md for full detail)
+
+- **Offline:** normal, not an error. Solo-house metaphor; tucked-away seed → unfurl on sync.
+- **Guardian role:** helper duty, not manager. Subtle pet accessory; passive roster portrait.
+- **Ceremony:** silent reset, Sunny Butter inline deltas — no loud alerts.
+- **Eviction/removal:** strict neutrality — no pet graphics, gamified copy, or emotional animations. Audit-ledger tone only.
+
+## Don't
+
+- Hardcoded hex colors, `Theme.of(context).colorScheme` seed colors, or generic Material defaults in presentation code
+- Harsh alert reds, neon accents, or clinical data-dashboard styling
+- Blaming or punitive copy for sync failures, overdue tasks, or score drops

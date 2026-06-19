@@ -57,6 +57,8 @@ Delegate the approved spec to `implementor` (`subagent_type: "implementor"`).
 
 Include: chosen approach, approved spec, files to touch, and Flutter conventions for this project.
 
+For **UI or presentation work**, also include: read `docs/design.md` and `.cursor/rules/design.mdc`; use `AppColors`, `AppTextTheme`, and `AppSizeTheme` tokens (`themeColors`, `themeText`, `themeSpacing`) — do not invent ad-hoc styling.
+
 ### 5. Audit Phase
 
 Delegate to `code-reviewer` (`subagent_type: "code-reviewer"`).
