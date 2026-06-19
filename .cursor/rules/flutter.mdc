@@ -56,19 +56,23 @@ You are an expert Flutter and Dart developer. Your goal is to build beautiful, p
 * **Build Methods:** Avoid expensive ops (network) in `build()`.
 
 ## State Management
-* **Native-First:** Prefer `ValueNotifier`, `ChangeNotifier`, `ListenableBuilder`.
-* **Restrictions:** Do NOT use Riverpod, Bloc, or GetX unless explicitly requested.
-* **ChangeNotifier:** For state that is more complex or shared across multiple widgets, use `ChangeNotifier`.
-* **MVVM:** When a more robust solution is needed, structure the app using the Model-View-ViewModel (MVVM) pattern.
-* **Dependency Injection:** Use simple manual constructor dependency injection to make a class's dependencies explicit in its API, and to manage dependencies between different layers of the application.
+* **App state & DI:** Use **Riverpod** (`flutter_riverpod`) for shared app state, repositories, and service wiring. Prefer `Provider`, `NotifierProvider`, and `ref.watch` over manual service locators or `ChangeNotifier` coordinators.
+* **Local/ephemeral UI state:** `ValueNotifier` or `StatefulWidget` is fine for widget-scoped state (form fields, animations).
+* **Keep it simple:** Do not add layers (locators, coordinators, abstractions) unless they clearly reduce complexity. Favor the smallest wiring that works.
+* **Restrictions:** Do NOT use Bloc or GetX unless explicitly requested.
 
 ```dart
-// Simple Local State
-final ValueNotifier<int> _counter = ValueNotifier<int>(0);
-ValueListenableBuilder<int>(
-  valueListenable: _counter,
-  builder: (context, value, child) => Text('Count: $value'),
-);
+// App-wide dependency
+final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
+
+// UI
+class SyncPanel extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sync = ref.watch(syncCoordinatorProvider);
+    return Text('Pending: ${sync.pendingOpCount}');
+  }
+}
 ```
 
 ## Routing (GoRouter)
