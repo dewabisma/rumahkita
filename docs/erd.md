@@ -46,11 +46,36 @@ Replaces the old `Users` and `House_Members` tables. This syncs across all peers
 
 * `member_id` (PK, UUID)
 * `tailscale_user_id` (Varchar) — The immutable network identifier.
+* `tailscale_node_key` (Varchar, Unique) — The unique identifier assigned by Tailscale to that specific physical device.
 * `house_id` (UUID)
 * `nickname` (Varchar) — The display name chosen for this specific house.
 * `lifetime_score` (Integer) — CRDT PN-Counter (Positive-Negative Counter) so score additions/subtractions merge safely from different devices.
 * `rotation_order_index` (Integer)
 * `last_updated_timestamp` (BigInt)
+
+#### Table: `Removal_Proposals_Sync` (CRDT Replicated, Append-Only)
+
+Tracks the lifecycle of an eviction or a self-removal request. Part of the 4-stage removal process.
+
+* `proposal_id` (PK, UUID)
+* `house_id` (UUID)
+* `target_member_id` (UUID) — The member being proposed for removal.
+* `proposer_member_id` (UUID, Nullable) — The member initiating the vote (`Null` if it is a voluntary self-removal).
+* `type` (Enum: `'eviction'`, `'self_removal'`)
+* `status` (Enum: `'proposed'`, `'approved'`, `'ready_to_execute'`, `'executed'`, `'cancelled'`, `'rejected'`) — Handled via MV-CRDT (Multi-Value) or LWW to ensure phase transitions merge cleanly.
+* `created_at` (BigInt) — Timestamp vector.
+* `updated_at` (BigInt)
+
+#### Table: `Proposal_Votes_Sync` (CRDT Replicated, Append-Only)
+
+Tracks independent votes cast by roommates. Devices sync these rows over Tailscale; the app locally calculates whether the 50% majority threshold has been crossed.
+
+* `vote_id` (PK, UUID)
+* `proposal_id` (FK → `Removal_Proposals_Sync`)
+* `voter_member_id` (FK → `Housemates_Sync`)
+* `vote_cast` (Boolean) — `True` for Yes, `False` for No.
+* `timestamp` (BigInt)
+* **Unique constraint:** `(proposal_id, voter_member_id)` — Prevents a roommate from voting twice on the same proposal.
 
 #### Table: `Cycles_Sync` (CRDT Replicated)
 

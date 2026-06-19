@@ -154,3 +154,64 @@ When a cycle reaches its time limit, the app halts standard operations and enter
 * **Transition to Ceremony:** From the Retro screen, the outgoing Guardian triggers the next "Ceremony Phase" (re-using the async collaborative setup code).
 * **Point Calibration:** Roommates can adjust chore weights based on the retro (e.g., *"We realized deep cleaning the kitchen takes way too long; let's change it from 30 points to 50 points for the next cycle"*).
 * **Unanimous Gate & Handover:** Once 100% of roommates hit "Accept" on the calibrated rules, the cycle officially rolls over. The system automatically transfers the Guardian status to the next sequential roommate in the queue.
+
+## Module Focus: Network Isolation & Eviction Protocol
+
+### 1. Tailnet Isolation & Port-Level ACLs
+
+To prevent lateral network access by the tailnet administrator, the app enforces application-only communication:
+
+* **Automated ACL Generation:** When the house creator registers their Tailscale API key, the app automatically pushes a custom JSON Access Control List (ACL) to the Tailscale dashboard.
+* **Port Restriction:** The ACL strictly dictates that nodes tagged with `tag:house-[id]` can *only* accept inbound connections on the specific port designated for the app’s CRDT sync engine (e.g., Port `5555`).
+* **Protocol Blocking:** All other protocols (SSH, HTTP, ICMP/Ping, VNC) are explicitly blocked at the network layer.
+
+---
+
+### 2. Member Removal State Machine
+
+A roommate's removal from the network must progress through a transparent, audited lifecycle.
+
+```
+                  [Self-Removal] ────────────────────────┐
+                        │                                │
+                        ▼                                ▼
+[Proposer] ──► [Create Proposal] ──► [State: PROPOSED] ─────► [State: EXECUTED]
+                                             │                   ▲
+                                     (If Vote Passes >50%)       │
+                                             ▼                   │
+                                     [State: APPROVED] ──────────┤
+                                             │                   │
+                                   (System triggers API)         │
+                                             ▼                   │
+                                 [State: READY TO EXECUTE] ──────┘
+
+```
+
+#### Alternative Terminal States:
+
+* **`State: CANCELLED`**: The original proposer pulls the proposal before the vote closes.
+* **`State: REJECTED`**: The voting window expires or active housemates vote "No," causing total agreement to drop below the required threshold.
+
+---
+
+### 3. Functional Requirements
+
+#### A. Proposal Initiation
+
+* **Triggers:** A removal process can be initiated via **Self-Removal** (voluntary exit) or a **Roommate-Initiated Proposal** (eviction).
+* **Self-Removal Bypass:** If a user chooses to leave voluntarily, the proposal bypasses the voting stage and moves immediately to `READY TO EXECUTE` and then `EXECUTED`.
+
+#### B. The Voting Engine
+
+* **The Majority Gate:** For an eviction proposal, the system opens a voting window. The proposal state shifts from `PROPOSED` to `APPROVED` only when the number of "Yes" votes exceeds $50\%$ of the *other* active roommates:
+
+$$\text{Required Votes} > \frac{\text{Total Active Members} - 1}{2}$$
+
+
+* **Visibility:** The roommate facing eviction can see that a proposal exists, ensuring total transparency within the household.
+
+#### C. Automated Network Execution
+
+* **API Trigger:** Once a proposal transitions to `READY TO EXECUTE`, the app of any online roommate uses the household's stored Tailscale credential to call the Tailscale API.
+* **Key Invalidation:** The API call explicitly invalidates the target roommate's device node key.
+* **State Shift:** Once the Tailscale network confirms the node is disconnected from the mesh, the state updates to `EXECUTED`. The local database replica marks them as inactive, freezes their score, and removes them from future Guardian rotations.
