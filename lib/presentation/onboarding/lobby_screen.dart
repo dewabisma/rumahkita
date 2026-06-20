@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/house/house_phase_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
 import 'package:rumah/presentation/onboarding/widgets/member_roster_list.dart';
@@ -34,10 +35,29 @@ class LobbyScreen extends ConsumerWidget {
           final housematesAsync = ref.watch(housematesProvider(houseId));
           final draftingCycle =
               ref.watch(draftingCycleProvider(houseId)).value;
+          final liveCycleCtx = ref.watch(houseRouterPhaseProvider).value;
+          final showLateJoinInfo = liveCycleCtx != null &&
+              (liveCycleCtx.activeCycle != null ||
+                  liveCycleCtx.handoverCycle != null);
           return housematesAsync.when(
             data: (mates) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (showLateJoinInfo) ...[
+                  Card(
+                    color: colors.surfaceElevated,
+                    child: Padding(
+                      padding: EdgeInsets.all(spacing.radiusCard),
+                      child: Text(
+                        'This house has an active cycle. You inherit the current '
+                        'rules, are appended to the end of the rotation queue, '
+                        'and do not need to participate in ceremony sign-off.',
+                        style: text.body?.copyWith(color: colors.textSecondary),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: spacing.radiusSmall),
+                ],
                 Expanded(child: MemberRosterList(members: mates)),
                 SizedBox(height: spacing.radiusCard),
                 if (draftingCycle != null) ...[

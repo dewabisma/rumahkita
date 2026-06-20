@@ -75,6 +75,7 @@ class RemovalProposalsSync extends Table {
   BlobColumn get updatedAtHlc => blob()();
   BlobColumn get statusHlc => blob().nullable()();
   TextColumn get statusDeviceId => text().nullable()();
+  BlobColumn get votingWindowEndsAtHlc => blob().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {proposalId};

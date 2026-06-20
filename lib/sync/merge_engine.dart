@@ -145,11 +145,11 @@ class MergeEngine {
       case SyncOpType.scoreEventAppend:
         return _applyScoreEvent(op, context, sideEffects);
       case SyncOpType.proposalCreate:
-        return _applyProposalCreate(op);
+        return _applyProposalCreate(op, sideEffects);
       case SyncOpType.proposalStatusTransition:
-        return _applyProposalStatusTransition(op);
+        return _applyProposalStatusTransition(op, sideEffects);
       case SyncOpType.voteCast:
-        return _applyVoteCast(op, context);
+        return _applyVoteCast(op, context, sideEffects);
       case SyncOpType.cycleCreate:
         return _applyCycleCreate(op);
       case SyncOpType.cycleStatusTransition:
@@ -526,13 +526,27 @@ class MergeEngine {
         .write(HousematesSyncCompanion(lifetimeScore: Value(sum)));
   }
 
-  Future<bool> _applyProposalCreate(SyncOperation op) async {
+  Future<bool> _applyProposalCreate(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final proposalId = op.payload['proposal_id'] as String;
     final existing = await (_db.select(
       _db.removalProposalsSync,
     )..where((t) => t.proposalId.equals(proposalId))).getSingleOrNull();
     if (existing != null) {
       return false;
+    }
+    final createdAtHlc = _decodeHlcBytes(op.hlc);
+    Uint8List? votingWindowEndsAtHlc;
+    final payloadEnds = op.payload['voting_window_ends_at_hlc'] as String?;
+    if (payloadEnds != null) {
+      votingWindowEndsAtHlc = _decodeHlcBytes(payloadEnds);
+    } else {
+      votingWindowEndsAtHlc = HandoverCycleHelpers.computeEndsAtHlc(
+        startedAtHlc: createdAtHlc,
+        cycleDurationDays: 7,
+      );
     }
     await _db
         .into(_db.removalProposalsSync)
@@ -546,14 +560,29 @@ class MergeEngine {
             ),
             type: op.payload['type'] as String,
             status: (op.payload['status'] as String?) ?? 'proposed',
-            createdAtHlc: _decodeHlcBytes(op.hlc),
-            updatedAtHlc: _decodeHlcBytes(op.hlc),
+            createdAtHlc: createdAtHlc,
+            updatedAtHlc: createdAtHlc,
+            votingWindowEndsAtHlc: Value(votingWindowEndsAtHlc),
           ),
         );
+    sideEffects.add(
+      ProposalCreated(
+        houseId: op.houseId,
+        proposalId: proposalId,
+        targetMemberId: op.payload['target_member_id'] as String,
+        proposerMemberId: op.payload['proposer_member_id'] as String?,
+        type: op.payload['type'] as String,
+        justificationNotes: op.payload['justification_notes'] as String?,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
     return true;
   }
 
-  Future<bool> _applyProposalStatusTransition(SyncOperation op) async {
+  Future<bool> _applyProposalStatusTransition(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final proposalId = op.payload['proposal_id'] as String;
     final from = op.payload['from'] != null
         ? ProposalStatus.fromWire(op.payload['from'] as String)
@@ -592,10 +621,41 @@ class MergeEngine {
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
       ),
     );
+    sideEffects.add(
+      ProposalStatusChanged(
+        houseId: op.houseId,
+        proposalId: proposalId,
+        from: from?.wireValue,
+        to: to.wireValue,
+        targetMemberId: row.targetMemberId,
+        type: row.type,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
+    if (to == ProposalStatus.readyToExecute) {
+      final target = await (_db.select(_db.housematesSync)
+            ..where((t) => t.memberId.equals(row.targetMemberId)))
+          .getSingleOrNull();
+      if (target != null) {
+        sideEffects.add(
+          RemovalReadyToExecute(
+            houseId: op.houseId,
+            proposalId: proposalId,
+            targetMemberId: row.targetMemberId,
+            targetNodeKey: target.tailscaleNodeKey,
+            hlc: _decodeHlcBytes(op.hlc),
+          ),
+        );
+      }
+    }
     return true;
   }
 
-  Future<bool> _applyVoteCast(SyncOperation op, MergeContext context) async {
+  Future<bool> _applyVoteCast(
+    SyncOperation op,
+    MergeContext context,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final voterId = op.payload['voter_member_id'] as String;
     if (!context.isMemberActive(voterId)) {
       return false;
@@ -636,6 +696,15 @@ class MergeEngine {
             originDeviceId: Value(op.originDeviceId),
           ),
         );
+    sideEffects.add(
+      VoteCastApplied(
+        houseId: op.houseId,
+        proposalId: proposalId,
+        voterMemberId: voterId,
+        voteCast: op.payload['vote_cast'] as bool,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
     return true;
   }
 

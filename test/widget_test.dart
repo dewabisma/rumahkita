@@ -4,10 +4,24 @@ import 'package:rumah/app/app.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/app/router.dart';
 import 'package:rumah/sync/handover_expiry_watcher.dart';
+import 'package:rumah/sync/removal_execution_watcher.dart';
+import 'package:rumah/sync/removal_proposal_expiry_watcher.dart';
 import 'package:rumah/services/device_identity_service.dart';
 
 HandoverExpiryWatcher _noopHandoverExpiryWatcher(Ref ref) {
   final watcher = HandoverExpiryWatcher(ref: ref);
+  ref.onDispose(watcher.dispose);
+  return watcher;
+}
+
+RemovalProposalExpiryWatcher _noopRemovalExpiryWatcher(Ref ref) {
+  final watcher = RemovalProposalExpiryWatcher(ref: ref);
+  ref.onDispose(watcher.dispose);
+  return watcher;
+}
+
+RemovalExecutionWatcher _noopRemovalExecutionWatcher(Ref ref) {
+  final watcher = RemovalExecutionWatcher(ref: ref);
   ref.onDispose(watcher.dispose);
   return watcher;
 }
@@ -27,6 +41,10 @@ void main() {
       overrides: [
         appStateProvider.overrideWithValue(appState),
         handoverExpiryWatcherProvider.overrideWith(_noopHandoverExpiryWatcher),
+        removalProposalExpiryWatcherProvider
+            .overrideWith(_noopRemovalExpiryWatcher),
+        removalExecutionWatcherProvider
+            .overrideWith(_noopRemovalExecutionWatcher),
       ],
     );
     addTearDown(container.dispose);
@@ -57,6 +75,10 @@ void main() {
       overrides: [
         appStateProvider.overrideWithValue(appState),
         handoverExpiryWatcherProvider.overrideWith(_noopHandoverExpiryWatcher),
+        removalProposalExpiryWatcherProvider
+            .overrideWith(_noopRemovalExpiryWatcher),
+        removalExecutionWatcherProvider
+            .overrideWith(_noopRemovalExecutionWatcher),
       ],
     );
     addTearDown(container.dispose);

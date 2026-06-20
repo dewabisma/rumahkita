@@ -5,8 +5,12 @@ import 'package:rumah/app/router_redirect.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
 import 'package:rumah/presentation/ceremony/ceremony_screen.dart';
 import 'package:rumah/presentation/house/handover_screen.dart';
+import 'package:rumah/presentation/house/member_roster_screen.dart';
 import 'package:rumah/presentation/house/house_phase_providers.dart';
 import 'package:rumah/presentation/home/home_screen.dart';
+import 'package:rumah/presentation/removal/propose_eviction_screen.dart';
+import 'package:rumah/presentation/removal/removal_proposal_screen.dart';
+import 'package:rumah/presentation/removal/self_removal_screen.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/dev/sync_debug_panel.dart';
 import 'package:rumah/presentation/onboarding/create_house_screen.dart';
@@ -15,6 +19,8 @@ import 'package:rumah/presentation/onboarding/join_house_screen.dart';
 import 'package:rumah/presentation/onboarding/lobby_screen.dart';
 import 'package:rumah/presentation/onboarding/welcome_screen.dart';
 import 'package:rumah/sync/handover_expiry_watcher.dart';
+import 'package:rumah/sync/removal_execution_watcher.dart';
+import 'package:rumah/sync/removal_proposal_expiry_watcher.dart';
 
 final rootScaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>(
   (ref) => GlobalKey<ScaffoldMessengerState>(),
@@ -38,6 +44,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refreshListenable = ref.watch(_routerRefreshListenableProvider);
   final scaffoldKey = ref.watch(rootScaffoldMessengerKeyProvider);
   ref.watch(handoverExpiryWatcherProvider);
+  ref.watch(removalProposalExpiryWatcherProvider);
+  ref.watch(removalExecutionWatcherProvider);
 
   final router = GoRouter(
     initialLocation: '/welcome',
@@ -83,6 +91,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/house/roster',
+        builder: (context, state) => const MemberRosterScreen(),
+      ),
+      GoRoute(
+        path: '/removal/propose',
+        builder: (context, state) => ProposeEvictionScreen(
+          targetMemberId: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: '/removal/leave',
+        builder: (context, state) => const SelfRemovalScreen(),
+      ),
+      GoRoute(
+        path: '/removal/:proposalId',
+        builder: (context, state) => RemovalProposalScreen(
+          proposalId: state.pathParameters['proposalId']!,
+        ),
       ),
       GoRoute(
         path: '/dev/sync',

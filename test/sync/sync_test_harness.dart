@@ -1,14 +1,25 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
+import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
+import 'package:rumah/data/repositories/drift_removal_repository.dart';
+import 'package:rumah/domain/repositories/removal_repository.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
 import 'package:rumah/domain/enums/proposal_type.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
+import 'package:rumah/app/providers.dart';
+import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
+import 'package:rumah/data/repositories/drift_task_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
+import 'package:rumah/services/stub_tailscale_admin_api.dart';
+import 'package:rumah/services/sync_service.dart';
+import 'package:rumah/services/tailscale_sync_transport.dart';
+import 'package:rumah/sync/removal_execution_watcher.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
 import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
@@ -17,6 +28,7 @@ import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_engine.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
+import 'package:rumah/sync/removal_merge_side_effect_handler.dart';
 import 'package:rumah/sync/sync_op_factory.dart';
 import 'package:rumah/sync/sync_operation.dart';
 
@@ -36,6 +48,9 @@ class SyncTestHarness {
   required this.sideEffectHandler,
   required this.handoverSideEffectHandler,
   required this.privilegeTierSideEffectHandler,
+  required this.removalSideEffectHandler,
+  required this.removalRepository,
+  required this.localSettingsRepository,
   });
 
   final AppDatabase db;
@@ -52,6 +67,9 @@ class SyncTestHarness {
   final MergeSideEffectHandler sideEffectHandler;
   final HandoverMergeSideEffectHandler handoverSideEffectHandler;
   final PrivilegeTierMergeSideEffectHandler privilegeTierSideEffectHandler;
+  final RemovalMergeSideEffectHandler removalSideEffectHandler;
+  final RemovalRepository removalRepository;
+  final DriftLocalSettingsRepository localSettingsRepository;
 
   static Future<SyncTestHarness> create({
     String deviceId = 'device-a',
@@ -73,10 +91,12 @@ class SyncTestHarness {
     final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
     final privilegeTierSideEffectHandler =
         PrivilegeTierMergeSideEffectHandler(db);
+    final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
     final sideEffectHandler = CompositeMergeSideEffectHandler([
       ceremonySideEffectHandler,
       handoverSideEffectHandler,
       privilegeTierSideEffectHandler,
+      removalSideEffectHandler,
     ]);
     final syncCoordinator = SyncWriteCoordinator(
       db: db,
@@ -87,11 +107,25 @@ class SyncTestHarness {
     );
     ceremonySideEffectHandler.bindSync(syncCoordinator);
     privilegeTierSideEffectHandler.bindSync(syncCoordinator);
+    removalSideEffectHandler.bindSync(syncCoordinator);
     final joinCredentialService = JoinCredentialService();
     final houseRepository = DriftHouseRepository(
       db: db,
       sync: syncCoordinator,
       joinCredentialService: joinCredentialService,
+    );
+    final housemateRepository = DriftHousemateRepository(
+      db: db,
+      sync: syncCoordinator,
+    );
+    final auditLogRepository = DriftAuditLogRepository(
+      db: db,
+      sync: syncCoordinator,
+    );
+    final localSettingsRepository = DriftLocalSettingsRepository(db: db);
+    final removalRepository = DriftRemovalRepository(
+      db: db,
+      sync: syncCoordinator,
     );
     return SyncTestHarness(
       db: db,
@@ -102,18 +136,59 @@ class SyncTestHarness {
       syncCoordinator: syncCoordinator,
       opFactory: SyncOpFactory(hlcService: hlcService, deviceId: deviceId),
       houseRepository: houseRepository,
-      housemateRepository: DriftHousemateRepository(
-        db: db,
-        sync: syncCoordinator,
-      ),
-      auditLogRepository: DriftAuditLogRepository(
-        db: db,
-        sync: syncCoordinator,
-      ),
+      housemateRepository: housemateRepository,
+      auditLogRepository: auditLogRepository,
       joinCredentialService: joinCredentialService,
       sideEffectHandler: sideEffectHandler,
       handoverSideEffectHandler: handoverSideEffectHandler,
       privilegeTierSideEffectHandler: privilegeTierSideEffectHandler,
+      removalSideEffectHandler: removalSideEffectHandler,
+      removalRepository: removalRepository,
+      localSettingsRepository: localSettingsRepository,
+    );
+  }
+
+  Future<void> setActiveHouse(String houseId) =>
+      localSettingsRepository.setActiveHouseId(houseId);
+
+  Future<ProviderContainer> watcherContainer({
+    required String houseId,
+    StubTailscaleAdminApi? tailscaleAdmin,
+  }) async {
+    await setActiveHouse(houseId);
+    final tailscale = tailscaleAdmin ?? StubTailscaleAdminApi();
+    final appState = AppState(
+      db: db,
+      deviceIdentity: DeviceIdentityService(),
+      hlcService: hlcService,
+      houseRepository: houseRepository,
+      housemateRepository: housemateRepository,
+      auditLogRepository: auditLogRepository,
+      ceremonyRepository: DriftCeremonyRepository(
+        db: db,
+        sync: syncCoordinator,
+      ),
+      taskRepository: DriftTaskRepository(db: db, sync: syncCoordinator),
+      removalRepository: removalRepository,
+      syncWriteCoordinator: syncCoordinator,
+      localSettingsRepository: localSettingsRepository,
+      syncService: SyncService(
+        db: db,
+        syncWriteCoordinator: syncCoordinator,
+        meshService: TailscaleMeshService(stateDirectory: '/tmp/rumah-test'),
+        transport: TailscaleSyncTransport(),
+        joinCredentialService: joinCredentialService,
+        localSettings: localSettingsRepository,
+      ),
+      meshService: TailscaleMeshService(stateDirectory: '/tmp/rumah-test'),
+      joinCredentialService: joinCredentialService,
+      tailscaleAdminApi: tailscale,
+    );
+    return ProviderContainer(
+      overrides: [
+        appStateProvider.overrideWithValue(appState),
+        tailscaleAdminApiProvider.overrideWithValue(tailscale),
+      ],
     );
   }
 
@@ -174,19 +249,24 @@ class SyncTestHarness {
     required String houseId,
     required String proposalId,
     required String targetMemberId,
+    String? proposerMemberId,
     ProposalType type = ProposalType.eviction,
+    String? justificationNotes,
   }) {
     return SyncOperation(
       opId: opId,
       opType: SyncOpType.proposalCreate.wireValue,
       houseId: houseId,
       originDeviceId: deviceId,
+      actorMemberId: proposerMemberId,
       hlc: base64Encode(hlcService.toBytes(hlcService.now())),
       payload: {
         'proposal_id': proposalId,
         'target_member_id': targetMemberId,
+        if (proposerMemberId != null) 'proposer_member_id': proposerMemberId,
         'type': type.wireValue,
         'status': ProposalStatus.proposed.wireValue,
+        if (justificationNotes != null) 'justification_notes': justificationNotes,
       },
     );
   }

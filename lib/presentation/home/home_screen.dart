@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rumah/presentation/home/widgets/current_guardian_banner.dart';
 import 'package:rumah/presentation/home/widgets/guardian_dashboard_section.dart';
 import 'package:rumah/presentation/home/widgets/member_privileges_section.dart';
@@ -7,6 +8,7 @@ import 'package:rumah/presentation/home/widgets/privilege_notification_listener.
 import 'package:rumah/presentation/home/widgets/task_list_section.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
+import 'package:rumah/presentation/removal/removal_target_banner.dart';
 import 'package:rumah/theme/app_colors.dart';
 import 'package:rumah/theme/app_spacing.dart';
 import 'package:rumah/theme/app_text_styles.dart';
@@ -37,6 +39,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     const ConnectionStatusHeader(),
                     SizedBox(height: spacing.radiusCard),
+                    RemovalTargetBanner(houseId: houseId),
                     Text('Your house is active', style: text.headline),
                     SizedBox(height: spacing.radiusSmall),
                     Text(
@@ -51,6 +54,13 @@ class HomeScreen extends ConsumerWidget {
                     TaskListSection(houseId: houseId),
                     SizedBox(height: spacing.radiusCard),
                     GuardianDashboardSection(houseId: houseId),
+                    SizedBox(height: spacing.radiusCard),
+                    Text('Household', style: text.sectionTitle),
+                    SizedBox(height: spacing.radiusSmall),
+                    OutlinedButton(
+                      onPressed: () => context.push('/house/roster'),
+                      child: const Text('View member roster'),
+                    ),
                   ],
                 ),
               ),

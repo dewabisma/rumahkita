@@ -2759,6 +2759,17 @@ class $RemovalProposalsSyncTable extends RemovalProposalsSync
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _votingWindowEndsAtHlcMeta =
+      const VerificationMeta('votingWindowEndsAtHlc');
+  @override
+  late final GeneratedColumn<Uint8List> votingWindowEndsAtHlc =
+      GeneratedColumn<Uint8List>(
+        'voting_window_ends_at_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     proposalId,
@@ -2771,6 +2782,7 @@ class $RemovalProposalsSyncTable extends RemovalProposalsSync
     updatedAtHlc,
     statusHlc,
     statusDeviceId,
+    votingWindowEndsAtHlc,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2873,6 +2885,15 @@ class $RemovalProposalsSyncTable extends RemovalProposalsSync
         ),
       );
     }
+    if (data.containsKey('voting_window_ends_at_hlc')) {
+      context.handle(
+        _votingWindowEndsAtHlcMeta,
+        votingWindowEndsAtHlc.isAcceptableOrUnknown(
+          data['voting_window_ends_at_hlc']!,
+          _votingWindowEndsAtHlcMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2925,6 +2946,10 @@ class $RemovalProposalsSyncTable extends RemovalProposalsSync
         DriftSqlType.string,
         data['${effectivePrefix}status_device_id'],
       ),
+      votingWindowEndsAtHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}voting_window_ends_at_hlc'],
+      ),
     );
   }
 
@@ -2946,6 +2971,7 @@ class RemovalProposalsSyncData extends DataClass
   final Uint8List updatedAtHlc;
   final Uint8List? statusHlc;
   final String? statusDeviceId;
+  final Uint8List? votingWindowEndsAtHlc;
   const RemovalProposalsSyncData({
     required this.proposalId,
     required this.houseId,
@@ -2957,6 +2983,7 @@ class RemovalProposalsSyncData extends DataClass
     required this.updatedAtHlc,
     this.statusHlc,
     this.statusDeviceId,
+    this.votingWindowEndsAtHlc,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2976,6 +3003,11 @@ class RemovalProposalsSyncData extends DataClass
     }
     if (!nullToAbsent || statusDeviceId != null) {
       map['status_device_id'] = Variable<String>(statusDeviceId);
+    }
+    if (!nullToAbsent || votingWindowEndsAtHlc != null) {
+      map['voting_window_ends_at_hlc'] = Variable<Uint8List>(
+        votingWindowEndsAtHlc,
+      );
     }
     return map;
   }
@@ -2998,6 +3030,9 @@ class RemovalProposalsSyncData extends DataClass
       statusDeviceId: statusDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(statusDeviceId),
+      votingWindowEndsAtHlc: votingWindowEndsAtHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(votingWindowEndsAtHlc),
     );
   }
 
@@ -3017,6 +3052,9 @@ class RemovalProposalsSyncData extends DataClass
       updatedAtHlc: serializer.fromJson<Uint8List>(json['updatedAtHlc']),
       statusHlc: serializer.fromJson<Uint8List?>(json['statusHlc']),
       statusDeviceId: serializer.fromJson<String?>(json['statusDeviceId']),
+      votingWindowEndsAtHlc: serializer.fromJson<Uint8List?>(
+        json['votingWindowEndsAtHlc'],
+      ),
     );
   }
   @override
@@ -3033,6 +3071,9 @@ class RemovalProposalsSyncData extends DataClass
       'updatedAtHlc': serializer.toJson<Uint8List>(updatedAtHlc),
       'statusHlc': serializer.toJson<Uint8List?>(statusHlc),
       'statusDeviceId': serializer.toJson<String?>(statusDeviceId),
+      'votingWindowEndsAtHlc': serializer.toJson<Uint8List?>(
+        votingWindowEndsAtHlc,
+      ),
     };
   }
 
@@ -3047,6 +3088,7 @@ class RemovalProposalsSyncData extends DataClass
     Uint8List? updatedAtHlc,
     Value<Uint8List?> statusHlc = const Value.absent(),
     Value<String?> statusDeviceId = const Value.absent(),
+    Value<Uint8List?> votingWindowEndsAtHlc = const Value.absent(),
   }) => RemovalProposalsSyncData(
     proposalId: proposalId ?? this.proposalId,
     houseId: houseId ?? this.houseId,
@@ -3062,6 +3104,9 @@ class RemovalProposalsSyncData extends DataClass
     statusDeviceId: statusDeviceId.present
         ? statusDeviceId.value
         : this.statusDeviceId,
+    votingWindowEndsAtHlc: votingWindowEndsAtHlc.present
+        ? votingWindowEndsAtHlc.value
+        : this.votingWindowEndsAtHlc,
   );
   RemovalProposalsSyncData copyWithCompanion(
     RemovalProposalsSyncCompanion data,
@@ -3089,6 +3134,9 @@ class RemovalProposalsSyncData extends DataClass
       statusDeviceId: data.statusDeviceId.present
           ? data.statusDeviceId.value
           : this.statusDeviceId,
+      votingWindowEndsAtHlc: data.votingWindowEndsAtHlc.present
+          ? data.votingWindowEndsAtHlc.value
+          : this.votingWindowEndsAtHlc,
     );
   }
 
@@ -3104,7 +3152,8 @@ class RemovalProposalsSyncData extends DataClass
           ..write('createdAtHlc: $createdAtHlc, ')
           ..write('updatedAtHlc: $updatedAtHlc, ')
           ..write('statusHlc: $statusHlc, ')
-          ..write('statusDeviceId: $statusDeviceId')
+          ..write('statusDeviceId: $statusDeviceId, ')
+          ..write('votingWindowEndsAtHlc: $votingWindowEndsAtHlc')
           ..write(')'))
         .toString();
   }
@@ -3121,6 +3170,7 @@ class RemovalProposalsSyncData extends DataClass
     $driftBlobEquality.hash(updatedAtHlc),
     $driftBlobEquality.hash(statusHlc),
     statusDeviceId,
+    $driftBlobEquality.hash(votingWindowEndsAtHlc),
   );
   @override
   bool operator ==(Object other) =>
@@ -3135,7 +3185,11 @@ class RemovalProposalsSyncData extends DataClass
           $driftBlobEquality.equals(other.createdAtHlc, this.createdAtHlc) &&
           $driftBlobEquality.equals(other.updatedAtHlc, this.updatedAtHlc) &&
           $driftBlobEquality.equals(other.statusHlc, this.statusHlc) &&
-          other.statusDeviceId == this.statusDeviceId);
+          other.statusDeviceId == this.statusDeviceId &&
+          $driftBlobEquality.equals(
+            other.votingWindowEndsAtHlc,
+            this.votingWindowEndsAtHlc,
+          ));
 }
 
 class RemovalProposalsSyncCompanion
@@ -3150,6 +3204,7 @@ class RemovalProposalsSyncCompanion
   final Value<Uint8List> updatedAtHlc;
   final Value<Uint8List?> statusHlc;
   final Value<String?> statusDeviceId;
+  final Value<Uint8List?> votingWindowEndsAtHlc;
   final Value<int> rowid;
   const RemovalProposalsSyncCompanion({
     this.proposalId = const Value.absent(),
@@ -3162,6 +3217,7 @@ class RemovalProposalsSyncCompanion
     this.updatedAtHlc = const Value.absent(),
     this.statusHlc = const Value.absent(),
     this.statusDeviceId = const Value.absent(),
+    this.votingWindowEndsAtHlc = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RemovalProposalsSyncCompanion.insert({
@@ -3175,6 +3231,7 @@ class RemovalProposalsSyncCompanion
     required Uint8List updatedAtHlc,
     this.statusHlc = const Value.absent(),
     this.statusDeviceId = const Value.absent(),
+    this.votingWindowEndsAtHlc = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : proposalId = Value(proposalId),
        houseId = Value(houseId),
@@ -3194,6 +3251,7 @@ class RemovalProposalsSyncCompanion
     Expression<Uint8List>? updatedAtHlc,
     Expression<Uint8List>? statusHlc,
     Expression<String>? statusDeviceId,
+    Expression<Uint8List>? votingWindowEndsAtHlc,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3207,6 +3265,8 @@ class RemovalProposalsSyncCompanion
       if (updatedAtHlc != null) 'updated_at_hlc': updatedAtHlc,
       if (statusHlc != null) 'status_hlc': statusHlc,
       if (statusDeviceId != null) 'status_device_id': statusDeviceId,
+      if (votingWindowEndsAtHlc != null)
+        'voting_window_ends_at_hlc': votingWindowEndsAtHlc,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3222,6 +3282,7 @@ class RemovalProposalsSyncCompanion
     Value<Uint8List>? updatedAtHlc,
     Value<Uint8List?>? statusHlc,
     Value<String?>? statusDeviceId,
+    Value<Uint8List?>? votingWindowEndsAtHlc,
     Value<int>? rowid,
   }) {
     return RemovalProposalsSyncCompanion(
@@ -3235,6 +3296,8 @@ class RemovalProposalsSyncCompanion
       updatedAtHlc: updatedAtHlc ?? this.updatedAtHlc,
       statusHlc: statusHlc ?? this.statusHlc,
       statusDeviceId: statusDeviceId ?? this.statusDeviceId,
+      votingWindowEndsAtHlc:
+          votingWindowEndsAtHlc ?? this.votingWindowEndsAtHlc,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3272,6 +3335,11 @@ class RemovalProposalsSyncCompanion
     if (statusDeviceId.present) {
       map['status_device_id'] = Variable<String>(statusDeviceId.value);
     }
+    if (votingWindowEndsAtHlc.present) {
+      map['voting_window_ends_at_hlc'] = Variable<Uint8List>(
+        votingWindowEndsAtHlc.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3291,6 +3359,7 @@ class RemovalProposalsSyncCompanion
           ..write('updatedAtHlc: $updatedAtHlc, ')
           ..write('statusHlc: $statusHlc, ')
           ..write('statusDeviceId: $statusDeviceId, ')
+          ..write('votingWindowEndsAtHlc: $votingWindowEndsAtHlc, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9857,6 +9926,7 @@ typedef $$RemovalProposalsSyncTableCreateCompanionBuilder =
       required Uint8List updatedAtHlc,
       Value<Uint8List?> statusHlc,
       Value<String?> statusDeviceId,
+      Value<Uint8List?> votingWindowEndsAtHlc,
       Value<int> rowid,
     });
 typedef $$RemovalProposalsSyncTableUpdateCompanionBuilder =
@@ -9871,6 +9941,7 @@ typedef $$RemovalProposalsSyncTableUpdateCompanionBuilder =
       Value<Uint8List> updatedAtHlc,
       Value<Uint8List?> statusHlc,
       Value<String?> statusDeviceId,
+      Value<Uint8List?> votingWindowEndsAtHlc,
       Value<int> rowid,
     });
 
@@ -9930,6 +10001,11 @@ class $$RemovalProposalsSyncTableFilterComposer
 
   ColumnFilters<String> get statusDeviceId => $composableBuilder(
     column: $table.statusDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get votingWindowEndsAtHlc => $composableBuilder(
+    column: $table.votingWindowEndsAtHlc,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9992,6 +10068,11 @@ class $$RemovalProposalsSyncTableOrderingComposer
     column: $table.statusDeviceId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<Uint8List> get votingWindowEndsAtHlc => $composableBuilder(
+    column: $table.votingWindowEndsAtHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RemovalProposalsSyncTableAnnotationComposer
@@ -10042,6 +10123,11 @@ class $$RemovalProposalsSyncTableAnnotationComposer
 
   GeneratedColumn<String> get statusDeviceId => $composableBuilder(
     column: $table.statusDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get votingWindowEndsAtHlc => $composableBuilder(
+    column: $table.votingWindowEndsAtHlc,
     builder: (column) => column,
   );
 }
@@ -10099,6 +10185,7 @@ class $$RemovalProposalsSyncTableTableManager
                 Value<Uint8List> updatedAtHlc = const Value.absent(),
                 Value<Uint8List?> statusHlc = const Value.absent(),
                 Value<String?> statusDeviceId = const Value.absent(),
+                Value<Uint8List?> votingWindowEndsAtHlc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RemovalProposalsSyncCompanion(
                 proposalId: proposalId,
@@ -10111,6 +10198,7 @@ class $$RemovalProposalsSyncTableTableManager
                 updatedAtHlc: updatedAtHlc,
                 statusHlc: statusHlc,
                 statusDeviceId: statusDeviceId,
+                votingWindowEndsAtHlc: votingWindowEndsAtHlc,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10125,6 +10213,7 @@ class $$RemovalProposalsSyncTableTableManager
                 required Uint8List updatedAtHlc,
                 Value<Uint8List?> statusHlc = const Value.absent(),
                 Value<String?> statusDeviceId = const Value.absent(),
+                Value<Uint8List?> votingWindowEndsAtHlc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RemovalProposalsSyncCompanion.insert(
                 proposalId: proposalId,
@@ -10137,6 +10226,7 @@ class $$RemovalProposalsSyncTableTableManager
                 updatedAtHlc: updatedAtHlc,
                 statusHlc: statusHlc,
                 statusDeviceId: statusDeviceId,
+                votingWindowEndsAtHlc: votingWindowEndsAtHlc,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

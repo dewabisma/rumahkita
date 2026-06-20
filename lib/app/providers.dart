@@ -6,19 +6,24 @@ import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
+import 'package:rumah/data/repositories/drift_removal_repository.dart';
 import 'package:rumah/data/repositories/drift_task_repository.dart';
 import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/domain/repositories/house_repositories.dart';
 import 'package:rumah/domain/repositories/local_settings_repository.dart';
+import 'package:rumah/domain/repositories/removal_repository.dart';
 import 'package:rumah/domain/repositories/task_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
+import 'package:rumah/services/stub_tailscale_admin_api.dart';
 import 'package:rumah/services/sync_service.dart';
+import 'package:rumah/services/tailscale_admin_api.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
 import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
+import 'package:rumah/sync/removal_merge_side_effect_handler.dart';
 import 'package:rumah/sync/join_credential.dart';
 import 'package:rumah/sync/merge_engine.dart';
 
@@ -33,11 +38,13 @@ class AppState {
     required this.auditLogRepository,
     required this.ceremonyRepository,
     required this.taskRepository,
+    required this.removalRepository,
     required this.syncWriteCoordinator,
     required this.localSettingsRepository,
     required this.syncService,
     required this.meshService,
     required this.joinCredentialService,
+    required this.tailscaleAdminApi,
   });
 
   final AppDatabase db;
@@ -48,11 +55,13 @@ class AppState {
   final AuditLogRepository auditLogRepository;
   final CeremonyRepository ceremonyRepository;
   final TaskRepository taskRepository;
+  final RemovalRepository removalRepository;
   final SyncWriteCoordinator syncWriteCoordinator;
   final LocalSettingsRepository localSettingsRepository;
   final SyncService syncService;
   final TailscaleMeshService meshService;
   final JoinCredentialService joinCredentialService;
+  final TailscaleAdminApi tailscaleAdminApi;
 }
 
 final appStateProvider = Provider<AppState>(
@@ -83,6 +92,10 @@ final ceremonyRepositoryProvider = Provider<CeremonyRepository>(
 
 final taskRepositoryProvider = Provider<TaskRepository>(
   (ref) => ref.watch(appStateProvider).taskRepository,
+);
+
+final removalRepositoryProvider = Provider<RemovalRepository>(
+  (ref) => ref.watch(appStateProvider).removalRepository,
 );
 
 final syncWriteCoordinatorProvider = Provider<SyncWriteCoordinator>(
@@ -148,10 +161,12 @@ Future<AppState> createAppState({
   final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
   final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
   final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(db);
+  final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
   final sideEffectHandler = CompositeMergeSideEffectHandler([
     ceremonySideEffectHandler,
     handoverSideEffectHandler,
     privilegeTierSideEffectHandler,
+    removalSideEffectHandler,
   ]);
   final syncWriteCoordinator = SyncWriteCoordinator(
     db: db,
@@ -162,7 +177,9 @@ Future<AppState> createAppState({
   );
   ceremonySideEffectHandler.bindSync(syncWriteCoordinator);
   privilegeTierSideEffectHandler.bindSync(syncWriteCoordinator);
+  removalSideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
+  final tailscaleAdminApi = StubTailscaleAdminApi();
 
   final dir = testDatabase != null
       ? null
@@ -197,6 +214,10 @@ Future<AppState> createAppState({
     db: db,
     sync: syncWriteCoordinator,
   );
+  final removalRepository = DriftRemovalRepository(
+    db: db,
+    sync: syncWriteCoordinator,
+  );
 
   final syncService = SyncService(
     db: db,
@@ -220,10 +241,12 @@ Future<AppState> createAppState({
     auditLogRepository: auditLogRepository,
     ceremonyRepository: ceremonyRepository,
     taskRepository: taskRepository,
+    removalRepository: removalRepository,
     syncWriteCoordinator: syncWriteCoordinator,
     localSettingsRepository: localSettingsRepository,
     syncService: syncService,
     meshService: meshService,
     joinCredentialService: joinCredentialService,
+    tailscaleAdminApi: tailscaleAdminApi,
   );
 }

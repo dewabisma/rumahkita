@@ -89,6 +89,78 @@ class ScoreChanged extends MergeSideEffect {
   final List<int> hlc;
 }
 
+class ProposalCreated extends MergeSideEffect {
+  const ProposalCreated({
+    required this.houseId,
+    required this.proposalId,
+    required this.targetMemberId,
+    this.proposerMemberId,
+    required this.type,
+    this.justificationNotes,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String proposalId;
+  final String targetMemberId;
+  final String? proposerMemberId;
+  final String type;
+  final String? justificationNotes;
+  final List<int> hlc;
+}
+
+class VoteCastApplied extends MergeSideEffect {
+  const VoteCastApplied({
+    required this.houseId,
+    required this.proposalId,
+    required this.voterMemberId,
+    required this.voteCast,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String proposalId;
+  final String voterMemberId;
+  final bool voteCast;
+  final List<int> hlc;
+}
+
+class ProposalStatusChanged extends MergeSideEffect {
+  const ProposalStatusChanged({
+    required this.houseId,
+    required this.proposalId,
+    required this.from,
+    required this.to,
+    required this.targetMemberId,
+    required this.type,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String proposalId;
+  final String? from;
+  final String to;
+  final String targetMemberId;
+  final String type;
+  final List<int> hlc;
+}
+
+class RemovalReadyToExecute extends MergeSideEffect {
+  const RemovalReadyToExecute({
+    required this.houseId,
+    required this.proposalId,
+    required this.targetMemberId,
+    required this.targetNodeKey,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String proposalId;
+  final String targetMemberId;
+  final String targetNodeKey;
+  final List<int> hlc;
+}
+
 abstract class MergeSideEffectHandler {
   Future<void> handle(List<MergeSideEffect> effects);
 }

@@ -50,6 +50,14 @@ class CeremonyMergeSideEffectHandler implements MergeSideEffectHandler {
           break;
         case HandoverStarted():
           break;
+        case ProposalCreated():
+          break;
+        case VoteCastApplied():
+          break;
+        case ProposalStatusChanged():
+          break;
+        case RemovalReadyToExecute():
+          break;
       }
     }
   }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:rumah/domain/enums/member_status.dart';
+import 'package:rumah/domain/enums/proposal_status.dart';
+import 'package:rumah/domain/enums/proposal_type.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/sync/hlc.dart';
@@ -367,6 +369,104 @@ class SyncOpFactory {
         'member_id': memberId,
         'delta': delta,
         if (reasonRef != null) 'reason_ref': reasonRef,
+      },
+    );
+  }
+
+  SyncOperation proposalCreate({
+    required String opId,
+    required String houseId,
+    required String proposalId,
+    required String targetMemberId,
+    String? proposerMemberId,
+    required ProposalType type,
+    ProposalStatus status = ProposalStatus.proposed,
+    String? votingWindowEndsAtHlc,
+    String? justificationNotes,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.proposalCreate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: proposerMemberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'proposal_id': proposalId,
+        'target_member_id': targetMemberId,
+        if (proposerMemberId != null) 'proposer_member_id': proposerMemberId,
+        'type': type.wireValue,
+        'status': status.wireValue,
+        if (votingWindowEndsAtHlc != null)
+          'voting_window_ends_at_hlc': votingWindowEndsAtHlc,
+        if (justificationNotes != null && justificationNotes.isNotEmpty)
+          'justification_notes': justificationNotes,
+      },
+    );
+  }
+
+  SyncOperation proposalStatusTransition({
+    required String opId,
+    required String houseId,
+    required String proposalId,
+    ProposalStatus? from,
+    required ProposalStatus to,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.proposalStatusTransition.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'proposal_id': proposalId,
+        if (from != null) 'from': from.wireValue,
+        'to': to.wireValue,
+      },
+    );
+  }
+
+  SyncOperation voteCast({
+    required String opId,
+    required String houseId,
+    required String voteId,
+    required String proposalId,
+    required String voterMemberId,
+    required bool voteCast,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.voteCast.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: voterMemberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'vote_id': voteId,
+        'proposal_id': proposalId,
+        'voter_member_id': voterMemberId,
+        'vote_cast': voteCast,
+      },
+    );
+  }
+
+  SyncOperation memberStatusTransition({
+    required String opId,
+    required String houseId,
+    required String memberId,
+    MemberStatus? from,
+    required MemberStatus to,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.memberStatusTransition.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'member_id': memberId,
+        if (from != null) 'from': from.wireValue,
+        'to': to.wireValue,
       },
     );
   }
