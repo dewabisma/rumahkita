@@ -24,9 +24,10 @@ import 'package:rumah/sync/handover_expiry_watcher.dart';
 import 'package:rumah/sync/removal_execution_watcher.dart';
 import 'package:rumah/sync/removal_proposal_expiry_watcher.dart';
 
-final rootScaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>(
-  (ref) => GlobalKey<ScaffoldMessengerState>(),
-);
+final rootScaffoldMessengerKeyProvider =
+    Provider<GlobalKey<ScaffoldMessengerState>>(
+      (ref) => GlobalKey<ScaffoldMessengerState>(),
+    );
 
 class _RouterRefreshListenable extends ChangeNotifier {
   _RouterRefreshListenable(Ref ref) {
@@ -36,8 +37,9 @@ class _RouterRefreshListenable extends ChangeNotifier {
   }
 }
 
-final _routerRefreshListenableProvider =
-    Provider<_RouterRefreshListenable>((ref) {
+final _routerRefreshListenableProvider = Provider<_RouterRefreshListenable>((
+  ref,
+) {
   final listenable = _RouterRefreshListenable(ref);
   ref.onDispose(listenable.dispose);
   return listenable;
@@ -77,10 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/lobby',
-        builder: (context, state) => const LobbyScreen(),
-      ),
+      GoRoute(path: '/lobby', builder: (context, state) => const LobbyScreen()),
       GoRoute(
         path: '/ceremony',
         builder: (context, state) => const CeremonyScreen(),
@@ -89,10 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/handover',
         builder: (context, state) => const HandoverScreen(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/house/roster',
         builder: (context, state) => const MemberRosterScreen(),
@@ -103,9 +99,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/removal/propose',
-        builder: (context, state) => ProposeEvictionScreen(
-          targetMemberId: state.extra as String?,
-        ),
+        builder: (context, state) =>
+            ProposeEvictionScreen(targetMemberId: state.extra as String?),
       ),
       GoRoute(
         path: '/removal/leave',

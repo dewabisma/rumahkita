@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
+import 'package:rumah/services/tailscale_identity_binder.dart';
 import 'package:rumah/theme/app_colors.dart';
 import 'package:rumah/theme/app_spacing.dart';
 import 'package:rumah/theme/app_text_styles.dart';
@@ -75,16 +76,18 @@ class _HouseSettingsScreenState extends ConsumerState<HouseSettingsScreen> {
 
     setState(() => _savingNickname = true);
     try {
-      await ref.read(housemateRepositoryProvider).updateNickname(
+      await ref
+          .read(housemateRepositoryProvider)
+          .updateNickname(
             houseId: houseId,
             memberId: memberId,
             nickname: nickname,
           );
       await ref.read(syncServiceProvider).drainOutbox();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nickname saved')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Nickname saved')));
       }
     } finally {
       if (mounted) {
@@ -105,6 +108,11 @@ class _HouseSettingsScreenState extends ConsumerState<HouseSettingsScreen> {
       if (authKey.isNotEmpty) {
         await localSettings.setTailscaleAuthKey(authKey);
         await mesh.up(authKey: authKey);
+        await resolveAndBindTailscaleNodeKey(
+          localSettings: localSettings,
+          deviceIdentity: ref.read(deviceIdentityProvider),
+          adminApi: ref.read(appStateProvider).tailscaleAdminApi,
+        );
       }
       if (adminKey.isNotEmpty) {
         await localSettings.setTailscaleAdminApiKey(adminKey);
@@ -131,9 +139,9 @@ class _HouseSettingsScreenState extends ConsumerState<HouseSettingsScreen> {
     await localSettings.setTailscaleAuthKey(null);
     await _loadSettings();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Auth key removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Auth key removed')));
     }
   }
 
@@ -142,9 +150,9 @@ class _HouseSettingsScreenState extends ConsumerState<HouseSettingsScreen> {
     await localSettings.setTailscaleAdminApiKey(null);
     await _loadSettings();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin API key removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Admin API key removed')));
     }
   }
 

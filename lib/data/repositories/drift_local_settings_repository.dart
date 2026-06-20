@@ -92,4 +92,15 @@ class DriftLocalSettingsRepository implements LocalSettingsRepository {
     final row = await (_db.select(_db.localUserSettings)).getSingleOrNull();
     return row?.tailscaleNodeId ?? '';
   }
+
+  @override
+  Future<void> setTailscaleNodeKey(String nodeKey) async {
+    final row = await (_db.select(_db.localUserSettings)).getSingleOrNull();
+    if (row == null) {
+      return;
+    }
+    await (_db.update(_db.localUserSettings)
+          ..where((t) => t.deviceId.equals(row.deviceId)))
+        .write(LocalUserSettingsCompanion(tailscaleNodeId: Value(nodeKey)));
+  }
 }

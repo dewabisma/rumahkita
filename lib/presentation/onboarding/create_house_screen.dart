@@ -90,7 +90,8 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
                       labelText: 'Tailscale admin API key',
                       hintText: 'tskey-api-...',
                       helperText:
-                          'Needs acl:write and devices:write for house network isolation.',
+                          'Personal access token (tskey-api-…) from Tailscale '
+                          'admin → Keys. Needs policy write + device tag access.',
                     ),
                     obscureText: true,
                   ),

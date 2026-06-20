@@ -47,6 +47,13 @@ void main() {
               body: jsonEncode(aclPolicy),
             );
           },
+          'POST /tailnet/-/acl/validate': (_, __, {headers, body}) async {
+            return const TailscaleHttpResponse(
+              statusCode: 200,
+              headers: {},
+              body: '',
+            );
+          },
           'POST /tailnet/-/acl': (_, __, {headers, body}) async {
             postAttempts++;
             if (postAttempts == 1) {
@@ -132,6 +139,45 @@ void main() {
       expect(devicesByNodeKey['node-a']!['tags'], ['tag:house-h1']);
       expect(devicesByNodeKey['node-b']!['tags'], isEmpty);
       expect(devicesByNodeKey['node-c']!['tags'], isEmpty);
+    });
+
+    test('reconciles empty tailnet policy', () async {
+      var aclPolicy = <String, dynamic>{};
+      final transport = FakeTailscaleApiTransport(
+        handlers: {
+          'GET /tailnet/-/acl': (_, __, {headers, body}) async {
+            return TailscaleHttpResponse(
+              statusCode: 200,
+              headers: {'etag': '"v0"'},
+              body: jsonEncode(aclPolicy),
+            );
+          },
+          'POST /tailnet/-/acl/validate': (_, __, {headers, body}) async {
+            return const TailscaleHttpResponse(
+              statusCode: 200,
+              headers: {},
+              body: '',
+            );
+          },
+          'POST /tailnet/-/acl': (_, __, {headers, body}) async {
+            aclPolicy = jsonDecode(body!) as Map<String, dynamic>;
+            return TailscaleHttpResponse(
+              statusCode: 200,
+              headers: {},
+              body: body,
+            );
+          },
+        },
+      );
+      final reconciler = TailscaleAclReconciler(transport: transport);
+
+      await reconciler.reconcileHouseAclFragment(
+        houseId: 'h1',
+        otherHouseFragments: [],
+      );
+
+      expect(aclPolicy['tagOwners'], isNotNull);
+      expect(aclPolicy['acls'], isNotEmpty);
     });
 
     test('refuses malformed ACL without blind POST', () async {

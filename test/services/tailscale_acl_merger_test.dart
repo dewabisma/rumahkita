@@ -4,11 +4,37 @@ import 'package:rumah/services/tailscale_acl_merger.dart';
 
 void main() {
   group('TailscaleAclMerger', () {
+    test('normalizes empty policy before merge', () {
+      const houseId = 'house-a';
+      final fragment = TailscaleAclBuilder.buildFragment(
+        houseId,
+        syntax: TailscalePolicySyntax.acls,
+      );
+      final merged = TailscaleAclMerger.merge(
+        currentPolicy: {},
+        houseFragments: [fragment],
+      );
+
+      final acls = merged['acls'] as List;
+      expect(acls.length, greaterThan(1));
+      expect(acls.last['src'], ['*']);
+    });
+
+    test('isWellFormedPolicy accepts empty policy after normalization', () {
+      expect(TailscaleAclMerger.isWellFormedPolicy({}), isTrue);
+    });
+
     test('prepends rumah acls and preserves non-rumah sections', () {
       const houseA = 'house-a';
       const houseB = 'house-b';
-      final fragmentA = TailscaleAclBuilder.buildFragment(houseA);
-      final fragmentB = TailscaleAclBuilder.buildFragment(houseB);
+      final fragmentA = TailscaleAclBuilder.buildFragment(
+        houseA,
+        syntax: TailscalePolicySyntax.acls,
+      );
+      final fragmentB = TailscaleAclBuilder.buildFragment(
+        houseB,
+        syntax: TailscalePolicySyntax.acls,
+      );
 
       final current = {
         'groups': {'admins': ['alice@example.com']},
@@ -50,7 +76,10 @@ void main() {
 
     test('rumah deny rules precede wildcard accept', () {
       const houseId = 'precedence-house';
-      final fragment = TailscaleAclBuilder.buildFragment(houseId);
+      final fragment = TailscaleAclBuilder.buildFragment(
+        houseId,
+        syntax: TailscalePolicySyntax.acls,
+      );
       final merged = TailscaleAclMerger.merge(
         currentPolicy: {
           'acls': [
@@ -67,6 +96,27 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('merges grants for grants-based tailnets', () {
+      const houseId = 'house-a';
+      final fragment = TailscaleAclBuilder.buildFragment(
+        houseId,
+        syntax: TailscalePolicySyntax.grants,
+      );
+      final merged = TailscaleAclMerger.merge(
+        currentPolicy: {
+          'grants': [
+            {'src': ['*'], 'dst': ['*'], 'ip': ['*']},
+          ],
+        },
+        houseFragments: [fragment],
+      );
+
+      final grants = merged['grants'] as List;
+      expect(grants.first['src'], [TailscaleAclBuilder.houseTag(houseId)]);
+      expect(grants.last['src'], ['*']);
+      expect(merged.containsKey('acls'), isFalse);
     });
 
     test('rejects malformed policy', () {

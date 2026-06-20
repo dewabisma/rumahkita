@@ -20,4 +20,6 @@ abstract class LocalSettingsRepository {
   Future<String> getDeviceId();
 
   Future<String> getTailscaleNodeKey();
+
+  Future<void> setTailscaleNodeKey(String nodeKey);
 }

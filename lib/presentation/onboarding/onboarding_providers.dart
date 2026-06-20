@@ -7,8 +7,11 @@ import 'package:rumah/domain/entities/house_entities.dart';
 import 'package:rumah/domain/entities/join_invite_payload.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
 import 'package:rumah/domain/generate_random_nickname.dart';
+import 'package:rumah/domain/repositories/local_settings_repository.dart';
 import 'package:rumah/services/catch_up_protocol.dart';
+import 'package:rumah/services/tailscale_identity_binder.dart';
 import 'package:rumah/services/join_invite_codec.dart';
+import 'package:rumah/services/tailscale_admin_api.dart';
 import 'package:uuid/uuid.dart';
 
 class OnboardingState {
@@ -81,6 +84,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       await localSettings.setTailscaleAuthKey(tailscaleAuthKey);
       await localSettings.setTailscaleAdminApiKey(tailscaleAdminApiKey);
       await mesh.up(authKey: tailscaleAuthKey);
+      await _bindTailscaleNodeKeyFromAdminApi(localSettings);
 
       final memberId = _uuid.v4();
       final house = await houseRepo.createHouse(
@@ -118,8 +122,20 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     }
   }
 
+  Future<void> _bindTailscaleNodeKeyFromAdminApi(
+    LocalSettingsRepository localSettings,
+  ) async {
+    final adminApi = await createTailscaleAdminApi(localSettings);
+    await resolveAndBindTailscaleNodeKey(
+      localSettings: localSettings,
+      deviceIdentity: ref.read(deviceIdentityProvider),
+      adminApi: adminApi,
+    );
+  }
+
   Future<void> regenerateInvite() async {
-    final houseId = state.houseId ?? await ref.read(activeHouseIdProvider.future);
+    final houseId =
+        state.houseId ?? await ref.read(activeHouseIdProvider.future);
     if (houseId == null) {
       return;
     }
@@ -138,7 +154,9 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     }
     final nodeKey = await localSettings.getTailscaleNodeKey();
     final magicDns = mesh.localMagicDns ?? 'localhost';
-    final base = await ref.read(houseRepositoryProvider).buildInvite(
+    final base = await ref
+        .read(houseRepositoryProvider)
+        .buildInvite(
           houseId: houseId,
           hostNodeKey: nodeKey,
           hostMagicDns: magicDns,
@@ -253,8 +271,9 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       state = state.copyWith(phase: LobbyPhase.joiningHouse);
       final memberId = _uuid.v4();
       final nickname = generateRandomNickname();
-      final rotationIndex =
-          await housemateRepo.nextRotationIndex(invite.houseId);
+      final rotationIndex = await housemateRepo.nextRotationIndex(
+        invite.houseId,
+      );
       if (_isJoinAttemptStale(generation)) {
         return;
       }
@@ -332,8 +351,8 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
 
 final onboardingNotifierProvider =
     NotifierProvider<OnboardingNotifier, OnboardingState>(
-  OnboardingNotifier.new,
-);
+      OnboardingNotifier.new,
+    );
 
 final joinInviteCodecProvider = Provider<JoinInviteCodec>(
   (ref) => const JoinInviteCodec(),
@@ -371,23 +390,48 @@ final isHouseCreatorProvider = FutureProvider<bool>((ref) async {
   return house?.creatorMemberId == localMember.memberId;
 });
 
+/// True when this device registered the house and can generate join invites.
+final canShareInviteProvider = FutureProvider<bool>((ref) async {
+  final localSettings = ref.read(localSettingsRepositoryProvider);
+  final authKey = await localSettings.getTailscaleAuthKey();
+  if (authKey == null || authKey.isEmpty) {
+    return false;
+  }
+
+  final bootstrapHost = await localSettings.getBootstrapHostNodeKey();
+  if (bootstrapHost == null || bootstrapHost.isEmpty) {
+    return false;
+  }
+
+  final nodeKey = await localSettings.getTailscaleNodeKey();
+  if (nodeKey == bootstrapHost) {
+    return true;
+  }
+
+  return ref.watch(isHouseCreatorProvider.future);
+});
+
 final localMemberProvider = FutureProvider<Housemate?>((ref) async {
   final houseId = await ref.watch(activeHouseIdProvider.future);
   if (houseId == null) {
     return null;
   }
-  final nodeKey =
-      await ref.watch(localSettingsRepositoryProvider).getTailscaleNodeKey();
+  final nodeKey = await ref
+      .watch(localSettingsRepositoryProvider)
+      .getTailscaleNodeKey();
   final mates = ref.watch(housematesProvider(houseId)).asData?.value ?? [];
   final match = mates.where((m) => m.tailscaleNodeKey == nodeKey).firstOrNull;
   return match;
 });
 
-final houseProvider = FutureProvider.family<House?, String>((ref, houseId) async {
+final houseProvider = FutureProvider.family<House?, String>((
+  ref,
+  houseId,
+) async {
   final db = ref.watch(databaseProvider);
-  final row = await (db.select(db.houseSync)
-        ..where((t) => t.houseId.equals(houseId)))
-      .getSingleOrNull();
+  final row = await (db.select(
+    db.houseSync,
+  )..where((t) => t.houseId.equals(houseId))).getSingleOrNull();
   if (row == null) {
     return null;
   }
@@ -401,8 +445,10 @@ final houseProvider = FutureProvider.family<House?, String>((ref, houseId) async
   );
 });
 
-final housematesProvider =
-    StreamProvider.family<List<Housemate>, String>((ref, houseId) {
+final housematesProvider = StreamProvider.family<List<Housemate>, String>((
+  ref,
+  houseId,
+) {
   final db = ref.watch(databaseProvider);
   final query = db.select(db.housematesSync)
     ..where((t) => t.houseId.equals(houseId));

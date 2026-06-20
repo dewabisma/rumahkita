@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:rumah/theme/app_colors.dart';
+import 'package:rumah/theme/app_spacing.dart';
+import 'package:rumah/theme/app_text_styles.dart';
 
 class InviteQrCard extends StatelessWidget {
   const InviteQrCard({super.key, required this.inviteLink});
@@ -8,21 +11,23 @@ class InviteQrCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.themeColors;
+    final text = context.themeText;
+    final spacing = context.themeSpacing;
+
     return Card(
+      color: colors.surfaceElevated,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(spacing.radiusCard),
         child: Column(
           children: [
             QrImageView(
               data: inviteLink,
-              size: 200,
-              backgroundColor: Colors.white,
+              size: 180,
+              backgroundColor: colors.surface,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Scan to join',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            SizedBox(height: spacing.radiusSmall),
+            Text('Scan to join', style: text.sectionTitle),
           ],
         ),
       ),

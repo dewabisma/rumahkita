@@ -33,10 +33,11 @@ class LobbyScreen extends ConsumerWidget {
             return const Center(child: Text('No active house yet'));
           }
           final housematesAsync = ref.watch(housematesProvider(houseId));
-          final draftingCycle =
-              ref.watch(draftingCycleProvider(houseId)).value;
+          final canShareInviteAsync = ref.watch(canShareInviteProvider);
+          final draftingCycle = ref.watch(draftingCycleProvider(houseId)).value;
           final liveCycleCtx = ref.watch(houseRouterPhaseProvider).value;
-          final showLateJoinInfo = liveCycleCtx != null &&
+          final showLateJoinInfo =
+              liveCycleCtx != null &&
               (liveCycleCtx.activeCycle != null ||
                   liveCycleCtx.handoverCycle != null);
           return housematesAsync.when(
@@ -58,6 +59,49 @@ class LobbyScreen extends ConsumerWidget {
                   ),
                   SizedBox(height: spacing.radiusSmall),
                 ],
+                canShareInviteAsync.when(
+                  data: (canShare) {
+                    if (!canShare) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Card(
+                          color: colors.surfaceElevated,
+                          child: Padding(
+                            padding: EdgeInsets.all(spacing.radiusCard),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Waiting for roommates?',
+                                  style: text.sectionTitle,
+                                ),
+                                SizedBox(height: spacing.radiusSmall),
+                                Text(
+                                  'Share a QR code so someone can join from '
+                                  'Join a house.',
+                                  style: text.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                                SizedBox(height: spacing.radiusSmall),
+                                FilledButton(
+                                  onPressed: () => context.push('/invite'),
+                                  child: const Text('Invite roommate'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: spacing.radiusCard),
+                      ],
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
                 Expanded(child: MemberRosterList(members: mates)),
                 SizedBox(height: spacing.radiusCard),
                 if (draftingCycle != null) ...[

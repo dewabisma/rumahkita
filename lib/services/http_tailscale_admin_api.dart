@@ -34,6 +34,7 @@ class HttpTailscaleAdminApi implements TailscaleAdminApi {
     required List<HouseAclMember> activeMembers,
   }) async {
     final fetched = await _reconciler.fetchAcl();
+    final syntax = TailscaleAclBuilder.detectSyntax(fetched.policy);
     final rumahHouseIds = TailscaleAclMerger.rumahHouseIdsInPolicy(
       fetched.policy,
     );
@@ -41,7 +42,7 @@ class HttpTailscaleAdminApi implements TailscaleAdminApi {
 
     final otherFragments = rumahHouseIds
         .where((id) => id != houseId)
-        .map(TailscaleAclBuilder.buildFragment)
+        .map((id) => TailscaleAclBuilder.buildFragment(id, syntax: syntax))
         .toList();
 
     await _reconciler.reconcileHouseAclFragment(
@@ -57,4 +58,7 @@ class HttpTailscaleAdminApi implements TailscaleAdminApi {
   @override
   Future<String> resolveDeviceId({required String tailscaleNodeKey}) =>
       _reconciler.resolveDeviceId(tailscaleNodeKey: tailscaleNodeKey);
+
+  Future<String?> resolvePlaceholderNodeKey(String storedNodeKey) =>
+      _reconciler.resolvePlaceholderNodeKey(storedNodeKey);
 }

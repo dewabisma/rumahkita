@@ -16,6 +16,7 @@ import 'package:rumah/domain/repositories/task_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
 import 'package:rumah/services/sync_service.dart';
 import 'package:rumah/services/tailscale_admin_api.dart';
+import 'package:rumah/services/tailscale_identity_binder.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
 import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
@@ -110,6 +111,10 @@ final syncServiceProvider = Provider<SyncService>(
   (ref) => ref.watch(appStateProvider).syncService,
 );
 
+final deviceIdentityProvider = Provider<DeviceIdentityService>(
+  (ref) => ref.watch(appStateProvider).deviceIdentity,
+);
+
 final meshServiceProvider = Provider<TailscaleMeshService>(
   (ref) => ref.watch(appStateProvider).meshService,
 );
@@ -132,14 +137,24 @@ Future<AppState> createAppState({
   final db = testDatabase ?? await openAppDatabase();
   final identity = DeviceIdentityService();
   final deviceId = testDeviceId ?? await identity.getOrCreateDeviceId();
-  final nodeKey = testNodeKey ?? await identity.getOrCreateNodeKey();
-
-  final hlcService = HlcService(deviceId: deviceId);
-  final hlcBytes = hlcService.toBytes(hlcService.now());
 
   final existingSettings = await (db.select(
     db.localUserSettings,
   )).getSingleOrNull();
+
+  final String nodeKey;
+  if (testNodeKey != null) {
+    nodeKey = testNodeKey;
+  } else if (existingSettings != null &&
+      existingSettings.tailscaleNodeId.isNotEmpty) {
+    nodeKey = existingSettings.tailscaleNodeId;
+    await identity.bindTailscaleNode(nodeKey);
+  } else {
+    nodeKey = await identity.getOrCreateNodeKey();
+  }
+  final hlcService = HlcService(deviceId: deviceId);
+  final hlcBytes = hlcService.toBytes(hlcService.now());
+
   if (existingSettings == null) {
     await db
         .into(db.localUserSettings)
@@ -150,7 +165,7 @@ Future<AppState> createAppState({
             createdAtHlc: hlcBytes,
           ),
         );
-  } else {
+  } else if (existingSettings.tailscaleNodeId != nodeKey) {
     await (db.update(db.localUserSettings)
           ..where((t) => t.deviceId.equals(deviceId)))
         .write(LocalUserSettingsCompanion(tailscaleNodeId: Value(nodeKey)));
@@ -160,7 +175,9 @@ Future<AppState> createAppState({
   final mergeEngine = MergeEngine(db);
   final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
   final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
-  final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(db);
+  final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(
+    db,
+  );
   final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
   final tailscaleAclSideEffectHandler = TailscaleAclMergeSideEffectHandler(
     db: db,
@@ -184,7 +201,9 @@ Future<AppState> createAppState({
   privilegeTierSideEffectHandler.bindSync(syncWriteCoordinator);
   removalSideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
-  final tailscaleAdminApi = await createTailscaleAdminApi(localSettingsRepository);
+  final tailscaleAdminApi = await createTailscaleAdminApi(
+    localSettingsRepository,
+  );
 
   final dir = testDatabase != null
       ? null
@@ -235,6 +254,16 @@ Future<AppState> createAppState({
 
   if (startSync) {
     await syncService.start();
+  }
+
+  final authKey = await localSettingsRepository.getTailscaleAuthKey();
+  if (authKey != null && authKey.isNotEmpty) {
+    await meshService.up(authKey: authKey);
+    await resolveAndBindTailscaleNodeKey(
+      localSettings: localSettingsRepository,
+      deviceIdentity: identity,
+      adminApi: tailscaleAdminApi,
+    );
   }
 
   return AppState(

@@ -1,19 +1,57 @@
 import 'package:rumah/services/tailscale_acl_builder.dart';
 
-/// Merges rumahkita house ACL fragments into a full Tailscale policy document.
+/// Merges rumahkita house policy fragments into a full Tailscale policy document.
 class TailscaleAclMerger {
   TailscaleAclMerger._();
 
   static final _houseTagPattern = RegExp(r'^tag:house-');
 
-  /// Merges [houseFragments] into [currentPolicy], prepending rumah house ACL
-  /// rules before non-rumah rules and preserving unrelated policy sections.
+  static bool usesGrantsSyntax(Map<String, dynamic> policy) {
+    return TailscaleAclBuilder.detectSyntax(policy) ==
+        TailscalePolicySyntax.grants;
+  }
+
+  /// Ensures [policy] has a baseline ACL document Tailscale accepts on POST.
+  static Map<String, dynamic> normalizePolicy(Map<String, dynamic> policy) {
+    if (usesGrantsSyntax(policy)) {
+      return Map<String, dynamic>.from(policy);
+    }
+
+    final normalized = Map<String, dynamic>.from(policy);
+    final acls = normalized['acls'];
+    if (acls == null || (acls is List && acls.isEmpty)) {
+      normalized['acls'] = [
+        {'action': 'accept', 'src': ['*'], 'dst': ['*:*']},
+      ];
+    }
+    return normalized;
+  }
+
+  /// Merges [houseFragments] into [currentPolicy], prepending rumah house rules
+  /// before non-rumah rules and preserving unrelated policy sections.
   static Map<String, dynamic> merge({
     required Map<String, dynamic> currentPolicy,
     required List<Map<String, dynamic>> houseFragments,
   }) {
-    final merged = Map<String, dynamic>.from(currentPolicy);
+    final merged = usesGrantsSyntax(currentPolicy)
+        ? Map<String, dynamic>.from(currentPolicy)
+        : normalizePolicy(currentPolicy);
 
+    _mergeTagOwners(merged, houseFragments);
+
+    if (usesGrantsSyntax(merged)) {
+      _mergeGrants(merged, houseFragments);
+      return merged;
+    }
+
+    _mergeAcls(merged, houseFragments);
+    return merged;
+  }
+
+  static void _mergeTagOwners(
+    Map<String, dynamic> merged,
+    List<Map<String, dynamic>> houseFragments,
+  ) {
     final tagOwners = Map<String, dynamic>.from(
       (merged['tagOwners'] as Map?)?.cast<String, dynamic>() ?? {},
     );
@@ -32,7 +70,35 @@ class TailscaleAclMerger {
     } else {
       merged.remove('tagOwners');
     }
+  }
 
+  static void _mergeGrants(
+    Map<String, dynamic> merged,
+    List<Map<String, dynamic>> houseFragments,
+  ) {
+    final existingGrants = (merged['grants'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        <Map<String, dynamic>>[];
+
+    final nonRumahGrants = existingGrants.where(_isNonRumahGrant).toList();
+
+    final rumahGrants = <Map<String, dynamic>>[];
+    for (final fragment in houseFragments) {
+      final fragmentGrants = (fragment['grants'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList() ??
+          <Map<String, dynamic>>[];
+      rumahGrants.addAll(fragmentGrants);
+    }
+
+    merged['grants'] = [...rumahGrants, ...nonRumahGrants];
+  }
+
+  static void _mergeAcls(
+    Map<String, dynamic> merged,
+    List<Map<String, dynamic>> houseFragments,
+  ) {
     final existingAcls = (merged['acls'] as List?)
             ?.map((e) => Map<String, dynamic>.from(e as Map))
             .toList() ??
@@ -50,7 +116,24 @@ class TailscaleAclMerger {
     }
 
     merged['acls'] = [...rumahAcls, ...nonRumahAcls];
-    return merged;
+  }
+
+  static bool _isNonRumahGrant(Map<String, dynamic> rule) {
+    return !_isRumahHouseGrant(rule);
+  }
+
+  static bool _isRumahHouseGrant(Map<String, dynamic> rule) {
+    final src = rule['src'];
+    final dst = rule['dst'];
+    if (src is! List || dst is! List || src.length != 1 || dst.length != 1) {
+      return false;
+    }
+    final srcTag = src.first;
+    final dstTag = dst.first;
+    return srcTag is String &&
+        dstTag is String &&
+        srcTag == dstTag &&
+        _houseTagPattern.hasMatch(srcTag);
   }
 
   static bool _isNonRumahAcl(Map<String, dynamic> rule) {
@@ -79,14 +162,24 @@ class TailscaleAclMerger {
 
   /// Validates that [policy] has the minimum structure for a safe POST.
   static bool isWellFormedPolicy(Map<String, dynamic> policy) {
-    if (policy.isEmpty) {
-      return false;
+    if (usesGrantsSyntax(policy)) {
+      final grants = policy['grants'];
+      if (grants != null && grants is! List) {
+        return false;
+      }
+      final tagOwners = policy['tagOwners'];
+      if (tagOwners != null && tagOwners is! Map) {
+        return false;
+      }
+      return true;
     }
-    final acls = policy['acls'];
+
+    final normalized = normalizePolicy(policy);
+    final acls = normalized['acls'];
     if (acls != null && acls is! List) {
       return false;
     }
-    final tagOwners = policy['tagOwners'];
+    final tagOwners = normalized['tagOwners'];
     if (tagOwners != null && tagOwners is! Map) {
       return false;
     }

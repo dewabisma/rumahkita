@@ -29,6 +29,13 @@ void main() {
             body: jsonEncode(aclPolicy),
           );
         },
+        'POST /tailnet/-/acl/validate': (_, __, {headers, body}) async {
+          return const TailscaleHttpResponse(
+            statusCode: 200,
+            headers: {},
+            body: '',
+          );
+        },
         'POST /tailnet/-/acl': (_, __, {headers, body}) async {
           aclPolicy = jsonDecode(body!) as Map<String, dynamic>;
           return TailscaleHttpResponse(
