@@ -100,7 +100,7 @@ class _JoinHouseScreenState extends ConsumerState<JoinHouseScreen> {
       );
       return;
     }
-    context.go('/lobby');
+    context.pushReplacement('/lobby');
   }
 
   @override
@@ -112,59 +112,93 @@ class _JoinHouseScreenState extends ConsumerState<JoinHouseScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_scanning)
-            SizedBox(
-              height: 200,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: MobileScanner(
-                  onDetect: (capture) {
-                    final barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      final value = barcode.rawValue;
-                      if (value != null && value.isNotEmpty) {
-                        setState(() => _scanning = false);
-                        _tryParseInvite(value);
-                        break;
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_scanning)
+                    SizedBox(
+                      height: 200,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: MobileScanner(
+                          errorBuilder: (context, error) {
+                            final message =
+                                error.errorCode ==
+                                        MobileScannerErrorCode.permissionDenied
+                                    ? 'Camera access is needed to scan invite codes.'
+                                    : 'Could not start the camera.';
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(message, textAlign: TextAlign.center),
+                                    const SizedBox(height: 12),
+                                    TextButton(
+                                      onPressed: () =>
+                                          setState(() => _scanning = false),
+                                      child: const Text('Go back'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          onDetect: (capture) {
+                            final barcodes = capture.barcodes;
+                            for (final barcode in barcodes) {
+                              final value = barcode.rawValue;
+                              if (value != null && value.isNotEmpty) {
+                                setState(() => _scanning = false);
+                                _tryParseInvite(value);
+                                break;
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: () => setState(() => _scanning = true),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Scan QR code'),
+                    ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _inviteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Invite link or payload',
+                    ),
+                    maxLines: 3,
+                    onChanged: (v) {
+                      if (v.trim().isNotEmpty) {
+                        _tryParseInvite(v.trim());
                       }
-                    }
-                  },
-                ),
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _nicknameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Your nickname'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _authKeyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tailscale auth key (optional for dev)',
+                    ),
+                    obscureText: true,
+                  ),
+                ],
               ),
-            )
-          else
-            OutlinedButton.icon(
-              onPressed: () => setState(() => _scanning = true),
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Scan QR code'),
             ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _inviteController,
-            decoration: const InputDecoration(
-              labelText: 'Invite link or payload',
-            ),
-            maxLines: 3,
-            onChanged: (v) {
-              if (v.trim().isNotEmpty) {
-                _tryParseInvite(v.trim());
-              }
-            },
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _nicknameController,
-            decoration: const InputDecoration(labelText: 'Your nickname'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _authKeyController,
-            decoration: const InputDecoration(
-              labelText: 'Tailscale auth key (optional for dev)',
-            ),
-            obscureText: true,
-          ),
-          const Spacer(),
           FilledButton(
             onPressed: _loading ? null : _submit,
             child: _loading

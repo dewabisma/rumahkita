@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rumah/theme/app_colors.dart';
 
 class OnboardingScaffold extends StatelessWidget {
@@ -9,6 +10,7 @@ class OnboardingScaffold extends StatelessWidget {
     required this.child,
     this.header,
     this.showBack = false,
+    this.backFallback,
   });
 
   final String title;
@@ -16,19 +18,29 @@ class OnboardingScaffold extends StatelessWidget {
   final Widget child;
   final Widget? header;
   final bool showBack;
+  final String? backFallback;
 
   @override
   Widget build(BuildContext context) {
     const colors = AppColors.defaultTheme();
+    final canNavigateBack =
+        showBack && (context.canPop() || backFallback != null);
 
     return Scaffold(
       appBar: AppBar(
-        leading: showBack
+        leading: canNavigateBack
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else if (backFallback != null) {
+                    context.go(backFallback!);
+                  }
+                },
               )
             : null,
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: Padding(

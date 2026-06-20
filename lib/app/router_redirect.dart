@@ -39,9 +39,7 @@ String? redirectForLocation({
           return '/home';
         }
       case CeremonyRedirectPhase.drafting:
-        if (location == '/welcome' ||
-            isOnboarding ||
-            location == '/lobby') {
+        if (location == '/welcome' || isOnboarding) {
           return '/ceremony';
         }
       case CeremonyRedirectPhase.none:

@@ -50,7 +50,7 @@ class InviteScreen extends ConsumerWidget {
           ),
           const Spacer(),
           FilledButton(
-            onPressed: () => context.go('/lobby'),
+            onPressed: () => context.push('/lobby'),
             child: const Text('Go to lobby'),
           ),
         ],

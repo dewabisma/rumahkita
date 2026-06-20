@@ -20,12 +20,12 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           const Spacer(),
           FilledButton(
-            onPressed: () => context.go('/create'),
+            onPressed: () => context.push('/create'),
             child: const Text('Start a house'),
           ),
           SizedBox(height: spacing.radiusButton),
           OutlinedButton(
-            onPressed: () => context.go('/join'),
+            onPressed: () => context.push('/join'),
             child: const Text('Join a house'),
           ),
           const Spacer(),

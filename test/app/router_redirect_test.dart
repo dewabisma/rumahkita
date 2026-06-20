@@ -31,10 +31,22 @@ void main() {
     );
   });
 
-  test('redirects to /ceremony when drafting cycle is active', () {
+  test('allows /lobby while drafting so users can navigate back from ceremony',
+      () {
     expect(
       redirectForLocation(
         location: '/lobby',
+        activeHouseId: 'house-1',
+        ceremonyPhase: CeremonyRedirectPhase.drafting,
+      ),
+      isNull,
+    );
+  });
+
+  test('redirects onboarding to /ceremony when drafting cycle is active', () {
+    expect(
+      redirectForLocation(
+        location: '/welcome',
         activeHouseId: 'house-1',
         ceremonyPhase: CeremonyRedirectPhase.drafting,
       ),

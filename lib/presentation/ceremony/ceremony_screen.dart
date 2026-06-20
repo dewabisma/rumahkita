@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/domain/entities/privilege_template.dart';
 import 'package:rumah/domain/entities/task.dart';
@@ -41,6 +42,17 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/lobby');
+            }
+          },
+        ),
+        automaticallyImplyLeading: false,
         title: Text('Ceremony', style: text.sectionTitle),
         backgroundColor: colors.background,
       ),

@@ -91,7 +91,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         next.phase == LobbyPhase.ready &&
         next.inviteLink != null &&
         location == '/create') {
-      router.go('/invite');
+      router.pushReplacement('/invite');
     }
 
     if (prev?.phase != LobbyPhase.error &&
