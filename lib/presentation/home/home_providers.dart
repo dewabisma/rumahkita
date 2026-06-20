@@ -5,7 +5,6 @@ import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
-import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 
 final activeCycleTasksProvider = StreamProvider.family<List<Task>, String>((
@@ -43,43 +42,6 @@ final openTasksProvider = Provider.family<AsyncValue<List<Task>>, String>((
       .whenData(
         (tasks) => tasks.where((t) => t.status == TaskStatus.open).toList(),
       );
-});
-
-final pendingReviewTasksProvider =
-    Provider.family<AsyncValue<List<Task>>, String>((ref, houseId) {
-      return ref
-          .watch(activeCycleTasksProvider(houseId))
-          .whenData(
-            (tasks) => tasks
-                .where((t) => t.status == TaskStatus.pendingReview)
-                .toList(),
-          );
-    });
-
-final isLocalGuardianProvider = Provider.family<AsyncValue<bool>, String>((
-  ref,
-  houseId,
-) {
-  final cycleAsync = ref.watch(activeCycleProvider(houseId));
-  final localMemberAsync = ref.watch(localMemberProvider);
-  return cycleAsync.when(
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-    data: (cycle) {
-      return localMemberAsync.when(
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-        data: (member) {
-          if (cycle == null || member == null) {
-            return const AsyncValue.data(false);
-          }
-          return AsyncValue.data(
-            cycle.activeGuardianMemberId == member.memberId,
-          );
-        },
-      );
-    },
-  );
 });
 
 final localClaimedTasksProvider =

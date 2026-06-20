@@ -11,6 +11,7 @@ import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/sync/ceremony_guardian.dart';
+import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/sync_operation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -308,6 +309,44 @@ class DriftCeremonyRepository implements CeremonyRepository {
   static Task taskFromRow(TasksSyncData row) => _toTask(row);
 }
 
+/// Returns the guardian from the most recently completed cycle, if any.
+Future<String?> findPreviousCycleGuardianId(
+  AppDatabase db,
+  String houseId,
+) async {
+  final rows = await (db.select(db.cyclesSync)
+        ..where(
+          (t) =>
+              t.houseId.equals(houseId) &
+              t.status.equals(CycleStatus.completed.wireValue),
+        ))
+      .get();
+  if (rows.isEmpty) {
+    return null;
+  }
+  rows.sort((a, b) {
+    final hlcA = HlcService.fromBytes(Uint8List.fromList(a.updatedAtHlc));
+    final hlcB = HlcService.fromBytes(Uint8List.fromList(b.updatedAtHlc));
+    return hlcA.compareTo(hlcB);
+  });
+  return rows.last.activeGuardianMemberId;
+}
+
+List<RotationRosterMember> _activeRotationRoster(
+  List<HousematesSyncData> housemates,
+) {
+  return housemates
+      .where((m) => m.memberStatus == MemberStatus.active.wireValue)
+      .where((m) => m.rotationOrderIndex != null)
+      .map(
+        (m) => RotationRosterMember(
+          memberId: m.memberId,
+          rotationOrderIndex: m.rotationOrderIndex!,
+        ),
+      )
+      .toList();
+}
+
 /// Activates a drafting cycle when all active members have accepted current rules.
 Future<void> maybeActivateCycle({
   required AppDatabase db,
@@ -316,7 +355,6 @@ Future<void> maybeActivateCycle({
   required String cycleId,
   Uuid? uuid,
 }) async {
-  final idGen = uuid ?? const Uuid();
   final cycleRow = await (db.select(db.cyclesSync)
         ..where((t) => t.cycleId.equals(cycleId)))
       .getSingleOrNull();
@@ -352,7 +390,58 @@ Future<void> maybeActivateCycle({
     return;
   }
 
-  final guardianId = pickDeterministicGuardian(cycleId, activeIds);
+  await tryActivateCycleIfReady(
+    db: db,
+    sync: sync,
+    houseId: houseId,
+    cycleId: cycleId,
+    housemates: housemates,
+    activeIds: activeIds,
+    uuid: uuid,
+  );
+}
+
+/// Assigns a guardian and transitions the cycle to active when prerequisites are met.
+Future<void> tryActivateCycleIfReady({
+  required AppDatabase db,
+  required SyncWriteCoordinator sync,
+  required String houseId,
+  required String cycleId,
+  required List<HousematesSyncData> housemates,
+  required List<String> activeIds,
+  Uuid? uuid,
+}) async {
+  final idGen = uuid ?? const Uuid();
+  final previousGuardianId = await findPreviousCycleGuardianId(db, houseId);
+
+  if (previousGuardianId != null) {
+    final hasNullRotationIndex = housemates
+        .where((m) => m.memberStatus == MemberStatus.active.wireValue)
+        .any((m) => m.rotationOrderIndex == null);
+    if (hasNullRotationIndex) {
+      return;
+    }
+  }
+
+  int? previousGuardianRotationIndex;
+  if (previousGuardianId != null) {
+    final previousMate = housemates
+        .where((m) => m.memberId == previousGuardianId)
+        .firstOrNull;
+    previousGuardianRotationIndex = previousMate?.rotationOrderIndex;
+    if (previousGuardianRotationIndex == null) {
+      return;
+    }
+  }
+
+  final guardianId = resolveGuardianForActivation(
+    cycleId: cycleId,
+    activeMemberIds: activeIds,
+    activeRotationRoster: _activeRotationRoster(housemates),
+    previousCycleGuardianId: previousGuardianId,
+    previousGuardianRotationIndex: previousGuardianRotationIndex,
+  );
+
   final guardianOp = sync.opFactory.cycleGuardianUpdate(
     opId: idGen.v4(),
     houseId: houseId,

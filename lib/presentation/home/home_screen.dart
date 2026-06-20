@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
-import 'package:rumah/presentation/home/widgets/guardian_review_section.dart';
+import 'package:rumah/presentation/home/widgets/current_guardian_banner.dart';
+import 'package:rumah/presentation/home/widgets/guardian_dashboard_section.dart';
 import 'package:rumah/presentation/home/widgets/task_list_section.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
@@ -18,9 +18,6 @@ class HomeScreen extends ConsumerWidget {
     final text = context.themeText;
     final spacing = context.themeSpacing;
     final houseId = ref.watch(activeHouseIdProvider).value;
-    final activeCycle = houseId != null
-        ? ref.watch(activeCycleProvider(houseId)).value
-        : null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -42,23 +39,12 @@ class HomeScreen extends ConsumerWidget {
                     'Claim chores, finish them, and let your guardian cheer you on.',
                     style: text.body?.copyWith(color: colors.textSecondary),
                   ),
-                  if (activeCycle != null) ...[
-                    SizedBox(height: spacing.radiusSmall),
-                    Card(
-                      color: colors.successSurface,
-                      child: Padding(
-                        padding: EdgeInsets.all(spacing.radiusCard),
-                        child: Text(
-                          'Guardian this cycle is keeping an eye on reviews.',
-                          style: text.body,
-                        ),
-                      ),
-                    ),
-                  ],
+                  SizedBox(height: spacing.radiusSmall),
+                  CurrentGuardianBanner(houseId: houseId),
                   SizedBox(height: spacing.radiusCard),
                   TaskListSection(houseId: houseId),
                   SizedBox(height: spacing.radiusCard),
-                  GuardianReviewSection(houseId: houseId),
+                  GuardianDashboardSection(houseId: houseId),
                 ],
               ),
       ),

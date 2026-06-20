@@ -217,6 +217,184 @@ void main() {
     },
   );
 
+  test('subsequent activation rotates guardian from completed cycle', () async {
+    final harness = await SyncTestHarness.create();
+    const uuid = Uuid();
+    final houseId = uuid.v4();
+    final memberA = uuid.v4();
+    final memberB = uuid.v4();
+    final memberC = uuid.v4();
+    final completedCycleId = uuid.v4();
+    final draftingCycleId = uuid.v4();
+    final hlc = harness.hlcService.toBytes(harness.hlcService.now());
+
+    await harness.db.into(harness.db.houseSync).insert(
+          HouseSyncCompanion.insert(
+            houseId: houseId,
+            displayName: 'Home',
+            creatorMemberId: memberA,
+            createdAtHlc: hlc,
+            updatedAtHlc: hlc,
+          ),
+        );
+    for (final entry in [
+      (memberA, 'A', 0),
+      (memberB, 'B', 1),
+      (memberC, 'C', 2),
+    ]) {
+      await harness.db.into(harness.db.housematesSync).insert(
+            HousematesSyncCompanion.insert(
+              memberId: entry.$1,
+              houseId: houseId,
+              tailscaleUserId: 'user-${entry.$2}',
+              tailscaleNodeKey: '${harness.nodeKey}-${entry.$2}',
+              nickname: entry.$2,
+              rotationOrderIndex: Value(entry.$3),
+              memberStatus: MemberStatus.active.wireValue,
+              updatedAtHlc: hlc,
+            ),
+          );
+    }
+    await harness.db.into(harness.db.cyclesSync).insert(
+          CyclesSyncCompanion.insert(
+            cycleId: completedCycleId,
+            houseId: houseId,
+            activeGuardianMemberId: memberA,
+            status: CycleStatus.completed.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+    await harness.db.into(harness.db.cyclesSync).insert(
+          CyclesSyncCompanion.insert(
+            cycleId: draftingCycleId,
+            houseId: houseId,
+            activeGuardianMemberId: memberA,
+            status: CycleStatus.drafting.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+
+    final ceremonyRepo = DriftCeremonyRepository(
+      db: harness.db,
+      sync: harness.syncCoordinator,
+    );
+    await ceremonyRepo.acceptRules(
+      houseId: houseId,
+      cycleId: draftingCycleId,
+      memberId: memberA,
+    );
+    await ceremonyRepo.acceptRules(
+      houseId: houseId,
+      cycleId: draftingCycleId,
+      memberId: memberB,
+    );
+    await ceremonyRepo.acceptRules(
+      houseId: houseId,
+      cycleId: draftingCycleId,
+      memberId: memberC,
+    );
+
+    final cycle = await (harness.db.select(harness.db.cyclesSync)
+          ..where((t) => t.cycleId.equals(draftingCycleId)))
+        .getSingle();
+    expect(cycle.status, CycleStatus.active.wireValue);
+    expect(
+      cycle.activeGuardianMemberId,
+      pickNextGuardian(
+        previousGuardianId: memberA,
+        activeRoster: [
+          RotationRosterMember(memberId: memberA, rotationOrderIndex: 0),
+          RotationRosterMember(memberId: memberB, rotationOrderIndex: 1),
+          RotationRosterMember(memberId: memberC, rotationOrderIndex: 2),
+        ],
+        previousGuardianRotationIndex: 0,
+      ),
+    );
+    expect(cycle.activeGuardianMemberId, memberB);
+  });
+
+  test('null rotation index blocks second-cycle activation', () async {
+    final harness = await SyncTestHarness.create();
+    const uuid = Uuid();
+    final houseId = uuid.v4();
+    final memberA = uuid.v4();
+    final memberB = uuid.v4();
+    final completedCycleId = uuid.v4();
+    final draftingCycleId = uuid.v4();
+    final hlc = harness.hlcService.toBytes(harness.hlcService.now());
+
+    await harness.db.into(harness.db.houseSync).insert(
+          HouseSyncCompanion.insert(
+            houseId: houseId,
+            displayName: 'Home',
+            creatorMemberId: memberA,
+            createdAtHlc: hlc,
+            updatedAtHlc: hlc,
+          ),
+        );
+    await harness.db.into(harness.db.housematesSync).insert(
+          HousematesSyncCompanion.insert(
+            memberId: memberA,
+            houseId: houseId,
+            tailscaleUserId: 'user-a',
+            tailscaleNodeKey: '${harness.nodeKey}-a',
+            nickname: 'A',
+            rotationOrderIndex: const Value(0),
+            memberStatus: MemberStatus.active.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+    await harness.db.into(harness.db.housematesSync).insert(
+          HousematesSyncCompanion.insert(
+            memberId: memberB,
+            houseId: houseId,
+            tailscaleUserId: 'user-b',
+            tailscaleNodeKey: '${harness.nodeKey}-b',
+            nickname: 'B',
+            memberStatus: MemberStatus.active.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+    await harness.db.into(harness.db.cyclesSync).insert(
+          CyclesSyncCompanion.insert(
+            cycleId: completedCycleId,
+            houseId: houseId,
+            activeGuardianMemberId: memberA,
+            status: CycleStatus.completed.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+    await harness.db.into(harness.db.cyclesSync).insert(
+          CyclesSyncCompanion.insert(
+            cycleId: draftingCycleId,
+            houseId: houseId,
+            activeGuardianMemberId: memberA,
+            status: CycleStatus.drafting.wireValue,
+            updatedAtHlc: hlc,
+          ),
+        );
+
+    final ceremonyRepo = DriftCeremonyRepository(
+      db: harness.db,
+      sync: harness.syncCoordinator,
+    );
+    await ceremonyRepo.acceptRules(
+      houseId: houseId,
+      cycleId: draftingCycleId,
+      memberId: memberA,
+    );
+    await ceremonyRepo.acceptRules(
+      houseId: houseId,
+      cycleId: draftingCycleId,
+      memberId: memberB,
+    );
+
+    final cycle = await (harness.db.select(harness.db.cyclesSync)
+          ..where((t) => t.cycleId.equals(draftingCycleId)))
+        .getSingle();
+    expect(cycle.status, CycleStatus.drafting.wireValue);
+  });
+
   test(
     'concurrent cycleCreate rejects duplicate drafting cycle on merge',
     () async {
