@@ -33,6 +33,16 @@ class TaskPointsChanged extends MergeSideEffect {
   final List<int> hlc;
 }
 
+class CeremonySignoffsChanged extends MergeSideEffect {
+  const CeremonySignoffsChanged({
+    required this.houseId,
+    required this.cycleId,
+  });
+
+  final String houseId;
+  final String cycleId;
+}
+
 abstract class MergeSideEffectHandler {
   Future<void> handle(List<MergeSideEffect> effects);
 }

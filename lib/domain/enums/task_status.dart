@@ -3,7 +3,8 @@ enum TaskStatus {
   claimed,
   pendingReview,
   approved,
-  rejected;
+  rejected,
+  archived;
 
   String get wireValue {
     switch (this) {

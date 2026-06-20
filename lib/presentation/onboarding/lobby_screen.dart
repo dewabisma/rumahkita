@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rumah/app/providers.dart';
+import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
 import 'package:rumah/presentation/onboarding/widgets/member_roster_list.dart';
 import 'package:rumah/presentation/onboarding/widgets/onboarding_scaffold.dart';
 import 'package:rumah/theme/app_colors.dart';
+import 'package:rumah/theme/app_spacing.dart';
+import 'package:rumah/theme/app_text_styles.dart';
 
 class LobbyScreen extends ConsumerWidget {
   const LobbyScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const colors = AppColors.defaultTheme();
+    final colors = context.themeColors;
+    final text = context.themeText;
+    final spacing = context.themeSpacing;
     final houseIdAsync = ref.watch(activeHouseIdProvider);
 
     return OnboardingScaffold(
@@ -24,24 +30,31 @@ class LobbyScreen extends ConsumerWidget {
             return const Center(child: Text('No active house yet'));
           }
           final housematesAsync = ref.watch(housematesProvider(houseId));
+          final draftingCycle =
+              ref.watch(draftingCycleProvider(houseId)).value;
           return housematesAsync.when(
             data: (mates) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: MemberRosterList(members: mates)),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Ceremony coming soon — for now, enjoy getting everyone into the house.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
+                SizedBox(height: spacing.radiusCard),
+                if (draftingCycle != null)
+                  Card(
+                    color: colors.activeSurface,
+                    child: Padding(
+                      padding: EdgeInsets.all(spacing.radiusCard),
+                      child: Text(
+                        'Ceremony in progress — head to the drafting screen to review rules.',
+                        style: text.body?.copyWith(color: colors.active),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
+                  )
+                else
+                  FilledButton(
+                    onPressed: () => _startCeremony(ref, houseId, context),
+                    child: const Text('Start Ceremony'),
                   ),
-                ),
               ],
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -52,5 +65,13 @@ class LobbyScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );
+  }
+
+  Future<void> _startCeremony(
+    WidgetRef ref,
+    String houseId,
+    BuildContext context,
+  ) async {
+    await ref.read(ceremonyRepositoryProvider).startCeremony(houseId);
   }
 }

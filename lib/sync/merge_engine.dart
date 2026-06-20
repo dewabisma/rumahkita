@@ -126,6 +126,8 @@ class MergeEngine {
         return _applyHouseDisplayNameUpdate(op);
       case SyncOpType.houseRulesVersionUpdate:
         return _applyHouseRulesVersionUpdate(op, sideEffects);
+      case SyncOpType.housePrivilegeTemplatesUpdate:
+        return _applyHousePrivilegeTemplatesUpdate(op);
       case SyncOpType.housemateNicknameUpdate:
         return _applyHousemateNicknameUpdate(op, context);
       case SyncOpType.memberStatusTransition:
@@ -147,7 +149,7 @@ class MergeEngine {
       case SyncOpType.cycleGuardianUpdate:
         return _applyCycleGuardianUpdate(op);
       case SyncOpType.cycleSignoffSet:
-        return _applyCycleSignoffSet(op);
+        return _applyCycleSignoffSet(op, sideEffects);
       case SyncOpType.taskCreate:
         return _applyTaskCreate(op);
       case SyncOpType.taskFieldUpdate:
@@ -284,6 +286,35 @@ class MergeEngine {
         rulesVersion: Value(newVersion),
         rulesVersionHlc: Value(_decodeHlcBytes(op.hlc)),
         rulesVersionDeviceId: Value(op.originDeviceId),
+        updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
+      ),
+    );
+    return true;
+  }
+
+  Future<bool> _applyHousePrivilegeTemplatesUpdate(SyncOperation op) async {
+    final row = await (_db.select(_db.houseSync)
+          ..where((t) => t.houseId.equals(op.houseId)))
+        .getSingleOrNull();
+    if (row == null) {
+      return false;
+    }
+    if (!LwwRegister.shouldApply(
+      incomingHlc: _decodeHlc(op.hlc),
+      incomingDeviceId: op.originDeviceId,
+      existingHlcBytes: row.privilegeTemplatesHlc,
+      existingDeviceId: row.privilegeTemplatesDeviceId,
+    )) {
+      return false;
+    }
+    final templates = op.payload['privilege_templates'] as Map<String, dynamic>;
+    await (_db.update(_db.houseSync)
+          ..where((t) => t.houseId.equals(op.houseId)))
+        .write(
+      HouseSyncCompanion(
+        privilegeTemplates: Value(jsonEncode(templates)),
+        privilegeTemplatesHlc: Value(_decodeHlcBytes(op.hlc)),
+        privilegeTemplatesDeviceId: Value(op.originDeviceId),
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
       ),
     );
@@ -548,6 +579,16 @@ class MergeEngine {
     if (existing != null) {
       return false;
     }
+    final draftingRows = await (_db.select(_db.cyclesSync)
+          ..where(
+            (t) =>
+                t.houseId.equals(op.houseId) &
+                t.status.equals(CycleStatus.drafting.wireValue),
+          ))
+        .get();
+    if (draftingRows.isNotEmpty) {
+      return false;
+    }
     await _db.into(_db.cyclesSync).insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
@@ -632,7 +673,10 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyCycleSignoffSet(SyncOperation op) async {
+  Future<bool> _applyCycleSignoffSet(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final cycleId = op.payload['cycle_id'] as String;
     final memberId = op.payload['member_id'] as String;
     final row = await (_db.select(_db.cyclesSync)
@@ -668,6 +712,9 @@ class MergeEngine {
         ceremonySignoffs: Value(jsonEncode(signoffs)),
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
       ),
+    );
+    sideEffects.add(
+      CeremonySignoffsChanged(houseId: op.houseId, cycleId: cycleId),
     );
     return true;
   }

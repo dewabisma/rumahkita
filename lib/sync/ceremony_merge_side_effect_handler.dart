@@ -1,13 +1,19 @@
 import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
+import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
+import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 
-/// Clears ceremony signoffs when rules or task points change during drafting.
+/// Clears ceremony signoffs when rules or task points change during drafting,
+/// and activates cycles after signoff merges.
 class CeremonyMergeSideEffectHandler implements MergeSideEffectHandler {
   CeremonyMergeSideEffectHandler(this._db);
 
   final AppDatabase _db;
+  SyncWriteCoordinator? _sync;
+
+  void bindSync(SyncWriteCoordinator sync) => _sync = sync;
 
   @override
   Future<void> handle(List<MergeSideEffect> effects) async {
@@ -20,6 +26,17 @@ class CeremonyMergeSideEffectHandler implements MergeSideEffectHandler {
           );
         case TaskPointsChanged():
           await _clearCycleSignoffs(cycleId: effect.cycleId);
+        case CeremonySignoffsChanged():
+          final sync = _sync;
+          if (sync == null) {
+            break;
+          }
+          await maybeActivateCycle(
+            db: _db,
+            sync: sync,
+            houseId: effect.houseId,
+            cycleId: effect.cycleId,
+          );
       }
     }
   }

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:rumah/data/local/app_database.dart';
+import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
+import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/domain/repositories/house_repositories.dart';
 import 'package:rumah/domain/repositories/local_settings_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
@@ -24,6 +26,8 @@ class AppState {
     required this.houseRepository,
     required this.housemateRepository,
     required this.auditLogRepository,
+    required this.ceremonyRepository,
+    required this.syncWriteCoordinator,
     required this.localSettingsRepository,
     required this.syncService,
     required this.meshService,
@@ -36,6 +40,8 @@ class AppState {
   final DriftHouseRepository houseRepository;
   final HousemateRepository housemateRepository;
   final AuditLogRepository auditLogRepository;
+  final CeremonyRepository ceremonyRepository;
+  final SyncWriteCoordinator syncWriteCoordinator;
   final LocalSettingsRepository localSettingsRepository;
   final SyncService syncService;
   final TailscaleMeshService meshService;
@@ -62,6 +68,14 @@ final housemateRepositoryProvider = Provider<HousemateRepository>(
 
 final auditLogRepositoryProvider = Provider<AuditLogRepository>(
   (ref) => ref.watch(appStateProvider).auditLogRepository,
+);
+
+final ceremonyRepositoryProvider = Provider<CeremonyRepository>(
+  (ref) => ref.watch(appStateProvider).ceremonyRepository,
+);
+
+final syncWriteCoordinatorProvider = Provider<SyncWriteCoordinator>(
+  (ref) => ref.watch(appStateProvider).syncWriteCoordinator,
 );
 
 final localSettingsRepositoryProvider = Provider<LocalSettingsRepository>(
@@ -126,6 +140,7 @@ Future<AppState> createAppState({
     mergeEngine: mergeEngine,
     sideEffectHandler: sideEffectHandler,
   );
+  sideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
 
   final dir = testDatabase != null
@@ -152,6 +167,10 @@ Future<AppState> createAppState({
     db: db,
     sync: syncWriteCoordinator,
   );
+  final ceremonyRepository = DriftCeremonyRepository(
+    db: db,
+    sync: syncWriteCoordinator,
+  );
 
   final syncService = SyncService(
     db: db,
@@ -173,6 +192,8 @@ Future<AppState> createAppState({
     houseRepository: houseRepository,
     housemateRepository: housemateRepository,
     auditLogRepository: auditLogRepository,
+    ceremonyRepository: ceremonyRepository,
+    syncWriteCoordinator: syncWriteCoordinator,
     localSettingsRepository: localSettingsRepository,
     syncService: syncService,
     meshService: meshService,

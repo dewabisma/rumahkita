@@ -16,6 +16,8 @@ import 'package:rumah/sync/sync_op_factory.dart';
 import 'package:rumah/sync/sync_operation.dart';
 import 'package:uuid/uuid.dart';
 
+import 'drift_ceremony_repository.dart';
+
 class SyncWriteCoordinator {
   SyncWriteCoordinator({
     required AppDatabase db,
@@ -289,6 +291,13 @@ class DriftHousemateRepository implements HousemateRepository {
       senderMemberId: memberId,
       ops: [createOp, rotationOp],
       joinCredential: joinCredential,
+    );
+    await bumpRulesVersionIfDrafting(
+      db: _db,
+      sync: _sync,
+      houseId: houseId,
+      senderMemberId: memberId,
+      uuid: _uuid,
     );
     return _toEntity(await (_db.select(_db.housematesSync)
           ..where((t) => t.memberId.equals(memberId)))

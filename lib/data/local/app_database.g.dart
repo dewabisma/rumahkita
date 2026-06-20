@@ -467,6 +467,40 @@ class $HouseSyncTable extends HouseSync
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _privilegeTemplatesMeta =
+      const VerificationMeta('privilegeTemplates');
+  @override
+  late final GeneratedColumn<String> privilegeTemplates =
+      GeneratedColumn<String>(
+        'privilege_templates',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('{}'),
+      );
+  static const VerificationMeta _privilegeTemplatesHlcMeta =
+      const VerificationMeta('privilegeTemplatesHlc');
+  @override
+  late final GeneratedColumn<Uint8List> privilegeTemplatesHlc =
+      GeneratedColumn<Uint8List>(
+        'privilege_templates_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _privilegeTemplatesDeviceIdMeta =
+      const VerificationMeta('privilegeTemplatesDeviceId');
+  @override
+  late final GeneratedColumn<String> privilegeTemplatesDeviceId =
+      GeneratedColumn<String>(
+        'privilege_templates_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     houseId,
@@ -479,6 +513,9 @@ class $HouseSyncTable extends HouseSync
     displayNameDeviceId,
     rulesVersionHlc,
     rulesVersionDeviceId,
+    privilegeTemplates,
+    privilegeTemplatesHlc,
+    privilegeTemplatesDeviceId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -589,6 +626,33 @@ class $HouseSyncTable extends HouseSync
         ),
       );
     }
+    if (data.containsKey('privilege_templates')) {
+      context.handle(
+        _privilegeTemplatesMeta,
+        privilegeTemplates.isAcceptableOrUnknown(
+          data['privilege_templates']!,
+          _privilegeTemplatesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('privilege_templates_hlc')) {
+      context.handle(
+        _privilegeTemplatesHlcMeta,
+        privilegeTemplatesHlc.isAcceptableOrUnknown(
+          data['privilege_templates_hlc']!,
+          _privilegeTemplatesHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('privilege_templates_device_id')) {
+      context.handle(
+        _privilegeTemplatesDeviceIdMeta,
+        privilegeTemplatesDeviceId.isAcceptableOrUnknown(
+          data['privilege_templates_device_id']!,
+          _privilegeTemplatesDeviceIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -638,6 +702,18 @@ class $HouseSyncTable extends HouseSync
         DriftSqlType.string,
         data['${effectivePrefix}rules_version_device_id'],
       ),
+      privilegeTemplates: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privilege_templates'],
+      )!,
+      privilegeTemplatesHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}privilege_templates_hlc'],
+      ),
+      privilegeTemplatesDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privilege_templates_device_id'],
+      ),
     );
   }
 
@@ -658,6 +734,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
   final String? displayNameDeviceId;
   final Uint8List? rulesVersionHlc;
   final String? rulesVersionDeviceId;
+  final String privilegeTemplates;
+  final Uint8List? privilegeTemplatesHlc;
+  final String? privilegeTemplatesDeviceId;
   const HouseSyncData({
     required this.houseId,
     required this.displayName,
@@ -669,6 +748,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     this.displayNameDeviceId,
     this.rulesVersionHlc,
     this.rulesVersionDeviceId,
+    required this.privilegeTemplates,
+    this.privilegeTemplatesHlc,
+    this.privilegeTemplatesDeviceId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -690,6 +772,17 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     }
     if (!nullToAbsent || rulesVersionDeviceId != null) {
       map['rules_version_device_id'] = Variable<String>(rulesVersionDeviceId);
+    }
+    map['privilege_templates'] = Variable<String>(privilegeTemplates);
+    if (!nullToAbsent || privilegeTemplatesHlc != null) {
+      map['privilege_templates_hlc'] = Variable<Uint8List>(
+        privilegeTemplatesHlc,
+      );
+    }
+    if (!nullToAbsent || privilegeTemplatesDeviceId != null) {
+      map['privilege_templates_device_id'] = Variable<String>(
+        privilegeTemplatesDeviceId,
+      );
     }
     return map;
   }
@@ -714,6 +807,14 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       rulesVersionDeviceId: rulesVersionDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(rulesVersionDeviceId),
+      privilegeTemplates: Value(privilegeTemplates),
+      privilegeTemplatesHlc: privilegeTemplatesHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(privilegeTemplatesHlc),
+      privilegeTemplatesDeviceId:
+          privilegeTemplatesDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(privilegeTemplatesDeviceId),
     );
   }
 
@@ -737,6 +838,15 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       rulesVersionDeviceId: serializer.fromJson<String?>(
         json['rulesVersionDeviceId'],
       ),
+      privilegeTemplates: serializer.fromJson<String>(
+        json['privilegeTemplates'],
+      ),
+      privilegeTemplatesHlc: serializer.fromJson<Uint8List?>(
+        json['privilegeTemplatesHlc'],
+      ),
+      privilegeTemplatesDeviceId: serializer.fromJson<String?>(
+        json['privilegeTemplatesDeviceId'],
+      ),
     );
   }
   @override
@@ -753,6 +863,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       'displayNameDeviceId': serializer.toJson<String?>(displayNameDeviceId),
       'rulesVersionHlc': serializer.toJson<Uint8List?>(rulesVersionHlc),
       'rulesVersionDeviceId': serializer.toJson<String?>(rulesVersionDeviceId),
+      'privilegeTemplates': serializer.toJson<String>(privilegeTemplates),
+      'privilegeTemplatesHlc': serializer.toJson<Uint8List?>(
+        privilegeTemplatesHlc,
+      ),
+      'privilegeTemplatesDeviceId': serializer.toJson<String?>(
+        privilegeTemplatesDeviceId,
+      ),
     };
   }
 
@@ -767,6 +884,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     Value<String?> displayNameDeviceId = const Value.absent(),
     Value<Uint8List?> rulesVersionHlc = const Value.absent(),
     Value<String?> rulesVersionDeviceId = const Value.absent(),
+    String? privilegeTemplates,
+    Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
+    Value<String?> privilegeTemplatesDeviceId = const Value.absent(),
   }) => HouseSyncData(
     houseId: houseId ?? this.houseId,
     displayName: displayName ?? this.displayName,
@@ -786,6 +906,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     rulesVersionDeviceId: rulesVersionDeviceId.present
         ? rulesVersionDeviceId.value
         : this.rulesVersionDeviceId,
+    privilegeTemplates: privilegeTemplates ?? this.privilegeTemplates,
+    privilegeTemplatesHlc: privilegeTemplatesHlc.present
+        ? privilegeTemplatesHlc.value
+        : this.privilegeTemplatesHlc,
+    privilegeTemplatesDeviceId: privilegeTemplatesDeviceId.present
+        ? privilegeTemplatesDeviceId.value
+        : this.privilegeTemplatesDeviceId,
   );
   HouseSyncData copyWithCompanion(HouseSyncCompanion data) {
     return HouseSyncData(
@@ -817,6 +944,15 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       rulesVersionDeviceId: data.rulesVersionDeviceId.present
           ? data.rulesVersionDeviceId.value
           : this.rulesVersionDeviceId,
+      privilegeTemplates: data.privilegeTemplates.present
+          ? data.privilegeTemplates.value
+          : this.privilegeTemplates,
+      privilegeTemplatesHlc: data.privilegeTemplatesHlc.present
+          ? data.privilegeTemplatesHlc.value
+          : this.privilegeTemplatesHlc,
+      privilegeTemplatesDeviceId: data.privilegeTemplatesDeviceId.present
+          ? data.privilegeTemplatesDeviceId.value
+          : this.privilegeTemplatesDeviceId,
     );
   }
 
@@ -832,7 +968,10 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
           ..write('displayNameHlc: $displayNameHlc, ')
           ..write('displayNameDeviceId: $displayNameDeviceId, ')
           ..write('rulesVersionHlc: $rulesVersionHlc, ')
-          ..write('rulesVersionDeviceId: $rulesVersionDeviceId')
+          ..write('rulesVersionDeviceId: $rulesVersionDeviceId, ')
+          ..write('privilegeTemplates: $privilegeTemplates, ')
+          ..write('privilegeTemplatesHlc: $privilegeTemplatesHlc, ')
+          ..write('privilegeTemplatesDeviceId: $privilegeTemplatesDeviceId')
           ..write(')'))
         .toString();
   }
@@ -849,6 +988,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     displayNameDeviceId,
     $driftBlobEquality.hash(rulesVersionHlc),
     rulesVersionDeviceId,
+    privilegeTemplates,
+    $driftBlobEquality.hash(privilegeTemplatesHlc),
+    privilegeTemplatesDeviceId,
   );
   @override
   bool operator ==(Object other) =>
@@ -869,7 +1011,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
             other.rulesVersionHlc,
             this.rulesVersionHlc,
           ) &&
-          other.rulesVersionDeviceId == this.rulesVersionDeviceId);
+          other.rulesVersionDeviceId == this.rulesVersionDeviceId &&
+          other.privilegeTemplates == this.privilegeTemplates &&
+          $driftBlobEquality.equals(
+            other.privilegeTemplatesHlc,
+            this.privilegeTemplatesHlc,
+          ) &&
+          other.privilegeTemplatesDeviceId == this.privilegeTemplatesDeviceId);
 }
 
 class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
@@ -883,6 +1031,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
   final Value<String?> displayNameDeviceId;
   final Value<Uint8List?> rulesVersionHlc;
   final Value<String?> rulesVersionDeviceId;
+  final Value<String> privilegeTemplates;
+  final Value<Uint8List?> privilegeTemplatesHlc;
+  final Value<String?> privilegeTemplatesDeviceId;
   final Value<int> rowid;
   const HouseSyncCompanion({
     this.houseId = const Value.absent(),
@@ -895,6 +1046,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     this.displayNameDeviceId = const Value.absent(),
     this.rulesVersionHlc = const Value.absent(),
     this.rulesVersionDeviceId = const Value.absent(),
+    this.privilegeTemplates = const Value.absent(),
+    this.privilegeTemplatesHlc = const Value.absent(),
+    this.privilegeTemplatesDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HouseSyncCompanion.insert({
@@ -908,6 +1062,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     this.displayNameDeviceId = const Value.absent(),
     this.rulesVersionHlc = const Value.absent(),
     this.rulesVersionDeviceId = const Value.absent(),
+    this.privilegeTemplates = const Value.absent(),
+    this.privilegeTemplatesHlc = const Value.absent(),
+    this.privilegeTemplatesDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : houseId = Value(houseId),
        displayName = Value(displayName),
@@ -925,6 +1082,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     Expression<String>? displayNameDeviceId,
     Expression<Uint8List>? rulesVersionHlc,
     Expression<String>? rulesVersionDeviceId,
+    Expression<String>? privilegeTemplates,
+    Expression<Uint8List>? privilegeTemplatesHlc,
+    Expression<String>? privilegeTemplatesDeviceId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -940,6 +1100,11 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
       if (rulesVersionHlc != null) 'rules_version_hlc': rulesVersionHlc,
       if (rulesVersionDeviceId != null)
         'rules_version_device_id': rulesVersionDeviceId,
+      if (privilegeTemplates != null) 'privilege_templates': privilegeTemplates,
+      if (privilegeTemplatesHlc != null)
+        'privilege_templates_hlc': privilegeTemplatesHlc,
+      if (privilegeTemplatesDeviceId != null)
+        'privilege_templates_device_id': privilegeTemplatesDeviceId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -955,6 +1120,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     Value<String?>? displayNameDeviceId,
     Value<Uint8List?>? rulesVersionHlc,
     Value<String?>? rulesVersionDeviceId,
+    Value<String>? privilegeTemplates,
+    Value<Uint8List?>? privilegeTemplatesHlc,
+    Value<String?>? privilegeTemplatesDeviceId,
     Value<int>? rowid,
   }) {
     return HouseSyncCompanion(
@@ -968,6 +1136,11 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
       displayNameDeviceId: displayNameDeviceId ?? this.displayNameDeviceId,
       rulesVersionHlc: rulesVersionHlc ?? this.rulesVersionHlc,
       rulesVersionDeviceId: rulesVersionDeviceId ?? this.rulesVersionDeviceId,
+      privilegeTemplates: privilegeTemplates ?? this.privilegeTemplates,
+      privilegeTemplatesHlc:
+          privilegeTemplatesHlc ?? this.privilegeTemplatesHlc,
+      privilegeTemplatesDeviceId:
+          privilegeTemplatesDeviceId ?? this.privilegeTemplatesDeviceId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1009,6 +1182,19 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
         rulesVersionDeviceId.value,
       );
     }
+    if (privilegeTemplates.present) {
+      map['privilege_templates'] = Variable<String>(privilegeTemplates.value);
+    }
+    if (privilegeTemplatesHlc.present) {
+      map['privilege_templates_hlc'] = Variable<Uint8List>(
+        privilegeTemplatesHlc.value,
+      );
+    }
+    if (privilegeTemplatesDeviceId.present) {
+      map['privilege_templates_device_id'] = Variable<String>(
+        privilegeTemplatesDeviceId.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1028,6 +1214,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
           ..write('displayNameDeviceId: $displayNameDeviceId, ')
           ..write('rulesVersionHlc: $rulesVersionHlc, ')
           ..write('rulesVersionDeviceId: $rulesVersionDeviceId, ')
+          ..write('privilegeTemplates: $privilegeTemplates, ')
+          ..write('privilegeTemplatesHlc: $privilegeTemplatesHlc, ')
+          ..write('privilegeTemplatesDeviceId: $privilegeTemplatesDeviceId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8109,6 +8298,9 @@ typedef $$HouseSyncTableCreateCompanionBuilder =
       Value<String?> displayNameDeviceId,
       Value<Uint8List?> rulesVersionHlc,
       Value<String?> rulesVersionDeviceId,
+      Value<String> privilegeTemplates,
+      Value<Uint8List?> privilegeTemplatesHlc,
+      Value<String?> privilegeTemplatesDeviceId,
       Value<int> rowid,
     });
 typedef $$HouseSyncTableUpdateCompanionBuilder =
@@ -8123,6 +8315,9 @@ typedef $$HouseSyncTableUpdateCompanionBuilder =
       Value<String?> displayNameDeviceId,
       Value<Uint8List?> rulesVersionHlc,
       Value<String?> rulesVersionDeviceId,
+      Value<String> privilegeTemplates,
+      Value<Uint8List?> privilegeTemplatesHlc,
+      Value<String?> privilegeTemplatesDeviceId,
       Value<int> rowid,
     });
 
@@ -8182,6 +8377,21 @@ class $$HouseSyncTableFilterComposer
 
   ColumnFilters<String> get rulesVersionDeviceId => $composableBuilder(
     column: $table.rulesVersionDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get privilegeTemplates => $composableBuilder(
+    column: $table.privilegeTemplates,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get privilegeTemplatesHlc => $composableBuilder(
+    column: $table.privilegeTemplatesHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get privilegeTemplatesDeviceId => $composableBuilder(
+    column: $table.privilegeTemplatesDeviceId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8244,6 +8454,21 @@ class $$HouseSyncTableOrderingComposer
     column: $table.rulesVersionDeviceId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get privilegeTemplates => $composableBuilder(
+    column: $table.privilegeTemplates,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get privilegeTemplatesHlc => $composableBuilder(
+    column: $table.privilegeTemplatesHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get privilegeTemplatesDeviceId => $composableBuilder(
+    column: $table.privilegeTemplatesDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HouseSyncTableAnnotationComposer
@@ -8302,6 +8527,21 @@ class $$HouseSyncTableAnnotationComposer
     column: $table.rulesVersionDeviceId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get privilegeTemplates => $composableBuilder(
+    column: $table.privilegeTemplates,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get privilegeTemplatesHlc => $composableBuilder(
+    column: $table.privilegeTemplatesHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get privilegeTemplatesDeviceId => $composableBuilder(
+    column: $table.privilegeTemplatesDeviceId,
+    builder: (column) => column,
+  );
 }
 
 class $$HouseSyncTableTableManager
@@ -8345,6 +8585,10 @@ class $$HouseSyncTableTableManager
                 Value<String?> displayNameDeviceId = const Value.absent(),
                 Value<Uint8List?> rulesVersionHlc = const Value.absent(),
                 Value<String?> rulesVersionDeviceId = const Value.absent(),
+                Value<String> privilegeTemplates = const Value.absent(),
+                Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
+                Value<String?> privilegeTemplatesDeviceId =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HouseSyncCompanion(
                 houseId: houseId,
@@ -8357,6 +8601,9 @@ class $$HouseSyncTableTableManager
                 displayNameDeviceId: displayNameDeviceId,
                 rulesVersionHlc: rulesVersionHlc,
                 rulesVersionDeviceId: rulesVersionDeviceId,
+                privilegeTemplates: privilegeTemplates,
+                privilegeTemplatesHlc: privilegeTemplatesHlc,
+                privilegeTemplatesDeviceId: privilegeTemplatesDeviceId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8371,6 +8618,10 @@ class $$HouseSyncTableTableManager
                 Value<String?> displayNameDeviceId = const Value.absent(),
                 Value<Uint8List?> rulesVersionHlc = const Value.absent(),
                 Value<String?> rulesVersionDeviceId = const Value.absent(),
+                Value<String> privilegeTemplates = const Value.absent(),
+                Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
+                Value<String?> privilegeTemplatesDeviceId =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HouseSyncCompanion.insert(
                 houseId: houseId,
@@ -8383,6 +8634,9 @@ class $$HouseSyncTableTableManager
                 displayNameDeviceId: displayNameDeviceId,
                 rulesVersionHlc: rulesVersionHlc,
                 rulesVersionDeviceId: rulesVersionDeviceId,
+                privilegeTemplates: privilegeTemplates,
+                privilegeTemplatesHlc: privilegeTemplatesHlc,
+                privilegeTemplatesDeviceId: privilegeTemplatesDeviceId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

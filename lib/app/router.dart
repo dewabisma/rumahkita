@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/app/router_redirect.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
+import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/ceremony/ceremony_screen.dart';
+import 'package:rumah/presentation/home/home_screen.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/dev/sync_debug_panel.dart';
 import 'package:rumah/presentation/onboarding/create_house_screen.dart';
@@ -18,6 +21,7 @@ final rootScaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerSta
 class _RouterRefreshListenable extends ChangeNotifier {
   _RouterRefreshListenable(Ref ref) {
     ref.listen(activeHouseIdProvider, (_, _) => notifyListeners());
+    ref.listen(ceremonyRouterPhaseProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -64,6 +68,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/lobby',
         builder: (context, state) => const LobbyScreen(),
+      ),
+      GoRoute(
+        path: '/ceremony',
+        builder: (context, state) => const CeremonyScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: '/dev/sync',

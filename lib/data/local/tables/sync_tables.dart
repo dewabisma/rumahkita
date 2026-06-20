@@ -21,6 +21,10 @@ class HouseSync extends Table {
   TextColumn get displayNameDeviceId => text().nullable()();
   BlobColumn get rulesVersionHlc => blob().nullable()();
   TextColumn get rulesVersionDeviceId => text().nullable()();
+  TextColumn get privilegeTemplates =>
+      text().withDefault(const Constant('{}'))();
+  BlobColumn get privilegeTemplatesHlc => blob().nullable()();
+  TextColumn get privilegeTemplatesDeviceId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {houseId};

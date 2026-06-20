@@ -4,6 +4,7 @@ enum SyncOpType {
   housemateCreate('housemate_create'),
   houseDisplayNameUpdate('house_display_name_update'),
   houseRulesVersionUpdate('house_rules_version_update'),
+  housePrivilegeTemplatesUpdate('house_privilege_templates_update'),
   housemateNicknameUpdate('housemate_nickname_update'),
   memberStatusTransition('member_status_transition'),
   rotationAssignment('rotation_assignment'),

@@ -110,4 +110,163 @@ class SyncOpFactory {
       },
     );
   }
+
+  SyncOperation houseRulesVersionUpdate({
+    required String opId,
+    required String houseId,
+    required int rulesVersion,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.houseRulesVersionUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {'rules_version': rulesVersion},
+    );
+  }
+
+  SyncOperation housePrivilegeTemplatesUpdate({
+    required String opId,
+    required String houseId,
+    required Map<String, dynamic> templatesJson,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.housePrivilegeTemplatesUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {'privilege_templates': templatesJson},
+    );
+  }
+
+  SyncOperation cycleCreate({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    required String activeGuardianMemberId,
+    String status = 'drafting',
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleCreate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        'active_guardian_member_id': activeGuardianMemberId,
+        'status': status,
+      },
+    );
+  }
+
+  SyncOperation cycleSignoffSet({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    required String memberId,
+    required bool accepted,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleSignoffSet.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: memberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        'member_id': memberId,
+        'accepted': accepted,
+      },
+    );
+  }
+
+  SyncOperation cycleStatusTransition({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    String? from,
+    required String to,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleStatusTransition.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        if (from != null) 'from': from,
+        'to': to,
+      },
+    );
+  }
+
+  SyncOperation cycleGuardianUpdate({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    required String activeGuardianMemberId,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleGuardianUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        'active_guardian_member_id': activeGuardianMemberId,
+      },
+    );
+  }
+
+  SyncOperation taskCreate({
+    required String opId,
+    required String houseId,
+    required String taskId,
+    required String cycleId,
+    required String title,
+    required int negotiatedPoints,
+    String status = 'open',
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.taskCreate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'task_id': taskId,
+        'cycle_id': cycleId,
+        'title': title,
+        'negotiated_points': negotiatedPoints,
+        'status': status,
+      },
+    );
+  }
+
+  SyncOperation taskFieldUpdate({
+    required String opId,
+    required String houseId,
+    required String taskId,
+    required String field,
+    required Object value,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.taskFieldUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'task_id': taskId,
+        'field': field,
+        'value': value,
+      },
+    );
+  }
 }

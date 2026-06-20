@@ -27,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -72,6 +72,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(tasksSync, tasksSync.pointsDeviceId);
             await m.addColumn(tasksSync, tasksSync.statusHlc);
             await m.addColumn(tasksSync, tasksSync.statusDeviceId);
+          }
+          if (from < 3) {
+            await m.addColumn(houseSync, houseSync.privilegeTemplates);
+            await m.addColumn(houseSync, houseSync.privilegeTemplatesHlc);
+            await m.addColumn(houseSync, houseSync.privilegeTemplatesDeviceId);
           }
         },
       );

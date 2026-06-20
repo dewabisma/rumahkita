@@ -32,6 +32,8 @@ class CrdtFieldRegistry {
     'house_sync.creator_member_id':
         const FieldSpec(kind: CrdtKind.appendOnlyCreate),
     'house_sync.rules_version': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'house_sync.privilege_templates':
+        const FieldSpec(kind: CrdtKind.lwwRegister),
     'house_sync.created_at_hlc':
         const FieldSpec(kind: CrdtKind.appendOnlyCreate),
     'house_sync.updated_at_hlc': const FieldSpec(kind: CrdtKind.lwwRegister),

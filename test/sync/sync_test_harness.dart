@@ -68,6 +68,7 @@ class SyncTestHarness {
       mergeEngine: mergeEngine,
       sideEffectHandler: sideEffectHandler,
     );
+    sideEffectHandler.bindSync(syncCoordinator);
     final joinCredentialService = JoinCredentialService();
     final houseRepository = DriftHouseRepository(
       db: db,
