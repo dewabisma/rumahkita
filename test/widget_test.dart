@@ -3,7 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/app/app.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/app/router.dart';
+import 'package:rumah/sync/handover_expiry_watcher.dart';
 import 'package:rumah/services/device_identity_service.dart';
+
+HandoverExpiryWatcher _noopHandoverExpiryWatcher(Ref ref) {
+  final watcher = HandoverExpiryWatcher(ref: ref);
+  ref.onDispose(watcher.dispose);
+  return watcher;
+}
 
 void main() {
   testWidgets('Welcome screen loads', (WidgetTester tester) async {
@@ -17,7 +24,10 @@ void main() {
     );
 
     final container = ProviderContainer(
-      overrides: [appStateProvider.overrideWithValue(appState)],
+      overrides: [
+        appStateProvider.overrideWithValue(appState),
+        handoverExpiryWatcherProvider.overrideWith(_noopHandoverExpiryWatcher),
+      ],
     );
     addTearDown(container.dispose);
 
@@ -44,7 +54,10 @@ void main() {
     );
 
     final container = ProviderContainer(
-      overrides: [appStateProvider.overrideWithValue(appState)],
+      overrides: [
+        appStateProvider.overrideWithValue(appState),
+        handoverExpiryWatcherProvider.overrideWith(_noopHandoverExpiryWatcher),
+      ],
     );
     addTearDown(container.dispose);
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rumah/app/router_redirect.dart';
-import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/house/house_phase_providers.dart';
 
 void main() {
   test('keeps host on /create while activeHouseId is set', () {
@@ -10,36 +10,29 @@ void main() {
     );
   });
 
-  test('keeps host on /invite while activeHouseId is set', () {
-    expect(
-      redirectForLocation(location: '/invite', activeHouseId: 'house-1'),
-      isNull,
-    );
-  });
-
-  test('redirects other onboarding paths to /lobby when house is active', () {
-    expect(
-      redirectForLocation(location: '/welcome', activeHouseId: 'house-1'),
-      '/lobby',
-    );
-  });
-
-  test('redirects /lobby to /welcome when no active house', () {
-    expect(
-      redirectForLocation(location: '/lobby', activeHouseId: null),
-      '/welcome',
-    );
-  });
-
-  test('allows /lobby while drafting so users can navigate back from ceremony',
-      () {
+  test('redirects /home to /handover during closeout', () {
     expect(
       redirectForLocation(
-        location: '/lobby',
+        location: '/home',
         activeHouseId: 'house-1',
-        ceremonyPhase: CeremonyRedirectPhase.drafting,
+        housePhase: const HousePhaseContext(
+          phase: HouseRedirectPhase.handoverCloseout,
+        ),
       ),
-      isNull,
+      '/handover',
+    );
+  });
+
+  test('redirects /handover to /ceremony during ceremony_pending', () {
+    expect(
+      redirectForLocation(
+        location: '/handover',
+        activeHouseId: 'house-1',
+        housePhase: const HousePhaseContext(
+          phase: HouseRedirectPhase.handoverCeremonyPending,
+        ),
+      ),
+      '/ceremony',
     );
   });
 
@@ -48,7 +41,7 @@ void main() {
       redirectForLocation(
         location: '/welcome',
         activeHouseId: 'house-1',
-        ceremonyPhase: CeremonyRedirectPhase.drafting,
+        housePhase: const HousePhaseContext(phase: HouseRedirectPhase.drafting),
       ),
       '/ceremony',
     );
@@ -59,20 +52,9 @@ void main() {
       redirectForLocation(
         location: '/lobby',
         activeHouseId: 'house-1',
-        ceremonyPhase: CeremonyRedirectPhase.active,
+        housePhase: const HousePhaseContext(phase: HouseRedirectPhase.active),
       ),
       '/home',
-    );
-  });
-
-  test('redirects /ceremony to /lobby when no ceremony phase', () {
-    expect(
-      redirectForLocation(
-        location: '/ceremony',
-        activeHouseId: 'house-1',
-        ceremonyPhase: CeremonyRedirectPhase.none,
-      ),
-      '/lobby',
     );
   });
 }

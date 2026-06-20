@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/data/repositories/drift_task_repository.dart';
 import 'package:rumah/domain/entities/house_entities.dart';
+import 'package:rumah/domain/entities/privilege_state.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/presentation/home/guardian_providers.dart';
+import 'package:rumah/presentation/home/privilege_providers.dart';
 import 'package:rumah/presentation/home/widgets/reject_notes_dialog.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/theme/app_colors.dart';
@@ -20,7 +22,9 @@ class GuardianDashboardSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isGuardian =
         ref.watch(isLocalGuardianProvider(houseId)).value ?? false;
-    if (!isGuardian) {
+    final isHandoverGuardian =
+        ref.watch(isHandoverGuardianProvider(houseId)).value ?? false;
+    if (!isGuardian && !isHandoverGuardian) {
       return const SizedBox.shrink();
     }
 
@@ -242,6 +246,7 @@ class _HouseScoreboardPanel extends ConsumerWidget {
                 else
                   ...mates.map(
                     (mate) => _ScoreboardRow(
+                      houseId: houseId,
                       mate: mate,
                       colors: colors,
                       text: text,
@@ -257,30 +262,85 @@ class _HouseScoreboardPanel extends ConsumerWidget {
   }
 }
 
-class _ScoreboardRow extends StatelessWidget {
+class _ScoreboardRow extends ConsumerWidget {
   const _ScoreboardRow({
+    required this.houseId,
     required this.mate,
     required this.colors,
     required this.text,
     required this.spacing,
   });
 
+  final String houseId;
   final Housemate mate;
   final AppColors colors;
   final AppTextTheme text;
   final AppSizeTheme spacing;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final perksAsync = ref.watch(
+      memberPrivilegeStatesProvider(
+        (houseId: houseId, memberId: mate.memberId),
+      ),
+    );
+    final activeStates = perksAsync.asData?.value
+            .where((s) => s.isActive)
+            .toList() ??
+        const <PrivilegeState>[];
+
     return Padding(
-      padding: EdgeInsets.only(bottom: spacing.radiusSmall / 2),
-      child: Row(
+      padding: EdgeInsets.only(bottom: spacing.radiusSmall),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(mate.nickname, style: text.body)),
-          Text(
-            '${mate.lifetimeScore} pts',
-            style: text.bodySmall?.copyWith(color: colors.textSecondary),
+          Row(
+            children: [
+              Expanded(child: Text(mate.nickname, style: text.body)),
+              Text(
+                '${mate.lifetimeScore} pts',
+                style: text.bodySmall?.copyWith(color: colors.textSecondary),
+              ),
+            ],
           ),
+          if (activeStates.isNotEmpty) ...[
+            SizedBox(height: spacing.radiusSmall / 4),
+            Wrap(
+              spacing: spacing.radiusSmall / 2,
+              runSpacing: spacing.radiusSmall / 4,
+              children: activeStates
+                  .map(
+                    (state) {
+                      final isPenalty = state.isPenalty && state.isActive;
+                      final background = isPenalty
+                          ? colors.cautionSurface
+                          : colors.successSurface;
+                      final foreground = isPenalty
+                          ? colors.droopingLeafBrown
+                          : colors.sproutGreen;
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: background,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          state.name,
+                          style: text.bodySmall?.copyWith(
+                            color: foreground,
+                            fontSize: 11,
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                  .toList(),
+            ),
+          ],
         ],
       ),
     );

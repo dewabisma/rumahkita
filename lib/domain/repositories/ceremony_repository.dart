@@ -5,6 +5,25 @@ import 'package:rumah/domain/entities/task.dart';
 abstract class CeremonyRepository {
   Future<Cycle> startCeremony(String houseId);
 
+  Future<Cycle> startNextCycleCeremony({
+    required String houseId,
+    required String handoverCycleId,
+    required String actorMemberId,
+  });
+
+  Future<void> advanceHandoverStep({
+    required String houseId,
+    required String cycleId,
+    required String actorMemberId,
+    required String from,
+    required String to,
+  });
+
+  Future<void> expireCycleToHandover({
+    required String houseId,
+    required String cycleId,
+  });
+
   Future<Task> addTask({
     required String houseId,
     required String cycleId,

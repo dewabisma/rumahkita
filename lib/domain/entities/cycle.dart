@@ -1,4 +1,5 @@
 import 'package:rumah/domain/enums/cycle_status.dart';
+import 'package:rumah/domain/enums/handover_step.dart';
 
 class CeremonySignoff {
   const CeremonySignoff({
@@ -21,6 +22,10 @@ class Cycle {
     required this.ceremonySignoffs,
     required this.rulesVersionAtSignoff,
     required this.updatedAtHlc,
+    this.startedAtHlc,
+    this.endsAtHlc,
+    this.cycleStartScoresJson = '{}',
+    this.handoverStep,
   });
 
   final String cycleId;
@@ -30,4 +35,11 @@ class Cycle {
   final Map<String, CeremonySignoff> ceremonySignoffs;
   final int rulesVersionAtSignoff;
   final List<int> updatedAtHlc;
+  final List<int>? startedAtHlc;
+  final List<int>? endsAtHlc;
+  final String cycleStartScoresJson;
+  final HandoverStep? handoverStep;
+
+  bool get isLive =>
+      status == CycleStatus.active || status == CycleStatus.handover;
 }

@@ -4,15 +4,18 @@ import 'package:drift/drift.dart';
 import 'package:hlc_dart/hlc_dart.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
+import 'package:rumah/domain/enums/handover_step.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/sync/ceremony_guardian.dart';
 import 'package:rumah/sync/hlc.dart';
+import 'package:rumah/sync/handover_cycle_helpers.dart';
 import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/state_machines/cycle_status_machine.dart';
+import 'package:rumah/sync/state_machines/handover_step_machine.dart';
 import 'package:rumah/sync/state_machines/member_status_machine.dart';
 import 'package:rumah/sync/state_machines/proposal_status_machine.dart';
 import 'package:rumah/sync/state_machines/task_status_machine.dart';
@@ -140,7 +143,7 @@ class MergeEngine {
       case SyncOpType.rotationAssignment:
         return _applyRotationAssignment(op);
       case SyncOpType.scoreEventAppend:
-        return _applyScoreEvent(op, context);
+        return _applyScoreEvent(op, context, sideEffects);
       case SyncOpType.proposalCreate:
         return _applyProposalCreate(op);
       case SyncOpType.proposalStatusTransition:
@@ -150,11 +153,15 @@ class MergeEngine {
       case SyncOpType.cycleCreate:
         return _applyCycleCreate(op);
       case SyncOpType.cycleStatusTransition:
-        return _applyCycleStatusTransition(op);
+        return _applyCycleStatusTransition(op, sideEffects);
       case SyncOpType.cycleGuardianUpdate:
         return _applyCycleGuardianUpdate(op);
       case SyncOpType.cycleSignoffSet:
         return _applyCycleSignoffSet(op, sideEffects);
+      case SyncOpType.cycleActivationFieldsSet:
+        return _applyCycleActivationFieldsSet(op);
+      case SyncOpType.cycleHandoverStepAdvance:
+        return _applyCycleHandoverStepAdvance(op);
       case SyncOpType.taskCreate:
         return _applyTaskCreate(op);
       case SyncOpType.taskFieldUpdate:
@@ -433,12 +440,42 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyScoreEvent(SyncOperation op, MergeContext context) async {
+  Future<bool> _applyScoreEvent(
+    SyncOperation op,
+    MergeContext context,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final memberId = op.payload['member_id'] as String;
     if (!context.isMemberActive(memberId)) {
       return false;
     }
+    final reasonRef = op.payload['reason_ref'] as String?;
+    if (HandoverCycleHelpers.isTaskApproveScoreEvent(reasonRef)) {
+      final taskId = reasonRef!.split(':').last;
+      final taskRow = await (_db.select(_db.tasksSync)
+            ..where((t) => t.taskId.equals(taskId)))
+          .getSingleOrNull();
+      if (taskRow == null) {
+        return false;
+      }
+      final cycleRow = await (_db.select(_db.cyclesSync)
+            ..where((t) => t.cycleId.equals(taskRow.cycleId)))
+          .getSingleOrNull();
+      if (cycleRow == null) {
+        return false;
+      }
+      if (HandoverCycleHelpers.isHandoverCycle(cycleRow.status) &&
+          !HandoverCycleHelpers.allowsTaskApproveOnHandover(
+            cycleRow.handoverStep,
+          )) {
+        return false;
+      }
+    }
     final eventId = op.payload['event_id'] as String;
+    final memberRow = await (_db.select(_db.housematesSync)
+          ..where((t) => t.memberId.equals(memberId)))
+        .getSingleOrNull();
+    final oldScore = memberRow?.lifetimeScore ?? 0;
     final inserted = await _db
         .into(_db.scoreEvents)
         .insert(
@@ -457,6 +494,25 @@ class MergeEngine {
       return false;
     }
     await _reprojectLifetimeScore(memberId);
+    if (memberRow == null) {
+      return true;
+    }
+    final updatedRow = await (_db.select(_db.housematesSync)
+          ..where((t) => t.memberId.equals(memberId)))
+        .getSingleOrNull();
+    final newScore = updatedRow?.lifetimeScore ?? oldScore;
+    if (oldScore != newScore) {
+      sideEffects.add(
+        ScoreChanged(
+          houseId: op.houseId,
+          memberId: memberId,
+          oldScore: oldScore,
+          newScore: newScore,
+          triggeringEventId: eventId,
+          hlc: _decodeHlcBytes(op.hlc),
+        ),
+      );
+    }
     return true;
   }
 
@@ -601,6 +657,27 @@ class MergeEngine {
     if (draftingRows.isNotEmpty) {
       return false;
     }
+    final liveRows = await (_db.select(_db.cyclesSync)..where(
+          (t) =>
+              t.houseId.equals(op.houseId) &
+              (t.status.equals(CycleStatus.active.wireValue) |
+                  t.status.equals(CycleStatus.handover.wireValue)),
+        ))
+        .get();
+    if (liveRows.any((r) => r.status == CycleStatus.active.wireValue)) {
+      return false;
+    }
+    final handoverRows = liveRows
+        .where((r) => r.status == CycleStatus.handover.wireValue)
+        .toList();
+    if (handoverRows.isNotEmpty) {
+      final rolloverReady = handoverRows.every(
+        (r) => r.handoverStep == HandoverStep.retro.wireValue,
+      );
+      if (!rolloverReady) {
+        return false;
+      }
+    }
     await _db
         .into(_db.cyclesSync)
         .insert(
@@ -616,7 +693,10 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyCycleStatusTransition(SyncOperation op) async {
+  Future<bool> _applyCycleStatusTransition(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final cycleId = op.payload['cycle_id'] as String;
     final from = op.payload['from'] != null
         ? CycleStatus.fromWire(op.payload['from'] as String)
@@ -635,6 +715,14 @@ class MergeEngine {
     if (!CycleStatusMachine.canTransition(current, to)) {
       return false;
     }
+    if (current == CycleStatus.active && to == CycleStatus.handover) {
+      if (HandoverCycleHelpers.isOpHlcBeforeEndsAt(
+        opHlcBase64: op.hlc,
+        endsAtHlcBytes: row.endsAtHlc,
+      )) {
+        return false;
+      }
+    }
     if (!LwwRegister.shouldApply(
       incomingHlc: _decodeHlc(op.hlc),
       incomingDeviceId: op.originDeviceId,
@@ -643,13 +731,121 @@ class MergeEngine {
     )) {
       return false;
     }
+    final companion = CyclesSyncCompanion(
+      status: Value(to.wireValue),
+      statusHlc: Value(_decodeHlcBytes(op.hlc)),
+      statusDeviceId: Value(op.originDeviceId),
+      updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
+    );
+    if (to == CycleStatus.handover) {
+      await (_db.update(
+        _db.cyclesSync,
+      )..where((t) => t.cycleId.equals(cycleId))).write(
+        companion.copyWith(
+          handoverStep: const Value('closeout'),
+          handoverStepHlc: Value(_decodeHlcBytes(op.hlc)),
+          handoverStepDeviceId: Value(op.originDeviceId),
+        ),
+      );
+      sideEffects.add(
+        HandoverStarted(
+          houseId: op.houseId,
+          cycleId: cycleId,
+          guardianMemberId: row.activeGuardianMemberId,
+          hlc: _decodeHlcBytes(op.hlc),
+        ),
+      );
+      return true;
+    }
+    await (_db.update(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).write(companion);
+    return true;
+  }
+
+  Future<bool> _applyCycleActivationFieldsSet(SyncOperation op) async {
+    final cycleId = op.payload['cycle_id'] as String;
+    final row = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
+    if (row == null) {
+      return false;
+    }
+    if (row.status != CycleStatus.drafting.wireValue) {
+      return false;
+    }
+    if (row.startedAtHlc != null && row.startedAtHlc!.isNotEmpty) {
+      return false;
+    }
+    final startedAt = _decodeHlcBytes(op.payload['started_at_hlc'] as String);
+    final endsAt = _decodeHlcBytes(op.payload['ends_at_hlc'] as String);
+    final scoresJson = jsonEncode(
+      op.payload['cycle_start_scores_json'] as Map<String, dynamic>,
+    );
     await (_db.update(
       _db.cyclesSync,
     )..where((t) => t.cycleId.equals(cycleId))).write(
       CyclesSyncCompanion(
-        status: Value(to.wireValue),
-        statusHlc: Value(_decodeHlcBytes(op.hlc)),
-        statusDeviceId: Value(op.originDeviceId),
+        startedAtHlc: Value(startedAt),
+        endsAtHlc: Value(endsAt),
+        cycleStartScoresJson: Value(scoresJson),
+        updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
+      ),
+    );
+    return true;
+  }
+
+  Future<bool> _applyCycleHandoverStepAdvance(SyncOperation op) async {
+    final cycleId = op.payload['cycle_id'] as String;
+    final from = HandoverStep.fromWire(op.payload['from'] as String);
+    final to = HandoverStep.fromWire(op.payload['to'] as String);
+    final row = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
+    if (row == null || row.status != CycleStatus.handover.wireValue) {
+      return false;
+    }
+    final current = row.handoverStep != null
+        ? HandoverStep.fromWire(row.handoverStep!)
+        : HandoverStep.closeout;
+    if (current != from) {
+      return false;
+    }
+    if (!HandoverStepMachine.canTransition(current, to)) {
+      return false;
+    }
+    if (!LwwRegister.shouldApply(
+      incomingHlc: _decodeHlc(op.hlc),
+      incomingDeviceId: op.originDeviceId,
+      existingHlcBytes: row.handoverStepHlc,
+      existingDeviceId: row.handoverStepDeviceId,
+    )) {
+      return false;
+    }
+    if (to == HandoverStep.retro) {
+      final tasks = await (_db.select(_db.tasksSync)
+            ..where((t) => t.cycleId.equals(cycleId)))
+          .get();
+      if (HandoverCycleHelpers.cycleHasPendingReviewTasks(
+        cycleId: cycleId,
+        tasks: tasks.map((t) => (cycleId: t.cycleId, status: t.status)),
+      )) {
+        return false;
+      }
+    }
+    if (to == HandoverStep.ceremonyPending) {
+      final actorId = op.actorMemberId;
+      if (actorId == null || actorId != row.activeGuardianMemberId) {
+        return false;
+      }
+    }
+    await (_db.update(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).write(
+      CyclesSyncCompanion(
+        handoverStep: Value(to.wireValue),
+        handoverStepHlc: Value(_decodeHlcBytes(op.hlc)),
+        handoverStepDeviceId: Value(op.originDeviceId),
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
       ),
     );
@@ -736,6 +932,14 @@ class MergeEngine {
 
   Future<bool> _applyTaskCreate(SyncOperation op) async {
     final taskId = op.payload['task_id'] as String;
+    final cycleId = op.payload['cycle_id'] as String;
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(cycleId)))
+        .getSingleOrNull();
+    if (cycleRow != null &&
+        HandoverCycleHelpers.isHandoverCycle(cycleRow.status)) {
+      return false;
+    }
     final existing = await (_db.select(
       _db.tasksSync,
     )..where((t) => t.taskId.equals(taskId))).getSingleOrNull();
@@ -770,7 +974,15 @@ class MergeEngine {
     if (row == null) {
       return false;
     }
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(row.cycleId)))
+        .getSingleOrNull();
     final field = op.payload['field'] as String;
+    if (cycleRow != null &&
+        HandoverCycleHelpers.isHandoverCycle(cycleRow.status) &&
+        field != 'status') {
+      return false;
+    }
     final incomingHlc = _decodeHlc(op.hlc);
     final hlcBytes = _decodeHlcBytes(op.hlc);
     TasksSyncCompanion updateCompanion;
@@ -825,6 +1037,19 @@ class MergeEngine {
         if (!TaskStatusMachine.canTransition(current, to)) {
           return false;
         }
+        if (cycleRow != null &&
+            HandoverCycleHelpers.isHandoverCycle(cycleRow.status)) {
+          if (to == TaskStatus.pendingReview) {
+            return false;
+          }
+          if ((to == TaskStatus.approved || to == TaskStatus.open) &&
+              current == TaskStatus.pendingReview &&
+              !HandoverCycleHelpers.allowsTaskApproveOnHandover(
+                cycleRow.handoverStep,
+              )) {
+            return false;
+          }
+        }
         if (to == TaskStatus.pendingReview && current == TaskStatus.open) {
           final actorId = op.actorMemberId;
           if (actorId == null || !context.isMemberActive(actorId)) {
@@ -842,12 +1067,9 @@ class MergeEngine {
           if (actorId == null || !context.isMemberActive(actorId)) {
             return false;
           }
-          final cycle = await (_db.select(
-            _db.cyclesSync,
-          )..where((t) => t.cycleId.equals(row.cycleId))).getSingleOrNull();
-          if (cycle == null ||
+          if (cycleRow == null ||
               !isTaskReviewGuardian(
-                activeGuardianMemberId: cycle.activeGuardianMemberId,
+                activeGuardianMemberId: cycleRow.activeGuardianMemberId,
                 actorMemberId: actorId,
               )) {
             return false;
@@ -900,6 +1122,13 @@ class MergeEngine {
       _db.tasksSync,
     )..where((t) => t.taskId.equals(taskId))).getSingleOrNull();
     if (row == null) {
+      return false;
+    }
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(row.cycleId)))
+        .getSingleOrNull();
+    if (cycleRow != null &&
+        HandoverCycleHelpers.isHandoverCycle(cycleRow.status)) {
       return false;
     }
     if (TaskStatus.fromWire(row.status) != TaskStatus.open) {

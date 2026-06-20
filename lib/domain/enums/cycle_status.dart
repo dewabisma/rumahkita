@@ -1,6 +1,7 @@
 enum CycleStatus {
   drafting,
   active,
+  handover,
   completed;
 
   String get wireValue => name;

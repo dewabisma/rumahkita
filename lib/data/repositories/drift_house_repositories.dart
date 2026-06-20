@@ -43,6 +43,7 @@ class SyncWriteCoordinator {
   final Uuid _uuid;
 
   SyncOpFactory get opFactory => _opFactory;
+  HlcService get hlcService => _hlcService;
 
   Future<MergeResult> emitLocalOps({
     required String houseId,

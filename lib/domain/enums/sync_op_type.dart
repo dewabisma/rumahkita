@@ -16,6 +16,8 @@ enum SyncOpType {
   cycleStatusTransition('cycle_status_transition'),
   cycleGuardianUpdate('cycle_guardian_update'),
   cycleSignoffSet('cycle_signoff_set'),
+  cycleActivationFieldsSet('cycle_activation_fields_set'),
+  cycleHandoverStepAdvance('cycle_handover_step_advance'),
   taskCreate('task_create'),
   taskFieldUpdate('task_field_update'),
   taskClaim('task_claim'),

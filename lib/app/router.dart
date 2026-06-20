@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/app/router_redirect.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
-import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
 import 'package:rumah/presentation/ceremony/ceremony_screen.dart';
+import 'package:rumah/presentation/house/handover_screen.dart';
+import 'package:rumah/presentation/house/house_phase_providers.dart';
 import 'package:rumah/presentation/home/home_screen.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/dev/sync_debug_panel.dart';
@@ -13,6 +14,7 @@ import 'package:rumah/presentation/onboarding/invite_screen.dart';
 import 'package:rumah/presentation/onboarding/join_house_screen.dart';
 import 'package:rumah/presentation/onboarding/lobby_screen.dart';
 import 'package:rumah/presentation/onboarding/welcome_screen.dart';
+import 'package:rumah/sync/handover_expiry_watcher.dart';
 
 final rootScaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>(
   (ref) => GlobalKey<ScaffoldMessengerState>(),
@@ -21,7 +23,7 @@ final rootScaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerSta
 class _RouterRefreshListenable extends ChangeNotifier {
   _RouterRefreshListenable(Ref ref) {
     ref.listen(activeHouseIdProvider, (_, _) => notifyListeners());
-    ref.listen(ceremonyRouterPhaseProvider, (_, _) => notifyListeners());
+    ref.listen(houseRouterPhaseProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -35,6 +37,7 @@ final _routerRefreshListenableProvider =
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshListenable = ref.watch(_routerRefreshListenableProvider);
   final scaffoldKey = ref.watch(rootScaffoldMessengerKeyProvider);
+  ref.watch(handoverExpiryWatcherProvider);
 
   final router = GoRouter(
     initialLocation: '/welcome',
@@ -72,6 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/ceremony',
         builder: (context, state) => const CeremonyScreen(),
+      ),
+      GoRoute(
+        path: '/handover',
+        builder: (context, state) => const HandoverScreen(),
       ),
       GoRoute(
         path: '/home',

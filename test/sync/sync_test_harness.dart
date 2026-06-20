@@ -10,11 +10,13 @@ import 'package:rumah/domain/enums/proposal_type.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
 import 'package:rumah/services/device_identity_service.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
+import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/join_credential.dart';
 import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_engine.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
+import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
 import 'package:rumah/sync/sync_op_factory.dart';
 import 'package:rumah/sync/sync_operation.dart';
 
@@ -31,7 +33,9 @@ class SyncTestHarness {
     required this.housemateRepository,
     required this.auditLogRepository,
     required this.joinCredentialService,
-    required this.sideEffectHandler,
+  required this.sideEffectHandler,
+  required this.handoverSideEffectHandler,
+  required this.privilegeTierSideEffectHandler,
   });
 
   final AppDatabase db;
@@ -45,7 +49,9 @@ class SyncTestHarness {
   final DriftHousemateRepository housemateRepository;
   final DriftAuditLogRepository auditLogRepository;
   final JoinCredentialService joinCredentialService;
-  final CeremonyMergeSideEffectHandler sideEffectHandler;
+  final MergeSideEffectHandler sideEffectHandler;
+  final HandoverMergeSideEffectHandler handoverSideEffectHandler;
+  final PrivilegeTierMergeSideEffectHandler privilegeTierSideEffectHandler;
 
   static Future<SyncTestHarness> create({
     String deviceId = 'device-a',
@@ -63,7 +69,15 @@ class SyncTestHarness {
           ),
         );
     final mergeEngine = MergeEngine(db);
-    final sideEffectHandler = CeremonyMergeSideEffectHandler(db);
+    final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
+    final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
+    final privilegeTierSideEffectHandler =
+        PrivilegeTierMergeSideEffectHandler(db);
+    final sideEffectHandler = CompositeMergeSideEffectHandler([
+      ceremonySideEffectHandler,
+      handoverSideEffectHandler,
+      privilegeTierSideEffectHandler,
+    ]);
     final syncCoordinator = SyncWriteCoordinator(
       db: db,
       hlcService: hlcService,
@@ -71,7 +85,8 @@ class SyncTestHarness {
       mergeEngine: mergeEngine,
       sideEffectHandler: sideEffectHandler,
     );
-    sideEffectHandler.bindSync(syncCoordinator);
+    ceremonySideEffectHandler.bindSync(syncCoordinator);
+    privilegeTierSideEffectHandler.bindSync(syncCoordinator);
     final joinCredentialService = JoinCredentialService();
     final houseRepository = DriftHouseRepository(
       db: db,
@@ -97,6 +112,8 @@ class SyncTestHarness {
       ),
       joinCredentialService: joinCredentialService,
       sideEffectHandler: sideEffectHandler,
+      handoverSideEffectHandler: handoverSideEffectHandler,
+      privilegeTierSideEffectHandler: privilegeTierSideEffectHandler,
     );
   }
 

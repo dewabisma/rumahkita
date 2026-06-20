@@ -12,37 +12,8 @@ import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 
-enum CeremonyRedirectPhase { none, drafting, active }
-
-final ceremonyRouterPhaseProvider = Provider<AsyncValue<CeremonyRedirectPhase>>(
-  (ref) {
-    final houseId = ref.watch(activeHouseIdProvider).value;
-    if (houseId == null || houseId.isEmpty) {
-      return const AsyncValue.data(CeremonyRedirectPhase.none);
-    }
-    return ref.watch(_ceremonyRouterPhaseForHouseProvider(houseId));
-  },
-);
-
-final _ceremonyRouterPhaseForHouseProvider =
-    StreamProvider.family<CeremonyRedirectPhase, String>((ref, houseId) {
-  final db = ref.watch(databaseProvider);
-  final query = db.select(db.cyclesSync)
-    ..where((t) => t.houseId.equals(houseId));
-  return query.watch().map((rows) {
-    final hasActive =
-        rows.any((r) => r.status == CycleStatus.active.wireValue);
-    final hasDrafting =
-        rows.any((r) => r.status == CycleStatus.drafting.wireValue);
-    if (hasActive) {
-      return CeremonyRedirectPhase.active;
-    }
-    if (hasDrafting) {
-      return CeremonyRedirectPhase.drafting;
-    }
-    return CeremonyRedirectPhase.none;
-  });
-});
+export 'package:rumah/presentation/house/house_phase_providers.dart'
+    show CeremonyRedirectPhase, ceremonyRouterPhaseProvider;
 
 final draftingCycleProvider = StreamProvider.family<Cycle?, String>(
   (ref, houseId) {

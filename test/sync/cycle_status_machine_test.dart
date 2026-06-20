@@ -39,6 +39,16 @@ void main() {
         houseId: houseId,
         cycleId: cycleId,
         from: 'active',
+        to: 'handover',
+      ),
+      houseId,
+    );
+    await harness.apply(
+      harness.cycleStatusTransition(
+        opId: uuid.v4(),
+        houseId: houseId,
+        cycleId: cycleId,
+        from: 'handover',
         to: 'completed',
       ),
       houseId,

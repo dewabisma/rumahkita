@@ -15,7 +15,10 @@ import 'package:rumah/services/device_identity_service.dart';
 import 'package:rumah/services/sync_service.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
 import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
+import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
+import 'package:rumah/sync/merge_side_effect.dart';
+import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
 import 'package:rumah/sync/join_credential.dart';
 import 'package:rumah/sync/merge_engine.dart';
 
@@ -142,7 +145,14 @@ Future<AppState> createAppState({
 
   final localSettingsRepository = DriftLocalSettingsRepository(db: db);
   final mergeEngine = MergeEngine(db);
-  final sideEffectHandler = CeremonyMergeSideEffectHandler(db);
+  final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
+  final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
+  final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(db);
+  final sideEffectHandler = CompositeMergeSideEffectHandler([
+    ceremonySideEffectHandler,
+    handoverSideEffectHandler,
+    privilegeTierSideEffectHandler,
+  ]);
   final syncWriteCoordinator = SyncWriteCoordinator(
     db: db,
     hlcService: hlcService,
@@ -150,7 +160,8 @@ Future<AppState> createAppState({
     mergeEngine: mergeEngine,
     sideEffectHandler: sideEffectHandler,
   );
-  sideEffectHandler.bindSync(syncWriteCoordinator);
+  ceremonySideEffectHandler.bindSync(syncWriteCoordinator);
+  privilegeTierSideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
 
   final dir = testDatabase != null

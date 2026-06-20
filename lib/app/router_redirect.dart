@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/house/house_phase_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 
 /// Pure redirect logic for unit tests and [routerRedirect].
 String? redirectForLocation({
   required String location,
   required String? activeHouseId,
+  HousePhaseContext housePhase = const HousePhaseContext(
+    phase: HouseRedirectPhase.none,
+  ),
   CeremonyRedirectPhase ceremonyPhase = CeremonyRedirectPhase.none,
 }) {
   const onboardingPaths = {
@@ -30,23 +33,43 @@ String? redirectForLocation({
       return null;
     }
 
-    switch (ceremonyPhase) {
-      case CeremonyRedirectPhase.active:
+    switch (housePhase.phase) {
+      case HouseRedirectPhase.handoverCloseout:
+      case HouseRedirectPhase.handoverRetro:
         if (location == '/welcome' ||
             isOnboarding ||
             location == '/lobby' ||
+            location == '/home' ||
             location == '/ceremony') {
-          return '/home';
+          return '/handover';
         }
-      case CeremonyRedirectPhase.drafting:
+      case HouseRedirectPhase.handoverCeremonyPending:
+        if (location == '/welcome' ||
+            isOnboarding ||
+            location == '/lobby' ||
+            location == '/home' ||
+            location == '/handover') {
+          return '/ceremony';
+        }
+      case HouseRedirectPhase.drafting:
         if (location == '/welcome' || isOnboarding) {
           return '/ceremony';
         }
-      case CeremonyRedirectPhase.none:
+      case HouseRedirectPhase.active:
+        if (location == '/welcome' ||
+            isOnboarding ||
+            location == '/lobby' ||
+            location == '/ceremony' ||
+            location == '/handover') {
+          return '/home';
+        }
+      case HouseRedirectPhase.none:
         if (isOnboarding || location == '/welcome') {
           return '/lobby';
         }
-        if (location == '/ceremony' || location == '/home') {
+        if (location == '/ceremony' ||
+            location == '/home' ||
+            location == '/handover') {
           return '/lobby';
         }
     }
@@ -55,7 +78,8 @@ String? redirectForLocation({
 
   if (location == '/lobby' ||
       location == '/ceremony' ||
-      location == '/home') {
+      location == '/home' ||
+      location == '/handover') {
     return '/welcome';
   }
 
@@ -63,11 +87,12 @@ String? redirectForLocation({
 }
 
 String? routerRedirect(Ref ref, GoRouterState state) {
-  final ceremonyPhase =
-      ref.read(ceremonyRouterPhaseProvider).value ?? CeremonyRedirectPhase.none;
+  final housePhase =
+      ref.read(houseRouterPhaseProvider).value ??
+      const HousePhaseContext(phase: HouseRedirectPhase.none);
   return redirectForLocation(
     location: state.matchedLocation,
     activeHouseId: ref.read(activeHouseIdProvider).value,
-    ceremonyPhase: ceremonyPhase,
+    housePhase: housePhase,
   );
 }

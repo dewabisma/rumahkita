@@ -217,6 +217,52 @@ class SyncOpFactory {
     );
   }
 
+  SyncOperation cycleActivationFieldsSet({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    required String startedAtHlc,
+    required String endsAtHlc,
+    required Map<String, int> cycleStartScores,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleActivationFieldsSet.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        'started_at_hlc': startedAtHlc,
+        'ends_at_hlc': endsAtHlc,
+        'cycle_start_scores_json': cycleStartScores,
+      },
+    );
+  }
+
+  SyncOperation cycleHandoverStepAdvance({
+    required String opId,
+    required String houseId,
+    required String cycleId,
+    required String actorMemberId,
+    required String from,
+    required String to,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.cycleHandoverStepAdvance.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: actorMemberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'cycle_id': cycleId,
+        'from': from,
+        'to': to,
+      },
+    );
+  }
+
   SyncOperation taskCreate({
     required String opId,
     required String houseId,

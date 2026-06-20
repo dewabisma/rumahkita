@@ -39,6 +39,20 @@ class CeremonySignoffsChanged extends MergeSideEffect {
   final String cycleId;
 }
 
+class HandoverStarted extends MergeSideEffect {
+  const HandoverStarted({
+    required this.houseId,
+    required this.cycleId,
+    required this.guardianMemberId,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String cycleId;
+  final String guardianMemberId;
+  final List<int> hlc;
+}
+
 class TaskApproved extends MergeSideEffect {
   const TaskApproved({
     required this.houseId,
@@ -57,6 +71,24 @@ class TaskApproved extends MergeSideEffect {
   final List<int> hlc;
 }
 
+class ScoreChanged extends MergeSideEffect {
+  const ScoreChanged({
+    required this.houseId,
+    required this.memberId,
+    required this.oldScore,
+    required this.newScore,
+    required this.triggeringEventId,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String memberId;
+  final int oldScore;
+  final int newScore;
+  final String triggeringEventId;
+  final List<int> hlc;
+}
+
 abstract class MergeSideEffectHandler {
   Future<void> handle(List<MergeSideEffect> effects);
 }
@@ -64,6 +96,20 @@ abstract class MergeSideEffectHandler {
 class NoOpMergeSideEffectHandler implements MergeSideEffectHandler {
   @override
   Future<void> handle(List<MergeSideEffect> effects) async {}
+}
+
+/// Delegates side effects to multiple handlers without merging their logic.
+class CompositeMergeSideEffectHandler implements MergeSideEffectHandler {
+  CompositeMergeSideEffectHandler(this._handlers);
+
+  final List<MergeSideEffectHandler> _handlers;
+
+  @override
+  Future<void> handle(List<MergeSideEffect> effects) async {
+    for (final handler in _handlers) {
+      await handler.handle(effects);
+    }
+  }
 }
 
 class MergeResult {

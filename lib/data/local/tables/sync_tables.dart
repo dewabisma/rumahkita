@@ -25,6 +25,9 @@ class HouseSync extends Table {
       text().withDefault(const Constant('{}'))();
   BlobColumn get privilegeTemplatesHlc => blob().nullable()();
   TextColumn get privilegeTemplatesDeviceId => text().nullable()();
+  IntColumn get cycleDurationDays => integer().withDefault(const Constant(7))();
+  BlobColumn get cycleDurationDaysHlc => blob().nullable()();
+  TextColumn get cycleDurationDaysDeviceId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {houseId};
@@ -104,6 +107,13 @@ class CyclesSync extends Table {
   TextColumn get guardianDeviceId => text().nullable()();
   BlobColumn get rulesVersionAtSignoffHlc => blob().nullable()();
   TextColumn get rulesVersionAtSignoffDeviceId => text().nullable()();
+  BlobColumn get startedAtHlc => blob().nullable()();
+  BlobColumn get endsAtHlc => blob().nullable()();
+  TextColumn get cycleStartScoresJson =>
+      text().withDefault(const Constant('{}'))();
+  TextColumn get handoverStep => text().nullable()();
+  BlobColumn get handoverStepHlc => blob().nullable()();
+  TextColumn get handoverStepDeviceId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {cycleId};

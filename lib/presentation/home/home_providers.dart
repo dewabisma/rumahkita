@@ -7,7 +7,7 @@ import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 
-final activeCycleTasksProvider = StreamProvider.family<List<Task>, String>((
+final gameplayTasksProvider = StreamProvider.family<List<Task>, String>((
   ref,
   houseId,
 ) {
@@ -33,12 +33,15 @@ final activeCycleTasksProvider = StreamProvider.family<List<Task>, String>((
   });
 });
 
+/// Alias kept for guardian in-progress panel during active cycles.
+final activeCycleTasksProvider = gameplayTasksProvider;
+
 final openTasksProvider = Provider.family<AsyncValue<List<Task>>, String>((
   ref,
   houseId,
 ) {
   return ref
-      .watch(activeCycleTasksProvider(houseId))
+      .watch(gameplayTasksProvider(houseId))
       .whenData(
         (tasks) => tasks.where((t) => t.status == TaskStatus.open).toList(),
       );
@@ -46,7 +49,7 @@ final openTasksProvider = Provider.family<AsyncValue<List<Task>>, String>((
 
 final localClaimedTasksProvider =
     Provider.family<AsyncValue<List<Task>>, String>((ref, houseId) {
-      final tasksAsync = ref.watch(activeCycleTasksProvider(houseId));
+      final tasksAsync = ref.watch(gameplayTasksProvider(houseId));
       final localMemberAsync = ref.watch(localMemberProvider);
       return tasksAsync.when(
         loading: () => const AsyncValue.loading(),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/presentation/home/widgets/current_guardian_banner.dart';
 import 'package:rumah/presentation/home/widgets/guardian_dashboard_section.dart';
+import 'package:rumah/presentation/home/widgets/member_privileges_section.dart';
+import 'package:rumah/presentation/home/widgets/privilege_notification_listener.dart';
 import 'package:rumah/presentation/home/widgets/task_list_section.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
@@ -28,24 +30,29 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: houseId == null
             ? const Center(child: Text('No active house'))
-            : ListView(
-                padding: EdgeInsets.all(spacing.radiusCard),
-                children: [
-                  const ConnectionStatusHeader(),
-                  SizedBox(height: spacing.radiusCard),
-                  Text('Your house is active', style: text.headline),
-                  SizedBox(height: spacing.radiusSmall),
-                  Text(
-                    'Claim chores, finish them, and let your guardian cheer you on.',
-                    style: text.body?.copyWith(color: colors.textSecondary),
-                  ),
-                  SizedBox(height: spacing.radiusSmall),
-                  CurrentGuardianBanner(houseId: houseId),
-                  SizedBox(height: spacing.radiusCard),
-                  TaskListSection(houseId: houseId),
-                  SizedBox(height: spacing.radiusCard),
-                  GuardianDashboardSection(houseId: houseId),
-                ],
+            : PrivilegeNotificationListener(
+                houseId: houseId,
+                child: ListView(
+                  padding: EdgeInsets.all(spacing.radiusCard),
+                  children: [
+                    const ConnectionStatusHeader(),
+                    SizedBox(height: spacing.radiusCard),
+                    Text('Your house is active', style: text.headline),
+                    SizedBox(height: spacing.radiusSmall),
+                    Text(
+                      'Claim chores, finish them, and let your guardian cheer you on.',
+                      style: text.body?.copyWith(color: colors.textSecondary),
+                    ),
+                    SizedBox(height: spacing.radiusSmall),
+                    CurrentGuardianBanner(houseId: houseId),
+                    SizedBox(height: spacing.radiusCard),
+                    MemberPrivilegesSection(houseId: houseId),
+                    SizedBox(height: spacing.radiusCard),
+                    TaskListSection(houseId: houseId),
+                    SizedBox(height: spacing.radiusCard),
+                    GuardianDashboardSection(houseId: houseId),
+                  ],
+                ),
               ),
       ),
     );

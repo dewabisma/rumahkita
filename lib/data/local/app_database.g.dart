@@ -501,6 +501,40 @@ class $HouseSyncTable extends HouseSync
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _cycleDurationDaysMeta = const VerificationMeta(
+    'cycleDurationDays',
+  );
+  @override
+  late final GeneratedColumn<int> cycleDurationDays = GeneratedColumn<int>(
+    'cycle_duration_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(7),
+  );
+  static const VerificationMeta _cycleDurationDaysHlcMeta =
+      const VerificationMeta('cycleDurationDaysHlc');
+  @override
+  late final GeneratedColumn<Uint8List> cycleDurationDaysHlc =
+      GeneratedColumn<Uint8List>(
+        'cycle_duration_days_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _cycleDurationDaysDeviceIdMeta =
+      const VerificationMeta('cycleDurationDaysDeviceId');
+  @override
+  late final GeneratedColumn<String> cycleDurationDaysDeviceId =
+      GeneratedColumn<String>(
+        'cycle_duration_days_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     houseId,
@@ -516,6 +550,9 @@ class $HouseSyncTable extends HouseSync
     privilegeTemplates,
     privilegeTemplatesHlc,
     privilegeTemplatesDeviceId,
+    cycleDurationDays,
+    cycleDurationDaysHlc,
+    cycleDurationDaysDeviceId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -653,6 +690,33 @@ class $HouseSyncTable extends HouseSync
         ),
       );
     }
+    if (data.containsKey('cycle_duration_days')) {
+      context.handle(
+        _cycleDurationDaysMeta,
+        cycleDurationDays.isAcceptableOrUnknown(
+          data['cycle_duration_days']!,
+          _cycleDurationDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cycle_duration_days_hlc')) {
+      context.handle(
+        _cycleDurationDaysHlcMeta,
+        cycleDurationDaysHlc.isAcceptableOrUnknown(
+          data['cycle_duration_days_hlc']!,
+          _cycleDurationDaysHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cycle_duration_days_device_id')) {
+      context.handle(
+        _cycleDurationDaysDeviceIdMeta,
+        cycleDurationDaysDeviceId.isAcceptableOrUnknown(
+          data['cycle_duration_days_device_id']!,
+          _cycleDurationDaysDeviceIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -714,6 +778,18 @@ class $HouseSyncTable extends HouseSync
         DriftSqlType.string,
         data['${effectivePrefix}privilege_templates_device_id'],
       ),
+      cycleDurationDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cycle_duration_days'],
+      )!,
+      cycleDurationDaysHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}cycle_duration_days_hlc'],
+      ),
+      cycleDurationDaysDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_duration_days_device_id'],
+      ),
     );
   }
 
@@ -737,6 +813,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
   final String privilegeTemplates;
   final Uint8List? privilegeTemplatesHlc;
   final String? privilegeTemplatesDeviceId;
+  final int cycleDurationDays;
+  final Uint8List? cycleDurationDaysHlc;
+  final String? cycleDurationDaysDeviceId;
   const HouseSyncData({
     required this.houseId,
     required this.displayName,
@@ -751,6 +830,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     required this.privilegeTemplates,
     this.privilegeTemplatesHlc,
     this.privilegeTemplatesDeviceId,
+    required this.cycleDurationDays,
+    this.cycleDurationDaysHlc,
+    this.cycleDurationDaysDeviceId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -784,6 +866,17 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
         privilegeTemplatesDeviceId,
       );
     }
+    map['cycle_duration_days'] = Variable<int>(cycleDurationDays);
+    if (!nullToAbsent || cycleDurationDaysHlc != null) {
+      map['cycle_duration_days_hlc'] = Variable<Uint8List>(
+        cycleDurationDaysHlc,
+      );
+    }
+    if (!nullToAbsent || cycleDurationDaysDeviceId != null) {
+      map['cycle_duration_days_device_id'] = Variable<String>(
+        cycleDurationDaysDeviceId,
+      );
+    }
     return map;
   }
 
@@ -815,6 +908,14 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
           privilegeTemplatesDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(privilegeTemplatesDeviceId),
+      cycleDurationDays: Value(cycleDurationDays),
+      cycleDurationDaysHlc: cycleDurationDaysHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cycleDurationDaysHlc),
+      cycleDurationDaysDeviceId:
+          cycleDurationDaysDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cycleDurationDaysDeviceId),
     );
   }
 
@@ -847,6 +948,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       privilegeTemplatesDeviceId: serializer.fromJson<String?>(
         json['privilegeTemplatesDeviceId'],
       ),
+      cycleDurationDays: serializer.fromJson<int>(json['cycleDurationDays']),
+      cycleDurationDaysHlc: serializer.fromJson<Uint8List?>(
+        json['cycleDurationDaysHlc'],
+      ),
+      cycleDurationDaysDeviceId: serializer.fromJson<String?>(
+        json['cycleDurationDaysDeviceId'],
+      ),
     );
   }
   @override
@@ -870,6 +978,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       'privilegeTemplatesDeviceId': serializer.toJson<String?>(
         privilegeTemplatesDeviceId,
       ),
+      'cycleDurationDays': serializer.toJson<int>(cycleDurationDays),
+      'cycleDurationDaysHlc': serializer.toJson<Uint8List?>(
+        cycleDurationDaysHlc,
+      ),
+      'cycleDurationDaysDeviceId': serializer.toJson<String?>(
+        cycleDurationDaysDeviceId,
+      ),
     };
   }
 
@@ -887,6 +1002,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     String? privilegeTemplates,
     Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
     Value<String?> privilegeTemplatesDeviceId = const Value.absent(),
+    int? cycleDurationDays,
+    Value<Uint8List?> cycleDurationDaysHlc = const Value.absent(),
+    Value<String?> cycleDurationDaysDeviceId = const Value.absent(),
   }) => HouseSyncData(
     houseId: houseId ?? this.houseId,
     displayName: displayName ?? this.displayName,
@@ -913,6 +1031,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     privilegeTemplatesDeviceId: privilegeTemplatesDeviceId.present
         ? privilegeTemplatesDeviceId.value
         : this.privilegeTemplatesDeviceId,
+    cycleDurationDays: cycleDurationDays ?? this.cycleDurationDays,
+    cycleDurationDaysHlc: cycleDurationDaysHlc.present
+        ? cycleDurationDaysHlc.value
+        : this.cycleDurationDaysHlc,
+    cycleDurationDaysDeviceId: cycleDurationDaysDeviceId.present
+        ? cycleDurationDaysDeviceId.value
+        : this.cycleDurationDaysDeviceId,
   );
   HouseSyncData copyWithCompanion(HouseSyncCompanion data) {
     return HouseSyncData(
@@ -953,6 +1078,15 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
       privilegeTemplatesDeviceId: data.privilegeTemplatesDeviceId.present
           ? data.privilegeTemplatesDeviceId.value
           : this.privilegeTemplatesDeviceId,
+      cycleDurationDays: data.cycleDurationDays.present
+          ? data.cycleDurationDays.value
+          : this.cycleDurationDays,
+      cycleDurationDaysHlc: data.cycleDurationDaysHlc.present
+          ? data.cycleDurationDaysHlc.value
+          : this.cycleDurationDaysHlc,
+      cycleDurationDaysDeviceId: data.cycleDurationDaysDeviceId.present
+          ? data.cycleDurationDaysDeviceId.value
+          : this.cycleDurationDaysDeviceId,
     );
   }
 
@@ -971,7 +1105,10 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
           ..write('rulesVersionDeviceId: $rulesVersionDeviceId, ')
           ..write('privilegeTemplates: $privilegeTemplates, ')
           ..write('privilegeTemplatesHlc: $privilegeTemplatesHlc, ')
-          ..write('privilegeTemplatesDeviceId: $privilegeTemplatesDeviceId')
+          ..write('privilegeTemplatesDeviceId: $privilegeTemplatesDeviceId, ')
+          ..write('cycleDurationDays: $cycleDurationDays, ')
+          ..write('cycleDurationDaysHlc: $cycleDurationDaysHlc, ')
+          ..write('cycleDurationDaysDeviceId: $cycleDurationDaysDeviceId')
           ..write(')'))
         .toString();
   }
@@ -991,6 +1128,9 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
     privilegeTemplates,
     $driftBlobEquality.hash(privilegeTemplatesHlc),
     privilegeTemplatesDeviceId,
+    cycleDurationDays,
+    $driftBlobEquality.hash(cycleDurationDaysHlc),
+    cycleDurationDaysDeviceId,
   );
   @override
   bool operator ==(Object other) =>
@@ -1017,7 +1157,13 @@ class HouseSyncData extends DataClass implements Insertable<HouseSyncData> {
             other.privilegeTemplatesHlc,
             this.privilegeTemplatesHlc,
           ) &&
-          other.privilegeTemplatesDeviceId == this.privilegeTemplatesDeviceId);
+          other.privilegeTemplatesDeviceId == this.privilegeTemplatesDeviceId &&
+          other.cycleDurationDays == this.cycleDurationDays &&
+          $driftBlobEquality.equals(
+            other.cycleDurationDaysHlc,
+            this.cycleDurationDaysHlc,
+          ) &&
+          other.cycleDurationDaysDeviceId == this.cycleDurationDaysDeviceId);
 }
 
 class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
@@ -1034,6 +1180,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
   final Value<String> privilegeTemplates;
   final Value<Uint8List?> privilegeTemplatesHlc;
   final Value<String?> privilegeTemplatesDeviceId;
+  final Value<int> cycleDurationDays;
+  final Value<Uint8List?> cycleDurationDaysHlc;
+  final Value<String?> cycleDurationDaysDeviceId;
   final Value<int> rowid;
   const HouseSyncCompanion({
     this.houseId = const Value.absent(),
@@ -1049,6 +1198,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     this.privilegeTemplates = const Value.absent(),
     this.privilegeTemplatesHlc = const Value.absent(),
     this.privilegeTemplatesDeviceId = const Value.absent(),
+    this.cycleDurationDays = const Value.absent(),
+    this.cycleDurationDaysHlc = const Value.absent(),
+    this.cycleDurationDaysDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HouseSyncCompanion.insert({
@@ -1065,6 +1217,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     this.privilegeTemplates = const Value.absent(),
     this.privilegeTemplatesHlc = const Value.absent(),
     this.privilegeTemplatesDeviceId = const Value.absent(),
+    this.cycleDurationDays = const Value.absent(),
+    this.cycleDurationDaysHlc = const Value.absent(),
+    this.cycleDurationDaysDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : houseId = Value(houseId),
        displayName = Value(displayName),
@@ -1085,6 +1240,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     Expression<String>? privilegeTemplates,
     Expression<Uint8List>? privilegeTemplatesHlc,
     Expression<String>? privilegeTemplatesDeviceId,
+    Expression<int>? cycleDurationDays,
+    Expression<Uint8List>? cycleDurationDaysHlc,
+    Expression<String>? cycleDurationDaysDeviceId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1105,6 +1263,11 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
         'privilege_templates_hlc': privilegeTemplatesHlc,
       if (privilegeTemplatesDeviceId != null)
         'privilege_templates_device_id': privilegeTemplatesDeviceId,
+      if (cycleDurationDays != null) 'cycle_duration_days': cycleDurationDays,
+      if (cycleDurationDaysHlc != null)
+        'cycle_duration_days_hlc': cycleDurationDaysHlc,
+      if (cycleDurationDaysDeviceId != null)
+        'cycle_duration_days_device_id': cycleDurationDaysDeviceId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1123,6 +1286,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
     Value<String>? privilegeTemplates,
     Value<Uint8List?>? privilegeTemplatesHlc,
     Value<String?>? privilegeTemplatesDeviceId,
+    Value<int>? cycleDurationDays,
+    Value<Uint8List?>? cycleDurationDaysHlc,
+    Value<String?>? cycleDurationDaysDeviceId,
     Value<int>? rowid,
   }) {
     return HouseSyncCompanion(
@@ -1141,6 +1307,10 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
           privilegeTemplatesHlc ?? this.privilegeTemplatesHlc,
       privilegeTemplatesDeviceId:
           privilegeTemplatesDeviceId ?? this.privilegeTemplatesDeviceId,
+      cycleDurationDays: cycleDurationDays ?? this.cycleDurationDays,
+      cycleDurationDaysHlc: cycleDurationDaysHlc ?? this.cycleDurationDaysHlc,
+      cycleDurationDaysDeviceId:
+          cycleDurationDaysDeviceId ?? this.cycleDurationDaysDeviceId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1195,6 +1365,19 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
         privilegeTemplatesDeviceId.value,
       );
     }
+    if (cycleDurationDays.present) {
+      map['cycle_duration_days'] = Variable<int>(cycleDurationDays.value);
+    }
+    if (cycleDurationDaysHlc.present) {
+      map['cycle_duration_days_hlc'] = Variable<Uint8List>(
+        cycleDurationDaysHlc.value,
+      );
+    }
+    if (cycleDurationDaysDeviceId.present) {
+      map['cycle_duration_days_device_id'] = Variable<String>(
+        cycleDurationDaysDeviceId.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1217,6 +1400,9 @@ class HouseSyncCompanion extends UpdateCompanion<HouseSyncData> {
           ..write('privilegeTemplates: $privilegeTemplates, ')
           ..write('privilegeTemplatesHlc: $privilegeTemplatesHlc, ')
           ..write('privilegeTemplatesDeviceId: $privilegeTemplatesDeviceId, ')
+          ..write('cycleDurationDays: $cycleDurationDays, ')
+          ..write('cycleDurationDaysHlc: $cycleDurationDaysHlc, ')
+          ..write('cycleDurationDaysDeviceId: $cycleDurationDaysDeviceId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3743,6 +3929,75 @@ class $CyclesSyncTable extends CyclesSync
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _startedAtHlcMeta = const VerificationMeta(
+    'startedAtHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> startedAtHlc =
+      GeneratedColumn<Uint8List>(
+        'started_at_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _endsAtHlcMeta = const VerificationMeta(
+    'endsAtHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> endsAtHlc = GeneratedColumn<Uint8List>(
+    'ends_at_hlc',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cycleStartScoresJsonMeta =
+      const VerificationMeta('cycleStartScoresJson');
+  @override
+  late final GeneratedColumn<String> cycleStartScoresJson =
+      GeneratedColumn<String>(
+        'cycle_start_scores_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('{}'),
+      );
+  static const VerificationMeta _handoverStepMeta = const VerificationMeta(
+    'handoverStep',
+  );
+  @override
+  late final GeneratedColumn<String> handoverStep = GeneratedColumn<String>(
+    'handover_step',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _handoverStepHlcMeta = const VerificationMeta(
+    'handoverStepHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> handoverStepHlc =
+      GeneratedColumn<Uint8List>(
+        'handover_step_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _handoverStepDeviceIdMeta =
+      const VerificationMeta('handoverStepDeviceId');
+  @override
+  late final GeneratedColumn<String> handoverStepDeviceId =
+      GeneratedColumn<String>(
+        'handover_step_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     cycleId,
@@ -3758,6 +4013,12 @@ class $CyclesSyncTable extends CyclesSync
     guardianDeviceId,
     rulesVersionAtSignoffHlc,
     rulesVersionAtSignoffDeviceId,
+    startedAtHlc,
+    endsAtHlc,
+    cycleStartScoresJson,
+    handoverStep,
+    handoverStepHlc,
+    handoverStepDeviceId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3886,6 +4147,57 @@ class $CyclesSyncTable extends CyclesSync
         ),
       );
     }
+    if (data.containsKey('started_at_hlc')) {
+      context.handle(
+        _startedAtHlcMeta,
+        startedAtHlc.isAcceptableOrUnknown(
+          data['started_at_hlc']!,
+          _startedAtHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ends_at_hlc')) {
+      context.handle(
+        _endsAtHlcMeta,
+        endsAtHlc.isAcceptableOrUnknown(data['ends_at_hlc']!, _endsAtHlcMeta),
+      );
+    }
+    if (data.containsKey('cycle_start_scores_json')) {
+      context.handle(
+        _cycleStartScoresJsonMeta,
+        cycleStartScoresJson.isAcceptableOrUnknown(
+          data['cycle_start_scores_json']!,
+          _cycleStartScoresJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('handover_step')) {
+      context.handle(
+        _handoverStepMeta,
+        handoverStep.isAcceptableOrUnknown(
+          data['handover_step']!,
+          _handoverStepMeta,
+        ),
+      );
+    }
+    if (data.containsKey('handover_step_hlc')) {
+      context.handle(
+        _handoverStepHlcMeta,
+        handoverStepHlc.isAcceptableOrUnknown(
+          data['handover_step_hlc']!,
+          _handoverStepHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('handover_step_device_id')) {
+      context.handle(
+        _handoverStepDeviceIdMeta,
+        handoverStepDeviceId.isAcceptableOrUnknown(
+          data['handover_step_device_id']!,
+          _handoverStepDeviceIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3947,6 +4259,30 @@ class $CyclesSyncTable extends CyclesSync
         DriftSqlType.string,
         data['${effectivePrefix}rules_version_at_signoff_device_id'],
       ),
+      startedAtHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}started_at_hlc'],
+      ),
+      endsAtHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}ends_at_hlc'],
+      ),
+      cycleStartScoresJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_start_scores_json'],
+      )!,
+      handoverStep: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}handover_step'],
+      ),
+      handoverStepHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}handover_step_hlc'],
+      ),
+      handoverStepDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}handover_step_device_id'],
+      ),
     );
   }
 
@@ -3970,6 +4306,12 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
   final String? guardianDeviceId;
   final Uint8List? rulesVersionAtSignoffHlc;
   final String? rulesVersionAtSignoffDeviceId;
+  final Uint8List? startedAtHlc;
+  final Uint8List? endsAtHlc;
+  final String cycleStartScoresJson;
+  final String? handoverStep;
+  final Uint8List? handoverStepHlc;
+  final String? handoverStepDeviceId;
   const CyclesSyncData({
     required this.cycleId,
     required this.houseId,
@@ -3984,6 +4326,12 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
     this.guardianDeviceId,
     this.rulesVersionAtSignoffHlc,
     this.rulesVersionAtSignoffDeviceId,
+    this.startedAtHlc,
+    this.endsAtHlc,
+    required this.cycleStartScoresJson,
+    this.handoverStep,
+    this.handoverStepHlc,
+    this.handoverStepDeviceId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4017,6 +4365,22 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
         rulesVersionAtSignoffDeviceId,
       );
     }
+    if (!nullToAbsent || startedAtHlc != null) {
+      map['started_at_hlc'] = Variable<Uint8List>(startedAtHlc);
+    }
+    if (!nullToAbsent || endsAtHlc != null) {
+      map['ends_at_hlc'] = Variable<Uint8List>(endsAtHlc);
+    }
+    map['cycle_start_scores_json'] = Variable<String>(cycleStartScoresJson);
+    if (!nullToAbsent || handoverStep != null) {
+      map['handover_step'] = Variable<String>(handoverStep);
+    }
+    if (!nullToAbsent || handoverStepHlc != null) {
+      map['handover_step_hlc'] = Variable<Uint8List>(handoverStepHlc);
+    }
+    if (!nullToAbsent || handoverStepDeviceId != null) {
+      map['handover_step_device_id'] = Variable<String>(handoverStepDeviceId);
+    }
     return map;
   }
 
@@ -4048,6 +4412,22 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
           rulesVersionAtSignoffDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(rulesVersionAtSignoffDeviceId),
+      startedAtHlc: startedAtHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAtHlc),
+      endsAtHlc: endsAtHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endsAtHlc),
+      cycleStartScoresJson: Value(cycleStartScoresJson),
+      handoverStep: handoverStep == null && nullToAbsent
+          ? const Value.absent()
+          : Value(handoverStep),
+      handoverStepHlc: handoverStepHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(handoverStepHlc),
+      handoverStepDeviceId: handoverStepDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(handoverStepDeviceId),
     );
   }
 
@@ -4078,6 +4458,16 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
       rulesVersionAtSignoffDeviceId: serializer.fromJson<String?>(
         json['rulesVersionAtSignoffDeviceId'],
       ),
+      startedAtHlc: serializer.fromJson<Uint8List?>(json['startedAtHlc']),
+      endsAtHlc: serializer.fromJson<Uint8List?>(json['endsAtHlc']),
+      cycleStartScoresJson: serializer.fromJson<String>(
+        json['cycleStartScoresJson'],
+      ),
+      handoverStep: serializer.fromJson<String?>(json['handoverStep']),
+      handoverStepHlc: serializer.fromJson<Uint8List?>(json['handoverStepHlc']),
+      handoverStepDeviceId: serializer.fromJson<String?>(
+        json['handoverStepDeviceId'],
+      ),
     );
   }
   @override
@@ -4103,6 +4493,12 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
       'rulesVersionAtSignoffDeviceId': serializer.toJson<String?>(
         rulesVersionAtSignoffDeviceId,
       ),
+      'startedAtHlc': serializer.toJson<Uint8List?>(startedAtHlc),
+      'endsAtHlc': serializer.toJson<Uint8List?>(endsAtHlc),
+      'cycleStartScoresJson': serializer.toJson<String>(cycleStartScoresJson),
+      'handoverStep': serializer.toJson<String?>(handoverStep),
+      'handoverStepHlc': serializer.toJson<Uint8List?>(handoverStepHlc),
+      'handoverStepDeviceId': serializer.toJson<String?>(handoverStepDeviceId),
     };
   }
 
@@ -4120,6 +4516,12 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
     Value<String?> guardianDeviceId = const Value.absent(),
     Value<Uint8List?> rulesVersionAtSignoffHlc = const Value.absent(),
     Value<String?> rulesVersionAtSignoffDeviceId = const Value.absent(),
+    Value<Uint8List?> startedAtHlc = const Value.absent(),
+    Value<Uint8List?> endsAtHlc = const Value.absent(),
+    String? cycleStartScoresJson,
+    Value<String?> handoverStep = const Value.absent(),
+    Value<Uint8List?> handoverStepHlc = const Value.absent(),
+    Value<String?> handoverStepDeviceId = const Value.absent(),
   }) => CyclesSyncData(
     cycleId: cycleId ?? this.cycleId,
     houseId: houseId ?? this.houseId,
@@ -4143,6 +4545,16 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
     rulesVersionAtSignoffDeviceId: rulesVersionAtSignoffDeviceId.present
         ? rulesVersionAtSignoffDeviceId.value
         : this.rulesVersionAtSignoffDeviceId,
+    startedAtHlc: startedAtHlc.present ? startedAtHlc.value : this.startedAtHlc,
+    endsAtHlc: endsAtHlc.present ? endsAtHlc.value : this.endsAtHlc,
+    cycleStartScoresJson: cycleStartScoresJson ?? this.cycleStartScoresJson,
+    handoverStep: handoverStep.present ? handoverStep.value : this.handoverStep,
+    handoverStepHlc: handoverStepHlc.present
+        ? handoverStepHlc.value
+        : this.handoverStepHlc,
+    handoverStepDeviceId: handoverStepDeviceId.present
+        ? handoverStepDeviceId.value
+        : this.handoverStepDeviceId,
   );
   CyclesSyncData copyWithCompanion(CyclesSyncCompanion data) {
     return CyclesSyncData(
@@ -4177,6 +4589,22 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
       rulesVersionAtSignoffDeviceId: data.rulesVersionAtSignoffDeviceId.present
           ? data.rulesVersionAtSignoffDeviceId.value
           : this.rulesVersionAtSignoffDeviceId,
+      startedAtHlc: data.startedAtHlc.present
+          ? data.startedAtHlc.value
+          : this.startedAtHlc,
+      endsAtHlc: data.endsAtHlc.present ? data.endsAtHlc.value : this.endsAtHlc,
+      cycleStartScoresJson: data.cycleStartScoresJson.present
+          ? data.cycleStartScoresJson.value
+          : this.cycleStartScoresJson,
+      handoverStep: data.handoverStep.present
+          ? data.handoverStep.value
+          : this.handoverStep,
+      handoverStepHlc: data.handoverStepHlc.present
+          ? data.handoverStepHlc.value
+          : this.handoverStepHlc,
+      handoverStepDeviceId: data.handoverStepDeviceId.present
+          ? data.handoverStepDeviceId.value
+          : this.handoverStepDeviceId,
     );
   }
 
@@ -4196,8 +4624,14 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
           ..write('guardianDeviceId: $guardianDeviceId, ')
           ..write('rulesVersionAtSignoffHlc: $rulesVersionAtSignoffHlc, ')
           ..write(
-            'rulesVersionAtSignoffDeviceId: $rulesVersionAtSignoffDeviceId',
+            'rulesVersionAtSignoffDeviceId: $rulesVersionAtSignoffDeviceId, ',
           )
+          ..write('startedAtHlc: $startedAtHlc, ')
+          ..write('endsAtHlc: $endsAtHlc, ')
+          ..write('cycleStartScoresJson: $cycleStartScoresJson, ')
+          ..write('handoverStep: $handoverStep, ')
+          ..write('handoverStepHlc: $handoverStepHlc, ')
+          ..write('handoverStepDeviceId: $handoverStepDeviceId')
           ..write(')'))
         .toString();
   }
@@ -4217,6 +4651,12 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
     guardianDeviceId,
     $driftBlobEquality.hash(rulesVersionAtSignoffHlc),
     rulesVersionAtSignoffDeviceId,
+    $driftBlobEquality.hash(startedAtHlc),
+    $driftBlobEquality.hash(endsAtHlc),
+    cycleStartScoresJson,
+    handoverStep,
+    $driftBlobEquality.hash(handoverStepHlc),
+    handoverStepDeviceId,
   );
   @override
   bool operator ==(Object other) =>
@@ -4238,7 +4678,16 @@ class CyclesSyncData extends DataClass implements Insertable<CyclesSyncData> {
             this.rulesVersionAtSignoffHlc,
           ) &&
           other.rulesVersionAtSignoffDeviceId ==
-              this.rulesVersionAtSignoffDeviceId);
+              this.rulesVersionAtSignoffDeviceId &&
+          $driftBlobEquality.equals(other.startedAtHlc, this.startedAtHlc) &&
+          $driftBlobEquality.equals(other.endsAtHlc, this.endsAtHlc) &&
+          other.cycleStartScoresJson == this.cycleStartScoresJson &&
+          other.handoverStep == this.handoverStep &&
+          $driftBlobEquality.equals(
+            other.handoverStepHlc,
+            this.handoverStepHlc,
+          ) &&
+          other.handoverStepDeviceId == this.handoverStepDeviceId);
 }
 
 class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
@@ -4255,6 +4704,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
   final Value<String?> guardianDeviceId;
   final Value<Uint8List?> rulesVersionAtSignoffHlc;
   final Value<String?> rulesVersionAtSignoffDeviceId;
+  final Value<Uint8List?> startedAtHlc;
+  final Value<Uint8List?> endsAtHlc;
+  final Value<String> cycleStartScoresJson;
+  final Value<String?> handoverStep;
+  final Value<Uint8List?> handoverStepHlc;
+  final Value<String?> handoverStepDeviceId;
   final Value<int> rowid;
   const CyclesSyncCompanion({
     this.cycleId = const Value.absent(),
@@ -4270,6 +4725,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
     this.guardianDeviceId = const Value.absent(),
     this.rulesVersionAtSignoffHlc = const Value.absent(),
     this.rulesVersionAtSignoffDeviceId = const Value.absent(),
+    this.startedAtHlc = const Value.absent(),
+    this.endsAtHlc = const Value.absent(),
+    this.cycleStartScoresJson = const Value.absent(),
+    this.handoverStep = const Value.absent(),
+    this.handoverStepHlc = const Value.absent(),
+    this.handoverStepDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CyclesSyncCompanion.insert({
@@ -4286,6 +4747,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
     this.guardianDeviceId = const Value.absent(),
     this.rulesVersionAtSignoffHlc = const Value.absent(),
     this.rulesVersionAtSignoffDeviceId = const Value.absent(),
+    this.startedAtHlc = const Value.absent(),
+    this.endsAtHlc = const Value.absent(),
+    this.cycleStartScoresJson = const Value.absent(),
+    this.handoverStep = const Value.absent(),
+    this.handoverStepHlc = const Value.absent(),
+    this.handoverStepDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : cycleId = Value(cycleId),
        houseId = Value(houseId),
@@ -4306,6 +4773,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
     Expression<String>? guardianDeviceId,
     Expression<Uint8List>? rulesVersionAtSignoffHlc,
     Expression<String>? rulesVersionAtSignoffDeviceId,
+    Expression<Uint8List>? startedAtHlc,
+    Expression<Uint8List>? endsAtHlc,
+    Expression<String>? cycleStartScoresJson,
+    Expression<String>? handoverStep,
+    Expression<Uint8List>? handoverStepHlc,
+    Expression<String>? handoverStepDeviceId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4326,6 +4799,14 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
         'rules_version_at_signoff_hlc': rulesVersionAtSignoffHlc,
       if (rulesVersionAtSignoffDeviceId != null)
         'rules_version_at_signoff_device_id': rulesVersionAtSignoffDeviceId,
+      if (startedAtHlc != null) 'started_at_hlc': startedAtHlc,
+      if (endsAtHlc != null) 'ends_at_hlc': endsAtHlc,
+      if (cycleStartScoresJson != null)
+        'cycle_start_scores_json': cycleStartScoresJson,
+      if (handoverStep != null) 'handover_step': handoverStep,
+      if (handoverStepHlc != null) 'handover_step_hlc': handoverStepHlc,
+      if (handoverStepDeviceId != null)
+        'handover_step_device_id': handoverStepDeviceId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4344,6 +4825,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
     Value<String?>? guardianDeviceId,
     Value<Uint8List?>? rulesVersionAtSignoffHlc,
     Value<String?>? rulesVersionAtSignoffDeviceId,
+    Value<Uint8List?>? startedAtHlc,
+    Value<Uint8List?>? endsAtHlc,
+    Value<String>? cycleStartScoresJson,
+    Value<String?>? handoverStep,
+    Value<Uint8List?>? handoverStepHlc,
+    Value<String?>? handoverStepDeviceId,
     Value<int>? rowid,
   }) {
     return CyclesSyncCompanion(
@@ -4364,6 +4851,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
           rulesVersionAtSignoffHlc ?? this.rulesVersionAtSignoffHlc,
       rulesVersionAtSignoffDeviceId:
           rulesVersionAtSignoffDeviceId ?? this.rulesVersionAtSignoffDeviceId,
+      startedAtHlc: startedAtHlc ?? this.startedAtHlc,
+      endsAtHlc: endsAtHlc ?? this.endsAtHlc,
+      cycleStartScoresJson: cycleStartScoresJson ?? this.cycleStartScoresJson,
+      handoverStep: handoverStep ?? this.handoverStep,
+      handoverStepHlc: handoverStepHlc ?? this.handoverStepHlc,
+      handoverStepDeviceId: handoverStepDeviceId ?? this.handoverStepDeviceId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4418,6 +4911,28 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
         rulesVersionAtSignoffDeviceId.value,
       );
     }
+    if (startedAtHlc.present) {
+      map['started_at_hlc'] = Variable<Uint8List>(startedAtHlc.value);
+    }
+    if (endsAtHlc.present) {
+      map['ends_at_hlc'] = Variable<Uint8List>(endsAtHlc.value);
+    }
+    if (cycleStartScoresJson.present) {
+      map['cycle_start_scores_json'] = Variable<String>(
+        cycleStartScoresJson.value,
+      );
+    }
+    if (handoverStep.present) {
+      map['handover_step'] = Variable<String>(handoverStep.value);
+    }
+    if (handoverStepHlc.present) {
+      map['handover_step_hlc'] = Variable<Uint8List>(handoverStepHlc.value);
+    }
+    if (handoverStepDeviceId.present) {
+      map['handover_step_device_id'] = Variable<String>(
+        handoverStepDeviceId.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4442,6 +4957,12 @@ class CyclesSyncCompanion extends UpdateCompanion<CyclesSyncData> {
           ..write(
             'rulesVersionAtSignoffDeviceId: $rulesVersionAtSignoffDeviceId, ',
           )
+          ..write('startedAtHlc: $startedAtHlc, ')
+          ..write('endsAtHlc: $endsAtHlc, ')
+          ..write('cycleStartScoresJson: $cycleStartScoresJson, ')
+          ..write('handoverStep: $handoverStep, ')
+          ..write('handoverStepHlc: $handoverStepHlc, ')
+          ..write('handoverStepDeviceId: $handoverStepDeviceId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8301,6 +8822,9 @@ typedef $$HouseSyncTableCreateCompanionBuilder =
       Value<String> privilegeTemplates,
       Value<Uint8List?> privilegeTemplatesHlc,
       Value<String?> privilegeTemplatesDeviceId,
+      Value<int> cycleDurationDays,
+      Value<Uint8List?> cycleDurationDaysHlc,
+      Value<String?> cycleDurationDaysDeviceId,
       Value<int> rowid,
     });
 typedef $$HouseSyncTableUpdateCompanionBuilder =
@@ -8318,6 +8842,9 @@ typedef $$HouseSyncTableUpdateCompanionBuilder =
       Value<String> privilegeTemplates,
       Value<Uint8List?> privilegeTemplatesHlc,
       Value<String?> privilegeTemplatesDeviceId,
+      Value<int> cycleDurationDays,
+      Value<Uint8List?> cycleDurationDaysHlc,
+      Value<String?> cycleDurationDaysDeviceId,
       Value<int> rowid,
     });
 
@@ -8392,6 +8919,21 @@ class $$HouseSyncTableFilterComposer
 
   ColumnFilters<String> get privilegeTemplatesDeviceId => $composableBuilder(
     column: $table.privilegeTemplatesDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cycleDurationDays => $composableBuilder(
+    column: $table.cycleDurationDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get cycleDurationDaysHlc => $composableBuilder(
+    column: $table.cycleDurationDaysHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleDurationDaysDeviceId => $composableBuilder(
+    column: $table.cycleDurationDaysDeviceId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8469,6 +9011,21 @@ class $$HouseSyncTableOrderingComposer
     column: $table.privilegeTemplatesDeviceId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get cycleDurationDays => $composableBuilder(
+    column: $table.cycleDurationDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get cycleDurationDaysHlc => $composableBuilder(
+    column: $table.cycleDurationDaysHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleDurationDaysDeviceId => $composableBuilder(
+    column: $table.cycleDurationDaysDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HouseSyncTableAnnotationComposer
@@ -8542,6 +9099,21 @@ class $$HouseSyncTableAnnotationComposer
     column: $table.privilegeTemplatesDeviceId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get cycleDurationDays => $composableBuilder(
+    column: $table.cycleDurationDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get cycleDurationDaysHlc => $composableBuilder(
+    column: $table.cycleDurationDaysHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cycleDurationDaysDeviceId => $composableBuilder(
+    column: $table.cycleDurationDaysDeviceId,
+    builder: (column) => column,
+  );
 }
 
 class $$HouseSyncTableTableManager
@@ -8589,6 +9161,9 @@ class $$HouseSyncTableTableManager
                 Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
                 Value<String?> privilegeTemplatesDeviceId =
                     const Value.absent(),
+                Value<int> cycleDurationDays = const Value.absent(),
+                Value<Uint8List?> cycleDurationDaysHlc = const Value.absent(),
+                Value<String?> cycleDurationDaysDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HouseSyncCompanion(
                 houseId: houseId,
@@ -8604,6 +9179,9 @@ class $$HouseSyncTableTableManager
                 privilegeTemplates: privilegeTemplates,
                 privilegeTemplatesHlc: privilegeTemplatesHlc,
                 privilegeTemplatesDeviceId: privilegeTemplatesDeviceId,
+                cycleDurationDays: cycleDurationDays,
+                cycleDurationDaysHlc: cycleDurationDaysHlc,
+                cycleDurationDaysDeviceId: cycleDurationDaysDeviceId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8622,6 +9200,9 @@ class $$HouseSyncTableTableManager
                 Value<Uint8List?> privilegeTemplatesHlc = const Value.absent(),
                 Value<String?> privilegeTemplatesDeviceId =
                     const Value.absent(),
+                Value<int> cycleDurationDays = const Value.absent(),
+                Value<Uint8List?> cycleDurationDaysHlc = const Value.absent(),
+                Value<String?> cycleDurationDaysDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HouseSyncCompanion.insert(
                 houseId: houseId,
@@ -8637,6 +9218,9 @@ class $$HouseSyncTableTableManager
                 privilegeTemplates: privilegeTemplates,
                 privilegeTemplatesHlc: privilegeTemplatesHlc,
                 privilegeTemplatesDeviceId: privilegeTemplatesDeviceId,
+                cycleDurationDays: cycleDurationDays,
+                cycleDurationDaysHlc: cycleDurationDaysHlc,
+                cycleDurationDaysDeviceId: cycleDurationDaysDeviceId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9856,6 +10440,12 @@ typedef $$CyclesSyncTableCreateCompanionBuilder =
       Value<String?> guardianDeviceId,
       Value<Uint8List?> rulesVersionAtSignoffHlc,
       Value<String?> rulesVersionAtSignoffDeviceId,
+      Value<Uint8List?> startedAtHlc,
+      Value<Uint8List?> endsAtHlc,
+      Value<String> cycleStartScoresJson,
+      Value<String?> handoverStep,
+      Value<Uint8List?> handoverStepHlc,
+      Value<String?> handoverStepDeviceId,
       Value<int> rowid,
     });
 typedef $$CyclesSyncTableUpdateCompanionBuilder =
@@ -9873,6 +10463,12 @@ typedef $$CyclesSyncTableUpdateCompanionBuilder =
       Value<String?> guardianDeviceId,
       Value<Uint8List?> rulesVersionAtSignoffHlc,
       Value<String?> rulesVersionAtSignoffDeviceId,
+      Value<Uint8List?> startedAtHlc,
+      Value<Uint8List?> endsAtHlc,
+      Value<String> cycleStartScoresJson,
+      Value<String?> handoverStep,
+      Value<Uint8List?> handoverStepHlc,
+      Value<String?> handoverStepDeviceId,
       Value<int> rowid,
     });
 
@@ -9947,6 +10543,36 @@ class $$CyclesSyncTableFilterComposer
 
   ColumnFilters<String> get rulesVersionAtSignoffDeviceId => $composableBuilder(
     column: $table.rulesVersionAtSignoffDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get startedAtHlc => $composableBuilder(
+    column: $table.startedAtHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get endsAtHlc => $composableBuilder(
+    column: $table.endsAtHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleStartScoresJson => $composableBuilder(
+    column: $table.cycleStartScoresJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get handoverStep => $composableBuilder(
+    column: $table.handoverStep,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get handoverStepHlc => $composableBuilder(
+    column: $table.handoverStepHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get handoverStepDeviceId => $composableBuilder(
+    column: $table.handoverStepDeviceId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10025,6 +10651,36 @@ class $$CyclesSyncTableOrderingComposer
         column: $table.rulesVersionAtSignoffDeviceId,
         builder: (column) => ColumnOrderings(column),
       );
+
+  ColumnOrderings<Uint8List> get startedAtHlc => $composableBuilder(
+    column: $table.startedAtHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get endsAtHlc => $composableBuilder(
+    column: $table.endsAtHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleStartScoresJson => $composableBuilder(
+    column: $table.cycleStartScoresJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get handoverStep => $composableBuilder(
+    column: $table.handoverStep,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get handoverStepHlc => $composableBuilder(
+    column: $table.handoverStepHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get handoverStepDeviceId => $composableBuilder(
+    column: $table.handoverStepDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CyclesSyncTableAnnotationComposer
@@ -10093,6 +10749,34 @@ class $$CyclesSyncTableAnnotationComposer
         column: $table.rulesVersionAtSignoffDeviceId,
         builder: (column) => column,
       );
+
+  GeneratedColumn<Uint8List> get startedAtHlc => $composableBuilder(
+    column: $table.startedAtHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get endsAtHlc =>
+      $composableBuilder(column: $table.endsAtHlc, builder: (column) => column);
+
+  GeneratedColumn<String> get cycleStartScoresJson => $composableBuilder(
+    column: $table.cycleStartScoresJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get handoverStep => $composableBuilder(
+    column: $table.handoverStep,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get handoverStepHlc => $composableBuilder(
+    column: $table.handoverStepHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get handoverStepDeviceId => $composableBuilder(
+    column: $table.handoverStepDeviceId,
+    builder: (column) => column,
+  );
 }
 
 class $$CyclesSyncTableTableManager
@@ -10141,6 +10825,12 @@ class $$CyclesSyncTableTableManager
                     const Value.absent(),
                 Value<String?> rulesVersionAtSignoffDeviceId =
                     const Value.absent(),
+                Value<Uint8List?> startedAtHlc = const Value.absent(),
+                Value<Uint8List?> endsAtHlc = const Value.absent(),
+                Value<String> cycleStartScoresJson = const Value.absent(),
+                Value<String?> handoverStep = const Value.absent(),
+                Value<Uint8List?> handoverStepHlc = const Value.absent(),
+                Value<String?> handoverStepDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CyclesSyncCompanion(
                 cycleId: cycleId,
@@ -10156,6 +10846,12 @@ class $$CyclesSyncTableTableManager
                 guardianDeviceId: guardianDeviceId,
                 rulesVersionAtSignoffHlc: rulesVersionAtSignoffHlc,
                 rulesVersionAtSignoffDeviceId: rulesVersionAtSignoffDeviceId,
+                startedAtHlc: startedAtHlc,
+                endsAtHlc: endsAtHlc,
+                cycleStartScoresJson: cycleStartScoresJson,
+                handoverStep: handoverStep,
+                handoverStepHlc: handoverStepHlc,
+                handoverStepDeviceId: handoverStepDeviceId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10175,6 +10871,12 @@ class $$CyclesSyncTableTableManager
                     const Value.absent(),
                 Value<String?> rulesVersionAtSignoffDeviceId =
                     const Value.absent(),
+                Value<Uint8List?> startedAtHlc = const Value.absent(),
+                Value<Uint8List?> endsAtHlc = const Value.absent(),
+                Value<String> cycleStartScoresJson = const Value.absent(),
+                Value<String?> handoverStep = const Value.absent(),
+                Value<Uint8List?> handoverStepHlc = const Value.absent(),
+                Value<String?> handoverStepDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CyclesSyncCompanion.insert(
                 cycleId: cycleId,
@@ -10190,6 +10892,12 @@ class $$CyclesSyncTableTableManager
                 guardianDeviceId: guardianDeviceId,
                 rulesVersionAtSignoffHlc: rulesVersionAtSignoffHlc,
                 rulesVersionAtSignoffDeviceId: rulesVersionAtSignoffDeviceId,
+                startedAtHlc: startedAtHlc,
+                endsAtHlc: endsAtHlc,
+                cycleStartScoresJson: cycleStartScoresJson,
+                handoverStep: handoverStep,
+                handoverStepHlc: handoverStepHlc,
+                handoverStepDeviceId: handoverStepDeviceId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

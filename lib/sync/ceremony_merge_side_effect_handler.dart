@@ -46,6 +46,10 @@ class CeremonyMergeSideEffectHandler implements MergeSideEffectHandler {
             break;
           }
           await _emitTaskApprovalScores(sync: sync, effect: effect);
+        case ScoreChanged():
+          break;
+        case HandoverStarted():
+          break;
       }
     }
   }

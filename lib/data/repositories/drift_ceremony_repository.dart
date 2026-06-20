@@ -7,10 +7,12 @@ import 'package:rumah/domain/entities/cycle.dart';
 import 'package:rumah/domain/entities/privilege_template.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
+import 'package:rumah/domain/enums/handover_step.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/sync/ceremony_guardian.dart';
+import 'package:rumah/sync/handover_cycle_helpers.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/sync_operation.dart';
 import 'package:uuid/uuid.dart';
@@ -38,11 +40,6 @@ class DriftCeremonyRepository implements CeremonyRepository {
       return _toCycle(existing);
     }
 
-    final activeCycle = await _findCycleByStatus(houseId, CycleStatus.active);
-    if (activeCycle != null) {
-      return _toCycle(activeCycle);
-    }
-
     final placeholderGuardian = await _placeholderGuardian(houseId);
     final cycleId = _uuid.v4();
     final op = _sync.opFactory.cycleCreate(
@@ -58,6 +55,106 @@ class DriftCeremonyRepository implements CeremonyRepository {
           ..where((t) => t.cycleId.equals(cycleId)))
         .getSingle();
     return _toCycle(row);
+  }
+
+  @override
+  Future<Cycle> startNextCycleCeremony({
+    required String houseId,
+    required String handoverCycleId,
+    required String actorMemberId,
+  }) async {
+    final handoverRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(handoverCycleId)))
+        .getSingleOrNull();
+    if (handoverRow == null ||
+        handoverRow.status != CycleStatus.handover.wireValue ||
+        handoverRow.handoverStep != HandoverStep.retro.wireValue) {
+      throw StateError('Handover cycle must be in retro step');
+    }
+
+    final existingDraft = await _findCycleByStatus(houseId, CycleStatus.drafting);
+    if (existingDraft != null) {
+      if (handoverRow.handoverStep == HandoverStep.retro.wireValue) {
+        final advanceOp = _sync.opFactory.cycleHandoverStepAdvance(
+          opId: _uuid.v4(),
+          houseId: houseId,
+          cycleId: handoverCycleId,
+          actorMemberId: actorMemberId,
+          from: HandoverStep.retro.wireValue,
+          to: HandoverStep.ceremonyPending.wireValue,
+        );
+        await _emit(
+          houseId: houseId,
+          senderMemberId: actorMemberId,
+          ops: [advanceOp],
+        );
+      }
+      return _toCycle(existingDraft);
+    }
+
+    final cycleId = _uuid.v4();
+    final createOp = _sync.opFactory.cycleCreate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      cycleId: cycleId,
+      activeGuardianMemberId: handoverRow.activeGuardianMemberId,
+    );
+    final advanceOp = _sync.opFactory.cycleHandoverStepAdvance(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      cycleId: handoverCycleId,
+      actorMemberId: actorMemberId,
+      from: HandoverStep.retro.wireValue,
+      to: HandoverStep.ceremonyPending.wireValue,
+    );
+    await _emit(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [createOp, advanceOp],
+    );
+
+    final row = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(cycleId)))
+        .getSingle();
+    return _toCycle(row);
+  }
+
+  @override
+  Future<void> advanceHandoverStep({
+    required String houseId,
+    required String cycleId,
+    required String actorMemberId,
+    required String from,
+    required String to,
+  }) async {
+    final op = _sync.opFactory.cycleHandoverStepAdvance(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      cycleId: cycleId,
+      actorMemberId: actorMemberId,
+      from: from,
+      to: to,
+    );
+    await _emit(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [op],
+    );
+  }
+
+  @override
+  Future<void> expireCycleToHandover({
+    required String houseId,
+    required String cycleId,
+  }) async {
+    final op = _sync.opFactory.cycleStatusTransition(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      cycleId: cycleId,
+      from: CycleStatus.active.wireValue,
+      to: CycleStatus.handover.wireValue,
+    );
+    await _emit(houseId: houseId, senderMemberId: null, ops: [op]);
   }
 
   @override
@@ -287,6 +384,12 @@ class DriftCeremonyRepository implements CeremonyRepository {
       ceremonySignoffs: signoffs,
       rulesVersionAtSignoff: row.rulesVersionAtSignoff,
       updatedAtHlc: row.updatedAtHlc,
+      startedAtHlc: row.startedAtHlc,
+      endsAtHlc: row.endsAtHlc,
+      cycleStartScoresJson: row.cycleStartScoresJson,
+      handoverStep: row.handoverStep != null
+          ? HandoverStep.fromWire(row.handoverStep!)
+          : null,
     );
   }
 
@@ -412,9 +515,38 @@ Future<void> tryActivateCycleIfReady({
   Uuid? uuid,
 }) async {
   final idGen = uuid ?? const Uuid();
-  final previousGuardianId = await findPreviousCycleGuardianId(db, houseId);
+  final draftingRow = await (db.select(db.cyclesSync)
+        ..where((t) => t.cycleId.equals(cycleId)))
+      .getSingleOrNull();
+  if (draftingRow == null ||
+      draftingRow.status != CycleStatus.drafting.wireValue) {
+    return;
+  }
 
-  if (previousGuardianId != null) {
+  final handoverRow = await (db.select(db.cyclesSync)
+        ..where(
+          (t) =>
+              t.houseId.equals(houseId) &
+              t.status.equals(CycleStatus.handover.wireValue),
+        ))
+      .getSingleOrNull();
+
+  final houseRow = await (db.select(db.houseSync)
+        ..where((t) => t.houseId.equals(houseId)))
+      .getSingleOrNull();
+  final cycleDurationDays =
+      houseRow?.cycleDurationDays ?? HandoverCycleHelpers.defaultCycleDurationDays;
+
+  final ops = <SyncOperation>[];
+
+  String? rotationSourceGuardianId;
+  if (handoverRow != null) {
+    rotationSourceGuardianId = handoverRow.activeGuardianMemberId;
+  } else {
+    rotationSourceGuardianId = await findPreviousCycleGuardianId(db, houseId);
+  }
+
+  if (rotationSourceGuardianId != null) {
     final hasNullRotationIndex = housemates
         .where((m) => m.memberStatus == MemberStatus.active.wireValue)
         .any((m) => m.rotationOrderIndex == null);
@@ -424,9 +556,9 @@ Future<void> tryActivateCycleIfReady({
   }
 
   int? previousGuardianRotationIndex;
-  if (previousGuardianId != null) {
+  if (rotationSourceGuardianId != null) {
     final previousMate = housemates
-        .where((m) => m.memberId == previousGuardianId)
+        .where((m) => m.memberId == rotationSourceGuardianId)
         .firstOrNull;
     previousGuardianRotationIndex = previousMate?.rotationOrderIndex;
     if (previousGuardianRotationIndex == null) {
@@ -438,22 +570,63 @@ Future<void> tryActivateCycleIfReady({
     cycleId: cycleId,
     activeMemberIds: activeIds,
     activeRotationRoster: _activeRotationRoster(housemates),
-    previousCycleGuardianId: previousGuardianId,
+    previousCycleGuardianId: rotationSourceGuardianId,
     previousGuardianRotationIndex: previousGuardianRotationIndex,
   );
 
-  final guardianOp = sync.opFactory.cycleGuardianUpdate(
-    opId: idGen.v4(),
-    houseId: houseId,
-    cycleId: cycleId,
-    activeGuardianMemberId: guardianId,
+  ops.add(
+    sync.opFactory.cycleGuardianUpdate(
+      opId: idGen.v4(),
+      houseId: houseId,
+      cycleId: cycleId,
+      activeGuardianMemberId: guardianId,
+    ),
   );
-  final statusOp = sync.opFactory.cycleStatusTransition(
-    opId: idGen.v4(),
-    houseId: houseId,
-    cycleId: cycleId,
-    from: CycleStatus.drafting.wireValue,
-    to: CycleStatus.active.wireValue,
+
+  if (draftingRow.startedAtHlc == null || draftingRow.startedAtHlc!.isEmpty) {
+    final startedHlc = sync.hlcService.now();
+    final startedBytes = sync.hlcService.toBytes(startedHlc);
+    final endsBytes = HandoverCycleHelpers.computeEndsAtHlc(
+      startedAtHlc: startedBytes,
+      cycleDurationDays: cycleDurationDays,
+    );
+    final scores = <String, int>{
+      for (final mate in housemates
+          .where((m) => m.memberStatus == MemberStatus.active.wireValue))
+        mate.memberId: mate.lifetimeScore,
+    };
+    ops.add(
+      sync.opFactory.cycleActivationFieldsSet(
+        opId: idGen.v4(),
+        houseId: houseId,
+        cycleId: cycleId,
+        startedAtHlc: base64Encode(startedBytes),
+        endsAtHlc: base64Encode(endsBytes),
+        cycleStartScores: scores,
+      ),
+    );
+  }
+
+  if (handoverRow != null) {
+    ops.add(
+      sync.opFactory.cycleStatusTransition(
+        opId: idGen.v4(),
+        houseId: houseId,
+        cycleId: handoverRow.cycleId,
+        from: CycleStatus.handover.wireValue,
+        to: CycleStatus.completed.wireValue,
+      ),
+    );
+  }
+
+  ops.add(
+    sync.opFactory.cycleStatusTransition(
+      opId: idGen.v4(),
+      houseId: houseId,
+      cycleId: cycleId,
+      from: CycleStatus.drafting.wireValue,
+      to: CycleStatus.active.wireValue,
+    ),
   );
 
   final settings =
@@ -462,7 +635,7 @@ Future<void> tryActivateCycleIfReady({
     houseId: houseId,
     tailscaleNodeKey: settings?.tailscaleNodeId ?? 'local-node',
     senderMemberId: null,
-    ops: [guardianOp, statusOp],
+    ops: ops,
   );
 }
 
