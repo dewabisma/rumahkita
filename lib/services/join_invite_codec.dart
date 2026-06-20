@@ -46,11 +46,17 @@ class JoinInviteCodec {
       );
     }
     final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-    final payload = JoinInvitePayload.fromJson(json);
-    if (payload.payloadVersion != joinInvitePayloadVersion) {
+    final version = (json['payload_version'] as num?)?.toInt();
+    if (version != joinInvitePayloadVersion) {
       throw FormatException(
-        'Unsupported invite payload version ${payload.payloadVersion}',
+        version != null && version < joinInvitePayloadVersion
+            ? 'This invite is outdated. Ask your roommate to share a new QR code.'
+            : 'Unsupported invite payload version $version',
       );
+    }
+    final payload = JoinInvitePayload.fromJson(json);
+    if (payload.tailscaleAuthKey.isEmpty) {
+      throw const FormatException('Invite is missing Tailscale auth key');
     }
     return payload;
   }

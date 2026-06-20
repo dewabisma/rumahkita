@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
@@ -18,7 +17,7 @@ class InviteScreen extends ConsumerWidget {
 
     return OnboardingScaffold(
       title: 'Invite roommates',
-      subtitle: 'Share this link or QR so others can join your house.',
+      subtitle: 'Have your roommate scan this QR code to join your house.',
       showBack: true,
       backFallback: '/welcome',
       header: const ConnectionStatusHeader(),
@@ -27,20 +26,6 @@ class InviteScreen extends ConsumerWidget {
         children: [
           if (inviteLink != null) InviteQrCard(inviteLink: inviteLink),
           const SizedBox(height: 16),
-          if (inviteLink != null)
-            OutlinedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: inviteLink));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invite link copied')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.link),
-              label: const Text('Copy invite link'),
-            ),
-          const SizedBox(height: 8),
           TextButton(
             onPressed: onboarding.phase == LobbyPhase.syncing
                 ? null

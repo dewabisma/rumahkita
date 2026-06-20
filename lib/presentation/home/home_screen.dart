@@ -61,6 +61,13 @@ class HomeScreen extends ConsumerWidget {
                       onPressed: () => context.push('/house/roster'),
                       child: const Text('View member roster'),
                     ),
+                    if (ref.watch(isHouseCreatorProvider).value ?? false) ...[
+                      SizedBox(height: spacing.radiusSmall),
+                      OutlinedButton(
+                        onPressed: () => context.push('/house/settings'),
+                        child: const Text('House settings'),
+                      ),
+                    ],
                   ],
                 ),
               ),

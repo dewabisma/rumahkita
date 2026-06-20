@@ -11,6 +11,7 @@ class OnboardingScaffold extends StatelessWidget {
     this.header,
     this.showBack = false,
     this.backFallback,
+    this.onBack,
   });
 
   final String title;
@@ -19,6 +20,7 @@ class OnboardingScaffold extends StatelessWidget {
   final Widget? header;
   final bool showBack;
   final String? backFallback;
+  final Future<void> Function()? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +33,10 @@ class OnboardingScaffold extends StatelessWidget {
         leading: canNavigateBack
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  if (context.canPop()) {
+                onPressed: () async {
+                  if (onBack != null) {
+                    await onBack!();
+                  } else if (context.canPop()) {
                     context.pop();
                   } else if (backFallback != null) {
                     context.go(backFallback!);

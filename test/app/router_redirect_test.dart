@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rumah/app/router_redirect.dart';
+import 'package:rumah/domain/entities/join_invite_payload.dart';
 import 'package:rumah/presentation/house/house_phase_providers.dart';
 
 void main() {
@@ -55,6 +56,33 @@ void main() {
         housePhase: const HousePhaseContext(phase: HouseRedirectPhase.active),
       ),
       '/home',
+    );
+  });
+
+  test('redirects /join/connect to /join without pending invite', () {
+    expect(
+      joinRouteRedirect(
+        location: '/join/connect',
+        pendingJoinInvite: null,
+      ),
+      '/join',
+    );
+  });
+
+  test('redirects /join to /join/connect with pending invite', () {
+    expect(
+      joinRouteRedirect(
+        location: '/join',
+        pendingJoinInvite: const JoinInvitePayload(
+          payloadVersion: joinInvitePayloadVersion,
+          houseId: 'h1',
+          hostNodeKey: 'node',
+          hostMagicDns: 'host.ts.net',
+          joinCredential: 'cred',
+          tailscaleAuthKey: 'tskey-auth-test',
+        ),
+      ),
+      '/join/connect',
     );
   });
 }

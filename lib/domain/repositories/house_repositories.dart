@@ -36,6 +36,12 @@ abstract class HousemateRepository {
   });
 
   Future<int> nextRotationIndex(String houseId);
+
+  Future<Housemate> updateNickname({
+    required String houseId,
+    required String memberId,
+    required String nickname,
+  });
 }
 
 abstract class AuditLogRepository {

@@ -5,6 +5,7 @@ import 'package:rumah/app/router_redirect.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
 import 'package:rumah/presentation/ceremony/ceremony_screen.dart';
 import 'package:rumah/presentation/house/handover_screen.dart';
+import 'package:rumah/presentation/house/house_settings_screen.dart';
 import 'package:rumah/presentation/house/member_roster_screen.dart';
 import 'package:rumah/presentation/house/house_phase_providers.dart';
 import 'package:rumah/presentation/home/home_screen.dart';
@@ -15,7 +16,8 @@ import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/dev/sync_debug_panel.dart';
 import 'package:rumah/presentation/onboarding/create_house_screen.dart';
 import 'package:rumah/presentation/onboarding/invite_screen.dart';
-import 'package:rumah/presentation/onboarding/join_house_screen.dart';
+import 'package:rumah/presentation/onboarding/join_connect_screen.dart';
+import 'package:rumah/presentation/onboarding/join_scan_screen.dart';
 import 'package:rumah/presentation/onboarding/lobby_screen.dart';
 import 'package:rumah/presentation/onboarding/welcome_screen.dart';
 import 'package:rumah/sync/handover_expiry_watcher.dart';
@@ -30,6 +32,7 @@ class _RouterRefreshListenable extends ChangeNotifier {
   _RouterRefreshListenable(Ref ref) {
     ref.listen(activeHouseIdProvider, (_, _) => notifyListeners());
     ref.listen(houseRouterPhaseProvider, (_, _) => notifyListeners());
+    ref.listen(onboardingNotifierProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -66,15 +69,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/join',
-        builder: (context, state) => JoinHouseScreen(
-          deepLinkPayload: state.uri.queryParameters['p'],
-        ),
-      ),
-      GoRoute(
-        path: '/join/:payload',
-        builder: (context, state) => JoinHouseScreen(
-          deepLinkPayload: state.pathParameters['payload'],
-        ),
+        builder: (context, state) => const JoinScanScreen(),
+        routes: [
+          GoRoute(
+            path: 'connect',
+            builder: (context, state) => const JoinConnectScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/lobby',
@@ -95,6 +96,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/house/roster',
         builder: (context, state) => const MemberRosterScreen(),
+      ),
+      GoRoute(
+        path: '/house/settings',
+        builder: (context, state) => const HouseSettingsScreen(),
       ),
       GoRoute(
         path: '/removal/propose',

@@ -4,17 +4,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rumah/domain/entities/join_invite_payload.dart';
 import 'package:rumah/services/join_invite_codec.dart';
 
+const _realisticTsKey =
+    'tskey-auth-kABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghij';
+
+JoinInvitePayload _samplePayload({int version = joinInvitePayloadVersion}) {
+  return JoinInvitePayload(
+    payloadVersion: version,
+    houseId: 'house-123',
+    hostNodeKey: 'node-host',
+    hostMagicDns: 'host.tailabc.ts.net',
+    joinCredential: 'cred-abc',
+    tailscaleAuthKey: _realisticTsKey,
+  );
+}
+
 void main() {
   const codec = JoinInviteCodec();
 
   test('round-trips invite payload through rumah:// URI', () {
-    const payload = JoinInvitePayload(
-      payloadVersion: joinInvitePayloadVersion,
-      houseId: 'house-123',
-      hostNodeKey: 'node-host',
-      hostMagicDns: 'host.tailabc.ts.net',
-      joinCredential: 'cred-abc',
-    );
+    final payload = _samplePayload();
 
     final uri = codec.encode(payload);
     expect(uri, startsWith('rumah://join?p='));
@@ -24,6 +32,7 @@ void main() {
     expect(decoded.hostNodeKey, payload.hostNodeKey);
     expect(decoded.hostMagicDns, payload.hostMagicDns);
     expect(decoded.joinCredential, payload.joinCredential);
+    expect(decoded.tailscaleAuthKey, payload.tailscaleAuthKey);
   });
 
   test('rejects oversized payload', () {
@@ -36,22 +45,44 @@ void main() {
           hostNodeKey: 'node',
           hostMagicDns: 'host.ts.net',
           joinCredential: 'cred',
+          tailscaleAuthKey: _realisticTsKey,
         ),
       ),
       throwsFormatException,
     );
   });
 
-  test('decodePayloadParam parses base64url segment', () {
-    const payload = JoinInvitePayload(
-      payloadVersion: joinInvitePayloadVersion,
-      houseId: 'house-abc',
-      hostNodeKey: 'node-a',
-      hostMagicDns: 'a.ts.net',
-      joinCredential: 'join-cred',
+  test('rejects v1 payload with friendly message', () {
+    final v1Json = jsonEncode({
+      'payload_version': 1,
+      'house_id': 'house-old',
+      'host_node_key': 'node',
+      'host_magic_dns': 'host.ts.net',
+      'join_credential': 'cred',
+    });
+    final encoded = base64Url.encode(utf8.encode(v1Json));
+    expect(
+      () => codec.decodePayloadParam(encoded),
+      throwsA(
+        predicate<FormatException>(
+          (e) => e.message.contains('outdated'),
+        ),
+      ),
     );
+  });
+
+  test('realistic tskey fits within size limit', () {
+    final payload = _samplePayload();
+    final uri = codec.encode(payload);
+    expect(uri.length, lessThan(joinInviteMaxDecodedBytes * 2));
+    expect(codec.decode(uri).tailscaleAuthKey, _realisticTsKey);
+  });
+
+  test('decodePayloadParam parses base64url segment', () {
+    final payload = _samplePayload();
     final encoded = base64Url.encode(utf8.encode(jsonEncode(payload.toJson())));
     final decoded = codec.decodePayloadParam(encoded);
-    expect(decoded.houseId, 'house-abc');
+    expect(decoded.houseId, 'house-123');
+    expect(decoded.tailscaleAuthKey, _realisticTsKey);
   });
 }

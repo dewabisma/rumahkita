@@ -14,6 +14,7 @@ import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/peer_allowlist.dart';
 import 'package:rumah/sync/sync_envelope.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
+import 'package:rumah/data/repositories/secure_key_value_store.dart';
 
 class HandleEnvelopeResult {
   const HandleEnvelopeResult({
@@ -378,6 +379,55 @@ class SyncService {
         );
   }
 
+  /// Removes house-scoped rows written during a partial join attempt.
+  Future<void> discardPartialJoin(String houseId) async {
+    await (db.delete(db.syncOutboxEntries)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.syncAppliedOps)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.syncPeerAllowlist)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.syncPeerState)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.housematesSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.houseSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.houseJoinSecrets)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.cyclesSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.tasksSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.taskClaimEvents)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.scoreEvents)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.removalProposalsSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.proposalVotesSync)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.auditLogAppendOnly)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+    await (db.delete(db.consumedJoinCredentials)
+          ..where((t) => t.houseId.equals(houseId)))
+        .go();
+  }
+
   Future<void> drainOutbox() async {
     final activeHouseId = await localSettings.getActiveHouseId();
     if (activeHouseId == null) {
@@ -474,13 +524,17 @@ class TailscaleMeshService {
   TailscaleMeshService({
     required this.stateDirectory,
     FlutterSecureStorage? secureStorage,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+    SecureKeyValueStore? secureStore,
+  }) : _secureStore = secureStore ??
+            _FlutterSecureStorageAdapter(
+              secureStorage ?? const FlutterSecureStorage(),
+            );
 
   static const _authKeyKey = 'rumah_tailscale_auth_key';
   static const _authKeyStoredAtKey = 'rumah_tailscale_auth_key_stored_at';
 
   final String stateDirectory;
-  final FlutterSecureStorage _secureStorage;
+  final SecureKeyValueStore _secureStore;
   bool _isUp = false;
   final List<TailscalePeer> _peers = [];
   String? _localMagicDns;
@@ -498,8 +552,8 @@ class TailscaleMeshService {
 
   Future<void> up({String? authKey}) async {
     if (authKey != null) {
-      await _secureStorage.write(key: _authKeyKey, value: authKey);
-      await _secureStorage.write(
+      await _secureStore.write(key: _authKeyKey, value: authKey);
+      await _secureStore.write(
         key: _authKeyStoredAtKey,
         value: DateTime.now().millisecondsSinceEpoch.toString(),
       );
@@ -542,12 +596,12 @@ class TailscaleMeshService {
   }
 
   Future<void> clearAuthKey() async {
-    await _secureStorage.delete(key: _authKeyKey);
-    await _secureStorage.delete(key: _authKeyStoredAtKey);
+    await _secureStore.delete(key: _authKeyKey);
+    await _secureStore.delete(key: _authKeyStoredAtKey);
   }
 
   Future<void> _clearAuthKeyIfStale() async {
-    final storedAt = await _secureStorage.read(key: _authKeyStoredAtKey);
+    final storedAt = await _secureStore.read(key: _authKeyStoredAtKey);
     if (storedAt == null) {
       return;
     }
@@ -562,6 +616,22 @@ class TailscaleMeshService {
       await clearAuthKey();
     }
   }
+}
+
+class _FlutterSecureStorageAdapter implements SecureKeyValueStore {
+  const _FlutterSecureStorageAdapter(this._storage);
+
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<void> delete({required String key}) => _storage.delete(key: key);
+
+  @override
+  Future<String?> read({required String key}) => _storage.read(key: key);
+
+  @override
+  Future<void> write({required String key, required String value}) =>
+      _storage.write(key: key, value: value);
 }
 
 class TailscalePeer {

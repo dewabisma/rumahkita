@@ -6,6 +6,7 @@ import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/entities/house_entities.dart';
 import 'package:rumah/domain/entities/join_invite_payload.dart';
 import 'package:rumah/domain/enums/lobby_phase.dart';
+import 'package:rumah/domain/generate_random_nickname.dart';
 import 'package:rumah/services/catch_up_protocol.dart';
 import 'package:rumah/services/join_invite_codec.dart';
 import 'package:uuid/uuid.dart';
@@ -17,6 +18,8 @@ class OnboardingState {
     this.houseId,
     this.invite,
     this.inviteLink,
+    this.pendingJoinInvite,
+    this.joinAttemptGeneration = 0,
   });
 
   final LobbyPhase phase;
@@ -24,6 +27,8 @@ class OnboardingState {
   final String? houseId;
   final JoinInvitePayload? invite;
   final String? inviteLink;
+  final JoinInvitePayload? pendingJoinInvite;
+  final int joinAttemptGeneration;
 
   OnboardingState copyWith({
     LobbyPhase? phase,
@@ -31,7 +36,10 @@ class OnboardingState {
     String? houseId,
     JoinInvitePayload? invite,
     String? inviteLink,
+    JoinInvitePayload? pendingJoinInvite,
+    int? joinAttemptGeneration,
     bool clearError = false,
+    bool clearPendingJoinInvite = false,
   }) {
     return OnboardingState(
       phase: phase ?? this.phase,
@@ -39,6 +47,11 @@ class OnboardingState {
       houseId: houseId ?? this.houseId,
       invite: invite ?? this.invite,
       inviteLink: inviteLink ?? this.inviteLink,
+      pendingJoinInvite: clearPendingJoinInvite
+          ? null
+          : (pendingJoinInvite ?? this.pendingJoinInvite),
+      joinAttemptGeneration:
+          joinAttemptGeneration ?? this.joinAttemptGeneration,
     );
   }
 }
@@ -51,9 +64,8 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
 
   Future<void> bootstrapHost({
     required String displayName,
-    required String nickname,
-    String? tailscaleAuthKey,
-    String? tailscaleAdminApiKey,
+    required String tailscaleAuthKey,
+    required String tailscaleAdminApiKey,
   }) async {
     state = state.copyWith(
       phase: LobbyPhase.connectingTailscale,
@@ -66,12 +78,8 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       final housemateRepo = ref.read(housemateRepositoryProvider);
       final sync = ref.read(syncServiceProvider);
 
-      if (tailscaleAuthKey != null && tailscaleAuthKey.isNotEmpty) {
-        await localSettings.setTailscaleAuthKey(tailscaleAuthKey);
-      }
-      if (tailscaleAdminApiKey != null && tailscaleAdminApiKey.isNotEmpty) {
-        await localSettings.setTailscaleAdminApiKey(tailscaleAdminApiKey);
-      }
+      await localSettings.setTailscaleAuthKey(tailscaleAuthKey);
+      await localSettings.setTailscaleAdminApiKey(tailscaleAdminApiKey);
       await mesh.up(authKey: tailscaleAuthKey);
 
       final memberId = _uuid.v4();
@@ -81,6 +89,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       );
       final nodeKey = await localSettings.getTailscaleNodeKey();
       final deviceId = await localSettings.getDeviceId();
+      final nickname = generateRandomNickname();
 
       await housemateRepo.addCreatorHousemate(
         houseId: house.houseId,
@@ -91,19 +100,13 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       );
 
       await localSettings.setBootstrapHostNodeKey(nodeKey);
-      final magicDns = mesh.localMagicDns ?? 'localhost';
-      final invite = await houseRepo.buildInvite(
-        houseId: house.houseId,
-        hostNodeKey: nodeKey,
-        hostMagicDns: magicDns,
-      );
-      final link = ref.read(joinInviteCodecProvider).encode(invite);
+      final built = await _buildFullInvite(house.houseId);
 
       state = state.copyWith(
         phase: LobbyPhase.ready,
         houseId: house.houseId,
-        invite: invite,
-        inviteLink: link,
+        invite: built.invite,
+        inviteLink: built.link,
       );
 
       await sync.drainOutbox();
@@ -120,24 +123,60 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     if (houseId == null) {
       return;
     }
+    final built = await _buildFullInvite(houseId);
+    state = state.copyWith(invite: built.invite, inviteLink: built.link);
+  }
+
+  Future<({JoinInvitePayload invite, String link})> _buildFullInvite(
+    String houseId,
+  ) async {
     final mesh = ref.read(meshServiceProvider);
     final localSettings = ref.read(localSettingsRepositoryProvider);
+    final authKey = await localSettings.getTailscaleAuthKey();
+    if (authKey == null || authKey.isEmpty) {
+      throw StateError('Tailscale auth key is required to build an invite');
+    }
     final nodeKey = await localSettings.getTailscaleNodeKey();
     final magicDns = mesh.localMagicDns ?? 'localhost';
-    final invite = await ref.read(houseRepositoryProvider).buildInvite(
+    final base = await ref.read(houseRepositoryProvider).buildInvite(
           houseId: houseId,
           hostNodeKey: nodeKey,
           hostMagicDns: magicDns,
         );
+    final invite = base.copyWith(tailscaleAuthKey: authKey);
     final link = ref.read(joinInviteCodecProvider).encode(invite);
-    state = state.copyWith(invite: invite, inviteLink: link);
+    return (invite: invite, link: link);
   }
 
-  Future<void> bootstrapJoiner({
-    required JoinInvitePayload invite,
-    required String nickname,
-    String? tailscaleAuthKey,
-  }) async {
+  void setPendingJoinInvite(JoinInvitePayload invite) {
+    if (invite.payloadVersion != joinInvitePayloadVersion) {
+      throw FormatException(
+        'Unsupported invite version ${invite.payloadVersion}',
+      );
+    }
+    if (invite.tailscaleAuthKey.isEmpty) {
+      throw const FormatException('Invite is missing Tailscale auth key');
+    }
+    state = state.copyWith(
+      pendingJoinInvite: invite,
+      clearError: true,
+      phase: LobbyPhase.idle,
+    );
+  }
+
+  bool _isJoinAttemptStale(int generation) {
+    return generation != state.joinAttemptGeneration ||
+        state.pendingJoinInvite == null;
+  }
+
+  Future<void> connectJoiner() async {
+    final invite = state.pendingJoinInvite;
+    if (invite == null) {
+      throw StateError('No pending join invite');
+    }
+
+    final generation = state.joinAttemptGeneration;
+
     state = state.copyWith(
       phase: LobbyPhase.connectingTailscale,
       clearError: true,
@@ -148,14 +187,26 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       final housemateRepo = ref.read(housemateRepositoryProvider);
       final sync = ref.read(syncServiceProvider);
 
-      if (tailscaleAuthKey != null && tailscaleAuthKey.isNotEmpty) {
-        await localSettings.setTailscaleAuthKey(tailscaleAuthKey);
+      await localSettings.setTailscaleAuthKey(invite.tailscaleAuthKey);
+      if (_isJoinAttemptStale(generation)) {
+        return;
       }
-      await mesh.up(authKey: tailscaleAuthKey);
+
+      await mesh.up(authKey: invite.tailscaleAuthKey);
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       state = state.copyWith(phase: LobbyPhase.catchingUp);
       final deviceId = await localSettings.getDeviceId();
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
+
       final nodeKey = await localSettings.getTailscaleNodeKey();
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       final catchUpRequest = CatchUpRequest(
         deviceId: deviceId,
@@ -169,30 +220,44 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         hostMagicDns: invite.hostMagicDns,
         request: catchUpRequest,
       );
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       await sync.persistHouseJoinSecret(
         houseId: invite.houseId,
         secretBase64: response.houseJoinSecret,
       );
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       state = state.copyWith(phase: LobbyPhase.replayingHistory);
       await sync.applyRosterSnapshot(
         houseId: invite.houseId,
         rosterSnapshot: response.rosterSnapshot,
       );
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
+
       await sync.replayCatchUpOutbox(
         houseId: invite.houseId,
         trustedHostNodeKey: invite.hostNodeKey,
         envelopes: response.outboxReplay,
       );
-
-      await localSettings.setActiveHouseId(invite.houseId);
-      await localSettings.setBootstrapHostNodeKey(invite.hostNodeKey);
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       state = state.copyWith(phase: LobbyPhase.joiningHouse);
       final memberId = _uuid.v4();
+      final nickname = generateRandomNickname();
       final rotationIndex =
           await housemateRepo.nextRotationIndex(invite.houseId);
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       await housemateRepo.joinHousemate(
         houseId: invite.houseId,
@@ -203,20 +268,65 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         rotationOrderIndex: rotationIndex,
         joinCredential: invite.joinCredential,
       );
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
+
+      await localSettings.setActiveHouseId(invite.houseId);
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
+
+      await localSettings.setBootstrapHostNodeKey(invite.hostNodeKey);
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       state = state.copyWith(phase: LobbyPhase.syncing);
       await sync.drainOutbox();
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
 
       state = state.copyWith(
         phase: LobbyPhase.ready,
         houseId: invite.houseId,
+        clearPendingJoinInvite: true,
       );
     } on Object catch (e) {
+      if (_isJoinAttemptStale(generation)) {
+        return;
+      }
       state = state.copyWith(
         phase: LobbyPhase.error,
         errorMessage: e.toString(),
       );
     }
+  }
+
+  Future<void> abortJoiner() async {
+    final invite = state.pendingJoinInvite;
+    final houseId = invite?.houseId;
+
+    state = state.copyWith(
+      joinAttemptGeneration: state.joinAttemptGeneration + 1,
+      clearPendingJoinInvite: true,
+      phase: LobbyPhase.idle,
+      clearError: true,
+    );
+
+    final localSettings = ref.read(localSettingsRepositoryProvider);
+    final mesh = ref.read(meshServiceProvider);
+    final sync = ref.read(syncServiceProvider);
+
+    if (houseId != null) {
+      await sync.discardPartialJoin(houseId);
+    }
+    await localSettings.setActiveHouseId(null);
+    await localSettings.setBootstrapHostNodeKey(null);
+    await localSettings.setTailscaleAuthKey(null);
+    await mesh.down();
+    await mesh.clearAuthKey();
   }
 }
 
@@ -246,6 +356,19 @@ final pendingOpCountProvider = StreamProvider<int>((ref) {
       (t) => t.houseId.equals(activeHouseId) & t.broadcasted.equals(false),
     );
   return query.watch().map((rows) => rows.length);
+});
+
+final isHouseCreatorProvider = FutureProvider<bool>((ref) async {
+  final houseId = await ref.watch(activeHouseIdProvider.future);
+  if (houseId == null) {
+    return false;
+  }
+  final localMember = await ref.watch(localMemberProvider.future);
+  if (localMember == null) {
+    return false;
+  }
+  final house = await ref.watch(houseProvider(houseId).future);
+  return house?.creatorMemberId == localMember.memberId;
 });
 
 final localMemberProvider = FutureProvider<Housemate?>((ref) async {

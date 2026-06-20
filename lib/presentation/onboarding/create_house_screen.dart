@@ -12,7 +12,6 @@ class CreateHouseScreen extends ConsumerStatefulWidget {
 
 class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
   final _displayNameController = TextEditingController();
-  final _nicknameController = TextEditingController();
   final _authKeyController = TextEditingController();
   final _adminApiKeyController = TextEditingController();
   bool _loading = false;
@@ -20,30 +19,32 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
   @override
   void dispose() {
     _displayNameController.dispose();
-    _nicknameController.dispose();
     _authKeyController.dispose();
     _adminApiKeyController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (_displayNameController.text.trim().isEmpty ||
-        _nicknameController.text.trim().isEmpty) {
+    if (_displayNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in house name and nickname')),
+        const SnackBar(content: Text('Please enter a house name')),
+      );
+      return;
+    }
+    if (_authKeyController.text.trim().isEmpty ||
+        _adminApiKeyController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add your Tailscale auth key and admin API key'),
+        ),
       );
       return;
     }
     setState(() => _loading = true);
     await ref.read(onboardingNotifierProvider.notifier).bootstrapHost(
           displayName: _displayNameController.text.trim(),
-          nickname: _nicknameController.text.trim(),
-          tailscaleAuthKey: _authKeyController.text.trim().isEmpty
-              ? null
-              : _authKeyController.text.trim(),
-          tailscaleAdminApiKey: _adminApiKeyController.text.trim().isEmpty
-              ? null
-              : _adminApiKeyController.text.trim(),
+          tailscaleAuthKey: _authKeyController.text.trim(),
+          tailscaleAdminApiKey: _adminApiKeyController.text.trim(),
         );
     if (!mounted) {
       return;
@@ -55,44 +56,49 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
   Widget build(BuildContext context) {
     return OnboardingScaffold(
       title: 'Name your house',
-      subtitle: 'Give your shared home a cozy name and pick your nickname.',
+      subtitle:
+          'Set up your house and connect Tailscale so roommates can join later.',
       showBack: true,
       backFallback: '/welcome',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            controller: _displayNameController,
-            decoration: const InputDecoration(labelText: 'House name'),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nicknameController,
-            decoration: const InputDecoration(labelText: 'Your nickname'),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _authKeyController,
-            decoration: const InputDecoration(
-              labelText: 'Tailscale auth key (optional for dev)',
-              hintText: 'tskey-auth-...',
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _displayNameController,
+                    decoration: const InputDecoration(labelText: 'House name'),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _authKeyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tailscale auth key',
+                      hintText: 'tskey-auth-...',
+                      helperText: 'Registers this device on your tailnet.',
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _adminApiKeyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tailscale admin API key',
+                      hintText: 'tskey-api-...',
+                      helperText:
+                          'Needs acl:write and devices:write for house network isolation.',
+                    ),
+                    obscureText: true,
+                  ),
+                ],
+              ),
             ),
-            obscureText: true,
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _adminApiKeyController,
-            decoration: const InputDecoration(
-              labelText: 'Tailscale admin API key (optional)',
-              hintText: 'tskey-api-...',
-              helperText:
-                  'Needs acl:write and devices:write scopes for house network isolation.',
-            ),
-            obscureText: true,
-          ),
-          const Spacer(),
           FilledButton(
             onPressed: _loading ? null : _submit,
             child: _loading

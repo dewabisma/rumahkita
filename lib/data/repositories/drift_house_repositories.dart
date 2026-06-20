@@ -211,6 +211,7 @@ class DriftHouseRepository implements HouseRepository {
       hostNodeKey: hostNodeKey,
       hostMagicDns: hostMagicDns,
       joinCredential: joinCredential,
+      tailscaleAuthKey: '',
     );
   }
 }
@@ -317,6 +318,30 @@ class DriftHousemateRepository implements HousemateRepository {
       return 0;
     }
     return indices.reduce((a, b) => a > b ? a : b) + 1;
+  }
+
+  @override
+  Future<Housemate> updateNickname({
+    required String houseId,
+    required String memberId,
+    required String nickname,
+  }) async {
+    final settings = await (_db.select(_db.localUserSettings)).getSingleOrNull();
+    final op = _sync.opFactory.housemateNicknameUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      memberId: memberId,
+      nickname: nickname,
+    );
+    await _sync.emitLocalOps(
+      houseId: houseId,
+      tailscaleNodeKey: settings?.tailscaleNodeId ?? 'local-node',
+      senderMemberId: memberId,
+      ops: [op],
+    );
+    return _toEntity(await (_db.select(_db.housematesSync)
+          ..where((t) => t.memberId.equals(memberId)))
+        .getSingle());
   }
 
   Housemate _toEntity(HousematesSyncData row) => Housemate(

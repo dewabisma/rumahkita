@@ -64,6 +64,27 @@ class SyncOpFactory {
     );
   }
 
+  SyncOperation housemateNicknameUpdate({
+    required String opId,
+    required String houseId,
+    required String memberId,
+    required String nickname,
+    String? actorMemberId,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.housemateNicknameUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: actorMemberId ?? memberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'member_id': memberId,
+        'nickname': nickname,
+      },
+    );
+  }
+
   SyncOperation rotationAssignment({
     required String opId,
     required String houseId,

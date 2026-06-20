@@ -13,6 +13,7 @@ JoinInvitePayload _$JoinInvitePayloadFromJson(Map<String, dynamic> json) =>
       hostNodeKey: json['host_node_key'] as String,
       hostMagicDns: json['host_magic_dns'] as String,
       joinCredential: json['join_credential'] as String,
+      tailscaleAuthKey: json['tailscale_auth_key'] as String,
     );
 
 Map<String, dynamic> _$JoinInvitePayloadToJson(JoinInvitePayload instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$JoinInvitePayloadToJson(JoinInvitePayload instance) =>
       'host_node_key': instance.hostNodeKey,
       'host_magic_dns': instance.hostMagicDns,
       'join_credential': instance.joinCredential,
+      'tailscale_auth_key': instance.tailscaleAuthKey,
     };
