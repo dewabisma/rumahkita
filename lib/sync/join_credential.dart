@@ -36,20 +36,20 @@ class JoinCredential {
   final String signature;
 
   Map<String, dynamic> toJson() => {
-        'house_id': houseId,
-        'allowed_op_type': allowedOpType,
-        'expiry_ms': expiryMs,
-        'nonce': nonce,
-        'signature': signature,
-      };
+    'house_id': houseId,
+    'allowed_op_type': allowedOpType,
+    'expiry_ms': expiryMs,
+    'nonce': nonce,
+    'signature': signature,
+  };
 
-  String encode() =>
-      base64Url.encode(utf8.encode(jsonEncode(toJson())));
+  String encode() => base64Url.encode(utf8.encode(jsonEncode(toJson())));
 
   static JoinCredential? decode(String encoded) {
     try {
       final json =
-          jsonDecode(utf8.decode(base64Url.decode(encoded))) as Map<String, dynamic>;
+          jsonDecode(utf8.decode(base64Url.decode(encoded)))
+              as Map<String, dynamic>;
       return JoinCredential(
         houseId: json['house_id'] as String,
         allowedOpType: json['allowed_op_type'] as String,
@@ -82,8 +82,7 @@ class JoinCredentialService {
     Duration ttl = const Duration(hours: 24),
   }) {
     final nonce = _uuid.v4();
-    final expiryMs =
-        DateTime.now().add(ttl).millisecondsSinceEpoch;
+    final expiryMs = DateTime.now().add(ttl).millisecondsSinceEpoch;
     final signature = _sign(
       houseId: houseId,
       allowedOpType: SyncOpType.housemateCreate.wireValue,

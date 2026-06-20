@@ -12,61 +12,65 @@ import 'package:uuid/uuid.dart';
 import 'sync_test_harness.dart';
 
 void main() {
-  test('handleEnvelope validates bootstrap houseId not activeHouseId', () async {
-    final host = await SyncTestHarness.create(
-      deviceId: 'device-host',
-      nodeKey: 'node-host',
-    );
-    final joiner = await SyncTestHarness.create(
-      deviceId: 'device-joiner',
-      nodeKey: 'node-joiner',
-    );
-    final localSettings = DriftLocalSettingsRepository(db: joiner.db);
-    final sync = SyncService(
-      db: joiner.db,
-      syncWriteCoordinator: joiner.syncCoordinator,
-      meshService: TailscaleMeshService(stateDirectory: '/tmp/test'),
-      transport: TailscaleSyncTransport(),
-      joinCredentialService: joiner.joinCredentialService,
-      localSettings: localSettings,
-    );
+  test(
+    'handleEnvelope validates bootstrap houseId not activeHouseId',
+    () async {
+      final host = await SyncTestHarness.create(
+        deviceId: 'device-host',
+        nodeKey: 'node-host',
+      );
+      final joiner = await SyncTestHarness.create(
+        deviceId: 'device-joiner',
+        nodeKey: 'node-joiner',
+      );
+      final localSettings = DriftLocalSettingsRepository(db: joiner.db);
+      final sync = SyncService(
+        db: joiner.db,
+        syncWriteCoordinator: joiner.syncCoordinator,
+        meshService: TailscaleMeshService(stateDirectory: '/tmp/test'),
+        transport: TailscaleSyncTransport(),
+        joinCredentialService: joiner.joinCredentialService,
+        localSettings: localSettings,
+      );
 
-    const uuid = Uuid();
-    final memberId = uuid.v4();
-    final house = await host.houseRepository.createHouse(
-      displayName: 'Bootstrap House',
-      creatorMemberId: memberId,
-    );
+      const uuid = Uuid();
+      final memberId = uuid.v4();
+      final house = await host.houseRepository.createHouse(
+        displayName: 'Bootstrap House',
+        creatorMemberId: memberId,
+      );
 
-    final outbox = await host.db.select(host.db.syncOutboxEntries).get();
-    final envelope = SyncEnvelope.fromJson(
-      jsonDecode(outbox.first.envelopeJson) as Map<String, dynamic>,
-    );
+      final outbox = await host.db.select(host.db.syncOutboxEntries).get();
+      final envelope = SyncEnvelope.fromJson(
+        jsonDecode(outbox.first.envelopeJson) as Map<String, dynamic>,
+      );
 
-    await sync.persistHouseJoinSecret(
-      houseId: house.houseId,
-      secretBase64: (await host.db.select(host.db.houseJoinSecrets).getSingle())
-          .secretBase64,
-    );
-
-    final result = await sync.handleEnvelope(
-      envelope,
-      strategy: BootstrapAllowlistStrategy(
-        trustedHostNodeKey: host.nodeKey,
+      await sync.persistHouseJoinSecret(
         houseId: house.houseId,
-        rosterAllowlist: PeerAllowlist(
-          activeMemberNodeKeys: {host.nodeKey},
-          localNodeKey: joiner.nodeKey,
-        ),
-      ),
-      validationHouseId: house.houseId,
-      ingressMode: AllowlistIngressMode.outboxReplay,
-      consumeCredentials: false,
-      relay: false,
-    );
+        secretBase64:
+            (await host.db.select(host.db.houseJoinSecrets).getSingle())
+                .secretBase64,
+      );
 
-    expect(result.applied, isTrue);
-    final houses = await joiner.db.select(joiner.db.houseSync).get();
-    expect(houses.single.houseId, house.houseId);
-  });
+      final result = await sync.handleEnvelope(
+        envelope,
+        strategy: BootstrapAllowlistStrategy(
+          trustedHostNodeKey: host.nodeKey,
+          houseId: house.houseId,
+          rosterAllowlist: PeerAllowlist(
+            activeMemberNodeKeys: {host.nodeKey},
+            localNodeKey: joiner.nodeKey,
+          ),
+        ),
+        validationHouseId: house.houseId,
+        ingressMode: AllowlistIngressMode.outboxReplay,
+        consumeCredentials: false,
+        relay: false,
+      );
+
+      expect(result.applied, isTrue);
+      final houses = await joiner.db.select(joiner.db.houseSync).get();
+      expect(houses.single.houseId, house.houseId);
+    },
+  );
 }

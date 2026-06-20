@@ -15,14 +15,8 @@ void main() {
   });
 
   test('create and verify round-trip', () {
-    final credential = service.create(
-      houseId: 'house-1',
-      houseSecret: secret,
-    );
-    expect(
-      service.verify(credential: credential, houseSecret: secret),
-      isTrue,
-    );
+    final credential = service.create(houseId: 'house-1', houseSecret: secret);
+    expect(service.verify(credential: credential, houseSecret: secret), isTrue);
     expect(credential.allowedOpType, SyncOpType.housemateCreate.wireValue);
   });
 
@@ -39,10 +33,7 @@ void main() {
   });
 
   test('replay rejected when nonce already consumed', () {
-    final credential = service.create(
-      houseId: 'house-1',
-      houseSecret: secret,
-    );
+    final credential = service.create(houseId: 'house-1', houseSecret: secret);
     final allowlist = PeerAllowlist(
       activeMemberNodeKeys: {},
       localNodeKey: 'local-node',
@@ -69,20 +60,19 @@ void main() {
       ],
     );
     expect(
-      allowlist.checkEnvelope(
-        envelope,
-        credentialService: service,
-        houseJoinSecret: secret,
-      ).allowed,
+      allowlist
+          .checkEnvelope(
+            envelope,
+            credentialService: service,
+            houseJoinSecret: secret,
+          )
+          .allowed,
       isFalse,
     );
   });
 
   test('scoped op enforcement requires housemate_create', () {
-    final credential = service.create(
-      houseId: 'house-1',
-      houseSecret: secret,
-    );
+    final credential = service.create(houseId: 'house-1', houseSecret: secret);
     final allowlist = PeerAllowlist(
       activeMemberNodeKeys: {},
       localNodeKey: 'local-node',
@@ -108,11 +98,13 @@ void main() {
       ],
     );
     expect(
-      allowlist.checkEnvelope(
-        envelope,
-        credentialService: service,
-        houseJoinSecret: secret,
-      ).allowed,
+      allowlist
+          .checkEnvelope(
+            envelope,
+            credentialService: service,
+            houseJoinSecret: secret,
+          )
+          .allowed,
       isFalse,
     );
   });

@@ -27,8 +27,9 @@ void main() {
       nickname: 'Host',
     );
 
-    final joinCredential =
-        await host.houseRepository.generateJoinCredential(house.houseId);
+    final joinCredential = await host.houseRepository.generateJoinCredential(
+      house.houseId,
+    );
 
     final joiner = await SyncTestHarness.create(
       deviceId: 'device-joiner',
@@ -85,8 +86,9 @@ void main() {
         .get();
     expect(consumedOnJoiner, isEmpty);
 
-    final consumedOnHost =
-        await host.db.select(host.db.consumedJoinCredentials).get();
+    final consumedOnHost = await host.db
+        .select(host.db.consumedJoinCredentials)
+        .get();
     expect(consumedOnHost, isEmpty);
 
     final members = await joiner.db.select(joiner.db.housematesSync).get();

@@ -2,20 +2,17 @@ import 'dart:convert';
 
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
+import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/sync_operation.dart';
 
 class SyncOpFactory {
-  SyncOpFactory({
-    required this.hlcService,
-    required this.deviceId,
-  });
+  SyncOpFactory({required this.hlcService, required this.deviceId});
 
   final HlcService hlcService;
   final String deviceId;
 
-  String _encodeHlc() =>
-      base64Encode(hlcService.toBytes(hlcService.now()));
+  String _encodeHlc() => base64Encode(hlcService.toBytes(hlcService.now()));
 
   SyncOperation houseCreate({
     required String opId,
@@ -197,11 +194,7 @@ class SyncOpFactory {
       houseId: houseId,
       originDeviceId: deviceId,
       hlc: _encodeHlc(),
-      payload: {
-        'cycle_id': cycleId,
-        if (from != null) 'from': from,
-        'to': to,
-      },
+      payload: {'cycle_id': cycleId, if (from != null) 'from': from, 'to': to},
     );
   }
 
@@ -262,10 +255,72 @@ class SyncOpFactory {
       houseId: houseId,
       originDeviceId: deviceId,
       hlc: _encodeHlc(),
+      payload: {'task_id': taskId, 'field': field, 'value': value},
+    );
+  }
+
+  SyncOperation taskStatusUpdate({
+    required String opId,
+    required String houseId,
+    required String taskId,
+    required String actorMemberId,
+    required TaskStatus from,
+    required TaskStatus to,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.taskFieldUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: actorMemberId,
+      hlc: _encodeHlc(),
       payload: {
         'task_id': taskId,
-        'field': field,
-        'value': value,
+        'field': 'status',
+        'value': to.wireValue,
+        'from': from.wireValue,
+      },
+    );
+  }
+
+  SyncOperation taskClaim({
+    required String opId,
+    required String houseId,
+    required String eventId,
+    required String taskId,
+    required String memberId,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.taskClaim.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: memberId,
+      hlc: _encodeHlc(),
+      payload: {'event_id': eventId, 'task_id': taskId, 'member_id': memberId},
+    );
+  }
+
+  SyncOperation scoreEventAppend({
+    required String opId,
+    required String houseId,
+    required String eventId,
+    required String memberId,
+    required int delta,
+    String? reasonRef,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.scoreEventAppend.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: memberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'event_id': eventId,
+        'member_id': memberId,
+        'delta': delta,
+        if (reasonRef != null) 'reason_ref': reasonRef,
       },
     );
   }

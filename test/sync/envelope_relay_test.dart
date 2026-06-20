@@ -44,22 +44,27 @@ void main() {
 
     final receiverMesh = TailscaleMeshService(stateDirectory: '/tmp/recv');
     receiverMesh.setPeersForTesting([
-      TailscalePeer(nodeKey: sender.nodeKey, hostName: 'localhost', online: true),
+      TailscalePeer(
+        nodeKey: sender.nodeKey,
+        hostName: 'localhost',
+        online: true,
+      ),
     ]);
 
     final receiverSettings = DriftLocalSettingsRepository(db: receiver.db);
     await receiverSettings.setActiveHouseId(house.houseId);
-    await receiver.db.into(receiver.db.houseJoinSecrets).insert(
+    await receiver.db
+        .into(receiver.db.houseJoinSecrets)
+        .insert(
           HouseJoinSecretsCompanion.insert(
             houseId: house.houseId,
-            secretBase64: (await sender.db
-                    .select(sender.db.houseJoinSecrets)
-                    .getSingle())
-                .secretBase64,
+            secretBase64:
+                (await sender.db.select(sender.db.houseJoinSecrets).getSingle())
+                    .secretBase64,
           ),
         );
 
-  final received = <SyncEnvelope>[];
+    final received = <SyncEnvelope>[];
     final receiverTransport = TailscaleSyncTransport();
     await receiverTransport.start();
     final sub = receiverTransport.incomingEnvelopes.listen(received.add);
@@ -75,7 +80,11 @@ void main() {
 
     final senderMesh = TailscaleMeshService(stateDirectory: '/tmp/send');
     senderMesh.setPeersForTesting([
-      TailscalePeer(nodeKey: receiver.nodeKey, hostName: 'localhost', online: true),
+      TailscalePeer(
+        nodeKey: receiver.nodeKey,
+        hostName: 'localhost',
+        online: true,
+      ),
     ]);
     final senderSettings = DriftLocalSettingsRepository(db: sender.db);
     final senderSync = SyncService(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/home/widgets/guardian_review_section.dart';
+import 'package:rumah/presentation/home/widgets/task_list_section.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
 import 'package:rumah/theme/app_colors.dart';
@@ -27,41 +29,38 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: colors.background,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(spacing.radiusCard),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const ConnectionStatusHeader(),
-              SizedBox(height: spacing.radiusCard),
-              Text('Your house is active', style: text.headline),
-              const SizedBox(height: 8),
-              Text(
-                'Ceremony complete — the living cycle has begun.',
-                style: text.body?.copyWith(color: colors.textSecondary),
-              ),
-              if (activeCycle != null) ...[
-                SizedBox(height: spacing.radiusCard),
-                Card(
-                  color: colors.successSurface,
-                  child: Padding(
-                    padding: EdgeInsets.all(spacing.radiusCard),
-                    child: Text(
-                      'Guardian this cycle: ${activeCycle.activeGuardianMemberId.substring(0, 8)}…',
-                      style: text.body,
-                    ),
+        child: houseId == null
+            ? const Center(child: Text('No active house'))
+            : ListView(
+                padding: EdgeInsets.all(spacing.radiusCard),
+                children: [
+                  const ConnectionStatusHeader(),
+                  SizedBox(height: spacing.radiusCard),
+                  Text('Your house is active', style: text.headline),
+                  SizedBox(height: spacing.radiusSmall),
+                  Text(
+                    'Claim chores, finish them, and let your guardian cheer you on.',
+                    style: text.body?.copyWith(color: colors.textSecondary),
                   ),
-                ),
-              ],
-              const Spacer(),
-              Text(
-                'Phase 3 gameplay screens coming soon.',
-                style: text.caption?.copyWith(color: colors.textMuted),
-                textAlign: TextAlign.center,
+                  if (activeCycle != null) ...[
+                    SizedBox(height: spacing.radiusSmall),
+                    Card(
+                      color: colors.successSurface,
+                      child: Padding(
+                        padding: EdgeInsets.all(spacing.radiusCard),
+                        child: Text(
+                          'Guardian this cycle is keeping an eye on reviews.',
+                          style: text.body,
+                        ),
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: spacing.radiusCard),
+                  TaskListSection(houseId: houseId),
+                  SizedBox(height: spacing.radiusCard),
+                  GuardianReviewSection(houseId: houseId),
+                ],
               ),
-            ],
-          ),
-        ),
       ),
     );
   }

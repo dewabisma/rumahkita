@@ -6,14 +6,22 @@ import 'sync_test_harness.dart';
 
 void main() {
   test('concurrent score deltas sum identically regardless of order', () async {
-    final peerA = await SyncTestHarness.create(deviceId: 'a', nodeKey: 'node-a');
-    final peerB = await SyncTestHarness.create(deviceId: 'b', nodeKey: 'node-b');
+    final peerA = await SyncTestHarness.create(
+      deviceId: 'a',
+      nodeKey: 'node-a',
+    );
+    final peerB = await SyncTestHarness.create(
+      deviceId: 'b',
+      nodeKey: 'node-b',
+    );
     const uuid = Uuid();
     final houseId = uuid.v4();
     final memberId = uuid.v4();
 
     for (final harness in [peerA, peerB]) {
-      await harness.db.into(harness.db.housematesSync).insert(
+      await harness.db
+          .into(harness.db.housematesSync)
+          .insert(
             HousematesSyncCompanion.insert(
               memberId: memberId,
               houseId: houseId,
@@ -21,8 +29,9 @@ void main() {
               tailscaleNodeKey: harness.nodeKey,
               nickname: 'Tester',
               memberStatus: 'active',
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
+              updatedAtHlc: harness.hlcService.toBytes(
+                harness.hlcService.now(),
+              ),
             ),
           );
     }
@@ -66,12 +75,12 @@ void main() {
       await peerB.apply(op, houseId);
     }
 
-    final memberA = await (peerA.db.select(peerA.db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingle();
-    final memberB = await (peerB.db.select(peerB.db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingle();
+    final memberA = await (peerA.db.select(
+      peerA.db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingle();
+    final memberB = await (peerB.db.select(
+      peerB.db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingle();
 
     expect(memberA.lifetimeScore, 12);
     expect(memberB.lifetimeScore, 12);

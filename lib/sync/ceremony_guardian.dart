@@ -12,7 +12,8 @@ String pickDeterministicGuardian(String cycleId, List<String> memberIds) {
   }
   final sorted = [...memberIds]..sort();
   final hash = sha256.convert(utf8.encode(cycleId));
-  final index = hash.bytes.fold<int>(0, (acc, byte) => acc + byte) % sorted.length;
+  final index =
+      hash.bytes.fold<int>(0, (acc, byte) => acc + byte) % sorted.length;
   return sorted[index];
 }
 
@@ -50,3 +51,8 @@ bool isActivationGateMet({
 
 bool isTaskArchived(String statusWire) =>
     statusWire == TaskStatus.archived.wireValue;
+
+bool isTaskReviewGuardian({
+  required String activeGuardianMemberId,
+  required String actorMemberId,
+}) => activeGuardianMemberId == actorMemberId;

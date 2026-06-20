@@ -1,4 +1,3 @@
-
 sealed class MergeSideEffect {
   const MergeSideEffect();
 }
@@ -34,13 +33,28 @@ class TaskPointsChanged extends MergeSideEffect {
 }
 
 class CeremonySignoffsChanged extends MergeSideEffect {
-  const CeremonySignoffsChanged({
-    required this.houseId,
-    required this.cycleId,
-  });
+  const CeremonySignoffsChanged({required this.houseId, required this.cycleId});
 
   final String houseId;
   final String cycleId;
+}
+
+class TaskApproved extends MergeSideEffect {
+  const TaskApproved({
+    required this.houseId,
+    required this.taskId,
+    required this.cycleId,
+    required this.negotiatedPoints,
+    required this.claimedByMemberIds,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String taskId;
+  final String cycleId;
+  final int negotiatedPoints;
+  final List<String> claimedByMemberIds;
+  final List<int> hlc;
 }
 
 abstract class MergeSideEffectHandler {

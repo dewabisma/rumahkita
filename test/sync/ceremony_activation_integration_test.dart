@@ -28,9 +28,9 @@ void main() {
       memberId: seed.memberA,
     );
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
+    final cycle = await (seed.harness.db.select(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
     expect(cycle.status, CycleStatus.active.wireValue);
     expect(
       cycle.activeGuardianMemberId,
@@ -38,34 +38,209 @@ void main() {
     );
   });
 
-  test('two-member offline accept sync activates cycle on both peers', () async {
-    final peerA = await SyncTestHarness.create(
-      deviceId: 'device-a',
-      nodeKey: 'node-a',
-    );
-    final peerB = await SyncTestHarness.create(
-      deviceId: 'device-b',
-      nodeKey: 'node-b',
-    );
-    const uuid = Uuid();
-    final houseId = uuid.v4();
-    final cycleId = uuid.v4();
-    final memberA = uuid.v4();
-    final memberB = uuid.v4();
+  test(
+    'two-member offline accept sync activates cycle on both peers',
+    () async {
+      final peerA = await SyncTestHarness.create(
+        deviceId: 'device-a',
+        nodeKey: 'node-a',
+      );
+      final peerB = await SyncTestHarness.create(
+        deviceId: 'device-b',
+        nodeKey: 'node-b',
+      );
+      const uuid = Uuid();
+      final houseId = uuid.v4();
+      final cycleId = uuid.v4();
+      final memberA = uuid.v4();
+      final memberB = uuid.v4();
 
-    for (final harness in [peerA, peerB]) {
-      await harness.db.into(harness.db.houseSync).insert(
+      for (final harness in [peerA, peerB]) {
+        await harness.db
+            .into(harness.db.houseSync)
+            .insert(
+              HouseSyncCompanion.insert(
+                houseId: houseId,
+                displayName: 'Shared Home',
+                creatorMemberId: memberA,
+                createdAtHlc: harness.hlcService.toBytes(
+                  harness.hlcService.now(),
+                ),
+                updatedAtHlc: harness.hlcService.toBytes(
+                  harness.hlcService.now(),
+                ),
+              ),
+            );
+        await harness.db
+            .into(harness.db.housematesSync)
+            .insert(
+              HousematesSyncCompanion.insert(
+                memberId: memberA,
+                houseId: houseId,
+                tailscaleUserId: 'user-a',
+                tailscaleNodeKey: peerA.nodeKey,
+                nickname: 'A',
+                memberStatus: MemberStatus.active.wireValue,
+                updatedAtHlc: harness.hlcService.toBytes(
+                  harness.hlcService.now(),
+                ),
+              ),
+            );
+        await harness.db
+            .into(harness.db.housematesSync)
+            .insert(
+              HousematesSyncCompanion.insert(
+                memberId: memberB,
+                houseId: houseId,
+                tailscaleUserId: 'user-b',
+                tailscaleNodeKey: peerB.nodeKey,
+                nickname: 'B',
+                memberStatus: MemberStatus.active.wireValue,
+                updatedAtHlc: harness.hlcService.toBytes(
+                  harness.hlcService.now(),
+                ),
+              ),
+            );
+        await harness.db
+            .into(harness.db.cyclesSync)
+            .insert(
+              CyclesSyncCompanion.insert(
+                cycleId: cycleId,
+                houseId: houseId,
+                activeGuardianMemberId: memberA,
+                status: CycleStatus.drafting.wireValue,
+                updatedAtHlc: harness.hlcService.toBytes(
+                  harness.hlcService.now(),
+                ),
+              ),
+            );
+      }
+
+      final repoA = DriftCeremonyRepository(
+        db: peerA.db,
+        sync: peerA.syncCoordinator,
+      );
+      final repoB = DriftCeremonyRepository(
+        db: peerB.db,
+        sync: peerB.syncCoordinator,
+      );
+
+      await repoA.acceptRules(
+        houseId: houseId,
+        cycleId: cycleId,
+        memberId: memberA,
+      );
+      await repoB.acceptRules(
+        houseId: houseId,
+        cycleId: cycleId,
+        memberId: memberB,
+      );
+
+      await _relayOutboxes(peerA, peerB);
+      await _relayOutboxes(peerB, peerA);
+
+      for (final harness in [peerA, peerB]) {
+        final cycle = await (harness.db.select(
+          harness.db.cyclesSync,
+        )..where((t) => t.cycleId.equals(cycleId))).getSingle();
+        expect(cycle.status, CycleStatus.active.wireValue);
+        expect(
+          cycle.activeGuardianMemberId,
+          pickDeterministicGuardian(cycleId, [memberA, memberB]),
+        );
+      }
+    },
+  );
+
+  test(
+    'inbound signoff merge triggers activation without local accept',
+    () async {
+      final peerA = await SyncTestHarness.create(
+        deviceId: 'device-a',
+        nodeKey: 'node-a',
+      );
+      final peerB = await SyncTestHarness.create(
+        deviceId: 'device-b',
+        nodeKey: 'node-b',
+      );
+      const uuid = Uuid();
+      final houseId = uuid.v4();
+      final cycleId = uuid.v4();
+      final memberA = uuid.v4();
+      final memberB = uuid.v4();
+
+      for (final harness in [peerA, peerB]) {
+        await _insertTwoMemberDraftingHouse(
+          harness: harness,
+          houseId: houseId,
+          cycleId: cycleId,
+          memberA: memberA,
+          memberB: memberB,
+          nodeKeyA: peerA.nodeKey,
+          nodeKeyB: peerB.nodeKey,
+        );
+      }
+
+      final repoA = DriftCeremonyRepository(
+        db: peerA.db,
+        sync: peerA.syncCoordinator,
+      );
+      final repoB = DriftCeremonyRepository(
+        db: peerB.db,
+        sync: peerB.syncCoordinator,
+      );
+
+      await repoA.acceptRules(
+        houseId: houseId,
+        cycleId: cycleId,
+        memberId: memberA,
+      );
+      await repoB.acceptRules(
+        houseId: houseId,
+        cycleId: cycleId,
+        memberId: memberB,
+      );
+
+      expect(
+        (await _cycleOn(peerA, cycleId)).status,
+        CycleStatus.drafting.wireValue,
+      );
+
+      await _relayOutboxes(peerB, peerA);
+
+      final cycleOnA = await _cycleOn(peerA, cycleId);
+      expect(cycleOnA.status, CycleStatus.active.wireValue);
+      expect(
+        cycleOnA.activeGuardianMemberId,
+        pickDeterministicGuardian(cycleId, [memberA, memberB]),
+      );
+    },
+  );
+
+  test(
+    'concurrent cycleCreate rejects duplicate drafting cycle on merge',
+    () async {
+      final peerA = await SyncTestHarness.create(deviceId: 'device-a');
+      const uuid = Uuid();
+      final houseId = uuid.v4();
+      final memberA = uuid.v4();
+      final cycleA = uuid.v4();
+      final cycleB = uuid.v4();
+
+      await peerA.db
+          .into(peerA.db.houseSync)
+          .insert(
             HouseSyncCompanion.insert(
               houseId: houseId,
-              displayName: 'Shared Home',
+              displayName: 'Home',
               creatorMemberId: memberA,
-              createdAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
+              createdAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
+              updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
             ),
           );
-      await harness.db.into(harness.db.housematesSync).insert(
+      await peerA.db
+          .into(peerA.db.housematesSync)
+          .insert(
             HousematesSyncCompanion.insert(
               memberId: memberA,
               houseId: houseId,
@@ -73,203 +248,53 @@ void main() {
               tailscaleNodeKey: peerA.nodeKey,
               nickname: 'A',
               memberStatus: MemberStatus.active.wireValue,
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
+              updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
             ),
           );
-      await harness.db.into(harness.db.housematesSync).insert(
-            HousematesSyncCompanion.insert(
-              memberId: memberB,
-              houseId: houseId,
-              tailscaleUserId: 'user-b',
-              tailscaleNodeKey: peerB.nodeKey,
-              nickname: 'B',
-              memberStatus: MemberStatus.active.wireValue,
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
-            ),
-          );
-      await harness.db.into(harness.db.cyclesSync).insert(
+      await peerA.db
+          .into(peerA.db.cyclesSync)
+          .insert(
             CyclesSyncCompanion.insert(
-              cycleId: cycleId,
+              cycleId: cycleA,
               houseId: houseId,
               activeGuardianMemberId: memberA,
               status: CycleStatus.drafting.wireValue,
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
+              updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
             ),
           );
-    }
 
-    final repoA = DriftCeremonyRepository(
-      db: peerA.db,
-      sync: peerA.syncCoordinator,
-    );
-    final repoB = DriftCeremonyRepository(
-      db: peerB.db,
-      sync: peerB.syncCoordinator,
-    );
-
-    await repoA.acceptRules(
-      houseId: houseId,
-      cycleId: cycleId,
-      memberId: memberA,
-    );
-    await repoB.acceptRules(
-      houseId: houseId,
-      cycleId: cycleId,
-      memberId: memberB,
-    );
-
-    await _relayOutboxes(peerA, peerB);
-    await _relayOutboxes(peerB, peerA);
-
-    for (final harness in [peerA, peerB]) {
-      final cycle = await (harness.db.select(harness.db.cyclesSync)
-            ..where((t) => t.cycleId.equals(cycleId)))
-          .getSingle();
-      expect(cycle.status, CycleStatus.active.wireValue);
-      expect(
-        cycle.activeGuardianMemberId,
-        pickDeterministicGuardian(cycleId, [memberA, memberB]),
+      final result = await peerA.apply(
+        SyncOperation(
+          opId: uuid.v4(),
+          opType: SyncOpType.cycleCreate.wireValue,
+          houseId: houseId,
+          originDeviceId: 'device-b',
+          hlc: base64Encode(peerA.hlcService.toBytes(peerA.hlcService.now())),
+          payload: {
+            'cycle_id': cycleB,
+            'active_guardian_member_id': memberA,
+            'status': CycleStatus.drafting.wireValue,
+          },
+        ),
+        houseId,
       );
-    }
-  });
 
-  test('inbound signoff merge triggers activation without local accept', () async {
-    final peerA = await SyncTestHarness.create(
-      deviceId: 'device-a',
-      nodeKey: 'node-a',
-    );
-    final peerB = await SyncTestHarness.create(
-      deviceId: 'device-b',
-      nodeKey: 'node-b',
-    );
-    const uuid = Uuid();
-    final houseId = uuid.v4();
-    final cycleId = uuid.v4();
-    final memberA = uuid.v4();
-    final memberB = uuid.v4();
+      expect(result.rejectedOpIds, isNotEmpty);
 
-    for (final harness in [peerA, peerB]) {
-      await _insertTwoMemberDraftingHouse(
-        harness: harness,
-        houseId: houseId,
-        cycleId: cycleId,
-        memberA: memberA,
-        memberB: memberB,
-        nodeKeyA: peerA.nodeKey,
-        nodeKeyB: peerB.nodeKey,
-      );
-    }
-
-    final repoA = DriftCeremonyRepository(
-      db: peerA.db,
-      sync: peerA.syncCoordinator,
-    );
-    final repoB = DriftCeremonyRepository(
-      db: peerB.db,
-      sync: peerB.syncCoordinator,
-    );
-
-    await repoA.acceptRules(
-      houseId: houseId,
-      cycleId: cycleId,
-      memberId: memberA,
-    );
-    await repoB.acceptRules(
-      houseId: houseId,
-      cycleId: cycleId,
-      memberId: memberB,
-    );
-
-    expect(
-      (await _cycleOn(peerA, cycleId)).status,
-      CycleStatus.drafting.wireValue,
-    );
-
-    await _relayOutboxes(peerB, peerA);
-
-    final cycleOnA = await _cycleOn(peerA, cycleId);
-    expect(cycleOnA.status, CycleStatus.active.wireValue);
-    expect(
-      cycleOnA.activeGuardianMemberId,
-      pickDeterministicGuardian(cycleId, [memberA, memberB]),
-    );
-  });
-
-  test('concurrent cycleCreate rejects duplicate drafting cycle on merge', () async {
-    final peerA = await SyncTestHarness.create(deviceId: 'device-a');
-    const uuid = Uuid();
-    final houseId = uuid.v4();
-    final memberA = uuid.v4();
-    final cycleA = uuid.v4();
-    final cycleB = uuid.v4();
-
-    await peerA.db.into(peerA.db.houseSync).insert(
-          HouseSyncCompanion.insert(
-            houseId: houseId,
-            displayName: 'Home',
-            creatorMemberId: memberA,
-            createdAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
-            updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
-          ),
-        );
-    await peerA.db.into(peerA.db.housematesSync).insert(
-          HousematesSyncCompanion.insert(
-            memberId: memberA,
-            houseId: houseId,
-            tailscaleUserId: 'user-a',
-            tailscaleNodeKey: peerA.nodeKey,
-            nickname: 'A',
-            memberStatus: MemberStatus.active.wireValue,
-            updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
-          ),
-        );
-    await peerA.db.into(peerA.db.cyclesSync).insert(
-          CyclesSyncCompanion.insert(
-            cycleId: cycleA,
-            houseId: houseId,
-            activeGuardianMemberId: memberA,
-            status: CycleStatus.drafting.wireValue,
-            updatedAtHlc: peerA.hlcService.toBytes(peerA.hlcService.now()),
-          ),
-        );
-
-    final result = await peerA.apply(
-      SyncOperation(
-        opId: uuid.v4(),
-        opType: SyncOpType.cycleCreate.wireValue,
-        houseId: houseId,
-        originDeviceId: 'device-b',
-        hlc: base64Encode(peerA.hlcService.toBytes(peerA.hlcService.now())),
-        payload: {
-          'cycle_id': cycleB,
-          'active_guardian_member_id': memberA,
-          'status': CycleStatus.drafting.wireValue,
-        },
-      ),
-      houseId,
-    );
-
-    expect(result.rejectedOpIds, isNotEmpty);
-
-    final drafting = await (peerA.db.select(peerA.db.cyclesSync)
-          ..where(
-            (t) =>
-                t.houseId.equals(houseId) &
-                t.status.equals(CycleStatus.drafting.wireValue),
-          ))
-        .get();
-    expect(drafting.length, 1);
-    expect(drafting.single.cycleId, cycleA);
-  });
+      final drafting =
+          await (peerA.db.select(peerA.db.cyclesSync)..where(
+                (t) =>
+                    t.houseId.equals(houseId) &
+                    t.status.equals(CycleStatus.drafting.wireValue),
+              ))
+              .get();
+      expect(drafting.length, 1);
+      expect(drafting.single.cycleId, cycleA);
+    },
+  );
 }
 
-Future<void> _relayOutboxes(
-  SyncTestHarness from,
-  SyncTestHarness to,
-) async {
+Future<void> _relayOutboxes(SyncTestHarness from, SyncTestHarness to) async {
   final outbox = await from.db.select(from.db.syncOutboxEntries).get();
   outbox.sort((a, b) => a.createdAtMs.compareTo(b.createdAtMs));
   for (final row in outbox) {
@@ -281,9 +306,9 @@ Future<void> _relayOutboxes(
 }
 
 Future<CyclesSyncData> _cycleOn(SyncTestHarness harness, String cycleId) {
-  return (harness.db.select(harness.db.cyclesSync)
-        ..where((t) => t.cycleId.equals(cycleId)))
-      .getSingle();
+  return (harness.db.select(
+    harness.db.cyclesSync,
+  )..where((t) => t.cycleId.equals(cycleId))).getSingle();
 }
 
 Future<void> _insertTwoMemberDraftingHouse({
@@ -295,7 +320,9 @@ Future<void> _insertTwoMemberDraftingHouse({
   required String nodeKeyA,
   required String nodeKeyB,
 }) async {
-  await harness.db.into(harness.db.houseSync).insert(
+  await harness.db
+      .into(harness.db.houseSync)
+      .insert(
         HouseSyncCompanion.insert(
           houseId: houseId,
           displayName: 'Shared Home',
@@ -304,7 +331,9 @@ Future<void> _insertTwoMemberDraftingHouse({
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.housematesSync).insert(
+  await harness.db
+      .into(harness.db.housematesSync)
+      .insert(
         HousematesSyncCompanion.insert(
           memberId: memberA,
           houseId: houseId,
@@ -315,7 +344,9 @@ Future<void> _insertTwoMemberDraftingHouse({
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.housematesSync).insert(
+  await harness.db
+      .into(harness.db.housematesSync)
+      .insert(
         HousematesSyncCompanion.insert(
           memberId: memberB,
           houseId: houseId,
@@ -326,7 +357,9 @@ Future<void> _insertTwoMemberDraftingHouse({
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.cyclesSync).insert(
+  await harness.db
+      .into(harness.db.cyclesSync)
+      .insert(
         CyclesSyncCompanion.insert(
           cycleId: cycleId,
           houseId: houseId,
@@ -357,7 +390,9 @@ Future<_DraftingSeed> _seedDraftingHouse(SyncTestHarness harness) async {
   final memberA = uuid.v4();
   final cycleId = uuid.v4();
 
-  await harness.db.into(harness.db.houseSync).insert(
+  await harness.db
+      .into(harness.db.houseSync)
+      .insert(
         HouseSyncCompanion.insert(
           houseId: houseId,
           displayName: 'Home',
@@ -366,7 +401,9 @@ Future<_DraftingSeed> _seedDraftingHouse(SyncTestHarness harness) async {
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.housematesSync).insert(
+  await harness.db
+      .into(harness.db.housematesSync)
+      .insert(
         HousematesSyncCompanion.insert(
           memberId: memberA,
           houseId: houseId,
@@ -377,7 +414,9 @@ Future<_DraftingSeed> _seedDraftingHouse(SyncTestHarness harness) async {
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.cyclesSync).insert(
+  await harness.db
+      .into(harness.db.cyclesSync)
+      .insert(
         CyclesSyncCompanion.insert(
           cycleId: cycleId,
           houseId: houseId,

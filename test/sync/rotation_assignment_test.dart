@@ -12,7 +12,9 @@ void main() {
     final houseId = uuid.v4();
     final memberId = uuid.v4();
 
-    await harness.db.into(harness.db.housematesSync).insert(
+    await harness.db
+        .into(harness.db.housematesSync)
+        .insert(
           HousematesSyncCompanion.insert(
             memberId: memberId,
             houseId: houseId,
@@ -35,9 +37,9 @@ void main() {
     );
     expect(result.appliedOpIds.length, 1);
 
-    final member = await (harness.db.select(harness.db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingle();
+    final member = await (harness.db.select(
+      harness.db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingle();
     expect(member.rotationOrderIndex, 2);
   });
 
@@ -47,7 +49,9 @@ void main() {
     final houseId = uuid.v4();
     final memberId = uuid.v4();
 
-    await harness.db.into(harness.db.housematesSync).insert(
+    await harness.db
+        .into(harness.db.housematesSync)
+        .insert(
           HousematesSyncCompanion.insert(
             memberId: memberId,
             houseId: houseId,

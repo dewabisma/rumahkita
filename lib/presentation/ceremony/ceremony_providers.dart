@@ -95,6 +95,8 @@ final tasksForCycleProvider = StreamProvider.family<List<Task>, String>(
   },
 );
 
+// Re-exported for ceremony drafting; active-cycle tasks live in home_providers.
+
 class CeremonySignoffStatus {
   const CeremonySignoffStatus({
     required this.acceptedByMemberId,

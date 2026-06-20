@@ -23,7 +23,8 @@ void main() {
       senderDeviceId: 'device-x',
       senderTailscaleNodeKey: senderKey,
       hlc: 'aGw=',
-      ops: ops ??
+      ops:
+          ops ??
           [
             SyncOperation(
               opId: 'op-1',
@@ -59,7 +60,10 @@ void main() {
   test('P3: live ingress requires credential for unknown sender', () {
     final credService = JoinCredentialService();
     final secret = credService.generateHouseSecret();
-    final credential = credService.create(houseId: houseId, houseSecret: secret);
+    final credential = credService.create(
+      houseId: houseId,
+      houseSecret: secret,
+    );
 
     final strategy = BootstrapAllowlistStrategy(
       trustedHostNodeKey: hostKey,
@@ -79,10 +83,7 @@ void main() {
     expect(withoutCred.allowed, isFalse);
 
     final withCred = strategy.checkEnvelope(
-      envelope(
-        senderKey: joinerKey,
-        joinCredential: credential.encode(),
-      ),
+      envelope(senderKey: joinerKey, joinCredential: credential.encode()),
       mode: AllowlistIngressMode.live,
       credentialService: credService,
       houseJoinSecret: secret,

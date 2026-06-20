@@ -7,12 +7,15 @@ import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
+import 'package:rumah/domain/enums/task_status.dart';
+import 'package:rumah/sync/ceremony_guardian.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/state_machines/cycle_status_machine.dart';
 import 'package:rumah/sync/state_machines/member_status_machine.dart';
 import 'package:rumah/sync/state_machines/proposal_status_machine.dart';
+import 'package:rumah/sync/state_machines/task_status_machine.dart';
 import 'package:rumah/sync/sync_operation.dart';
 
 class LwwRegister {
@@ -78,7 +81,9 @@ class MergeEngine {
 
         final success = await _applySingle(op, context, sideEffects);
         if (success) {
-          await _db.into(_db.syncAppliedOps).insert(
+          await _db
+              .into(_db.syncAppliedOps)
+              .insert(
                 SyncAppliedOpsCompanion.insert(
                   opId: op.opId,
                   houseId: op.houseId,
@@ -153,9 +158,9 @@ class MergeEngine {
       case SyncOpType.taskCreate:
         return _applyTaskCreate(op);
       case SyncOpType.taskFieldUpdate:
-        return _applyTaskFieldUpdate(op, sideEffects);
+        return _applyTaskFieldUpdate(op, context, sideEffects);
       case SyncOpType.taskClaim:
-        return _applyTaskClaim(op);
+        return _applyTaskClaim(op, context);
       case SyncOpType.auditLogAppend:
         return _applyAuditLogAppend(op);
     }
@@ -169,14 +174,16 @@ class MergeEngine {
       HlcService.fromBytes(_decodeHlcBytes(hlcBase64));
 
   Future<bool> _applyHouseCreate(SyncOperation op) async {
-    final existing = await (_db.select(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).getSingleOrNull();
     if (existing != null) {
       return false;
     }
     final payload = op.payload;
-    await _db.into(_db.houseSync).insert(
+    await _db
+        .into(_db.houseSync)
+        .insert(
           HouseSyncCompanion.insert(
             houseId: op.houseId,
             displayName: payload['display_name'] as String,
@@ -195,13 +202,16 @@ class MergeEngine {
 
   Future<bool> _applyHousemateCreate(SyncOperation op) async {
     final payload = op.payload;
-    final existing = await (_db.select(_db.housematesSync)
-          ..where((t) => t.memberId.equals(payload['member_id'] as String)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.housematesSync)
+              ..where((t) => t.memberId.equals(payload['member_id'] as String)))
+            .getSingleOrNull();
     if (existing != null) {
       return false;
     }
-    await _db.into(_db.housematesSync).insert(
+    await _db
+        .into(_db.housematesSync)
+        .insert(
           HousematesSyncCompanion.insert(
             memberId: payload['member_id'] as String,
             houseId: op.houseId,
@@ -213,7 +223,9 @@ class MergeEngine {
             updatedAtHlc: _decodeHlcBytes(op.hlc),
           ),
         );
-    await _db.into(_db.syncPeerAllowlist).insert(
+    await _db
+        .into(_db.syncPeerAllowlist)
+        .insert(
           SyncPeerAllowlistCompanion.insert(
             tailscaleNodeKey: payload['tailscale_node_key'] as String,
             houseId: op.houseId,
@@ -225,9 +237,9 @@ class MergeEngine {
   }
 
   Future<bool> _applyHouseDisplayNameUpdate(SyncOperation op) async {
-    final row = await (_db.select(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -239,9 +251,9 @@ class MergeEngine {
     )) {
       return false;
     }
-    await (_db.update(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .write(
+    await (_db.update(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).write(
       HouseSyncCompanion(
         displayName: Value(op.payload['display_name'] as String),
         displayNameHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -256,9 +268,9 @@ class MergeEngine {
     SyncOperation op,
     List<MergeSideEffect> sideEffects,
   ) async {
-    final row = await (_db.select(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -279,9 +291,9 @@ class MergeEngine {
         hlc: _decodeHlcBytes(op.hlc),
       ),
     );
-    await (_db.update(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .write(
+    await (_db.update(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).write(
       HouseSyncCompanion(
         rulesVersion: Value(newVersion),
         rulesVersionHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -293,9 +305,9 @@ class MergeEngine {
   }
 
   Future<bool> _applyHousePrivilegeTemplatesUpdate(SyncOperation op) async {
-    final row = await (_db.select(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -308,9 +320,9 @@ class MergeEngine {
       return false;
     }
     final templates = op.payload['privilege_templates'] as Map<String, dynamic>;
-    await (_db.update(_db.houseSync)
-          ..where((t) => t.houseId.equals(op.houseId)))
-        .write(
+    await (_db.update(
+      _db.houseSync,
+    )..where((t) => t.houseId.equals(op.houseId))).write(
       HouseSyncCompanion(
         privilegeTemplates: Value(jsonEncode(templates)),
         privilegeTemplatesHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -329,9 +341,9 @@ class MergeEngine {
     if (!context.isMemberActive(memberId)) {
       return false;
     }
-    final row = await (_db.select(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -343,9 +355,9 @@ class MergeEngine {
     )) {
       return false;
     }
-    await (_db.update(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .write(
+    await (_db.update(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).write(
       HousematesSyncCompanion(
         nickname: Value(op.payload['nickname'] as String),
         nicknameHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -365,9 +377,9 @@ class MergeEngine {
         ? MemberStatus.fromWire(op.payload['from'] as String)
         : null;
     final to = MemberStatus.fromWire(op.payload['to'] as String);
-    final row = await (_db.select(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingleOrNull();
     final current = row != null
         ? MemberStatus.fromWire(row.memberStatus)
         : null;
@@ -384,9 +396,9 @@ class MergeEngine {
         )) {
       return false;
     }
-    await (_db.update(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .write(
+    await (_db.update(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).write(
       HousematesSyncCompanion(
         memberStatus: Value(to.wireValue),
         evictedAtHlc: to == MemberStatus.evicted
@@ -401,37 +413,35 @@ class MergeEngine {
 
   Future<bool> _applyRotationAssignment(SyncOperation op) async {
     final memberId = op.payload['member_id'] as String;
-    final row = await (_db.select(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
     if (row.rotationOrderIndex != null) {
       return false;
     }
-    await (_db.update(_db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .write(
+    await (_db.update(
+      _db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).write(
       HousematesSyncCompanion(
-        rotationOrderIndex:
-            Value(op.payload['rotation_order_index'] as int),
+        rotationOrderIndex: Value(op.payload['rotation_order_index'] as int),
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
       ),
     );
     return true;
   }
 
-  Future<bool> _applyScoreEvent(
-    SyncOperation op,
-    MergeContext context,
-  ) async {
+  Future<bool> _applyScoreEvent(SyncOperation op, MergeContext context) async {
     final memberId = op.payload['member_id'] as String;
     if (!context.isMemberActive(memberId)) {
       return false;
     }
     final eventId = op.payload['event_id'] as String;
-    final inserted = await _db.into(_db.scoreEvents).insert(
+    final inserted = await _db
+        .into(_db.scoreEvents)
+        .insert(
           ScoreEventsCompanion.insert(
             eventId: eventId,
             houseId: op.houseId,
@@ -451,9 +461,9 @@ class MergeEngine {
   }
 
   Future<void> _reprojectLifetimeScore(String memberId) async {
-    final events = await (_db.select(_db.scoreEvents)
-          ..where((t) => t.memberId.equals(memberId)))
-        .get();
+    final events = await (_db.select(
+      _db.scoreEvents,
+    )..where((t) => t.memberId.equals(memberId))).get();
     final sum = events.fold<int>(0, (acc, e) => acc + e.delta);
     await (_db.update(_db.housematesSync)
           ..where((t) => t.memberId.equals(memberId)))
@@ -462,19 +472,22 @@ class MergeEngine {
 
   Future<bool> _applyProposalCreate(SyncOperation op) async {
     final proposalId = op.payload['proposal_id'] as String;
-    final existing = await (_db.select(_db.removalProposalsSync)
-          ..where((t) => t.proposalId.equals(proposalId)))
-        .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.removalProposalsSync,
+    )..where((t) => t.proposalId.equals(proposalId))).getSingleOrNull();
     if (existing != null) {
       return false;
     }
-    await _db.into(_db.removalProposalsSync).insert(
+    await _db
+        .into(_db.removalProposalsSync)
+        .insert(
           RemovalProposalsSyncCompanion.insert(
             proposalId: proposalId,
             houseId: op.houseId,
             targetMemberId: op.payload['target_member_id'] as String,
-            proposerMemberId:
-                Value(op.payload['proposer_member_id'] as String?),
+            proposerMemberId: Value(
+              op.payload['proposer_member_id'] as String?,
+            ),
             type: op.payload['type'] as String,
             status: (op.payload['status'] as String?) ?? 'proposed',
             createdAtHlc: _decodeHlcBytes(op.hlc),
@@ -490,9 +503,9 @@ class MergeEngine {
         ? ProposalStatus.fromWire(op.payload['from'] as String)
         : null;
     final to = ProposalStatus.fromWire(op.payload['to'] as String);
-    final row = await (_db.select(_db.removalProposalsSync)
-          ..where((t) => t.proposalId.equals(proposalId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.removalProposalsSync,
+    )..where((t) => t.proposalId.equals(proposalId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -513,9 +526,9 @@ class MergeEngine {
     )) {
       return false;
     }
-    await (_db.update(_db.removalProposalsSync)
-          ..where((t) => t.proposalId.equals(proposalId)))
-        .write(
+    await (_db.update(
+      _db.removalProposalsSync,
+    )..where((t) => t.proposalId.equals(proposalId))).write(
       RemovalProposalsSyncCompanion(
         status: Value(to.wireValue),
         statusHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -526,23 +539,20 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyVoteCast(
-    SyncOperation op,
-    MergeContext context,
-  ) async {
+  Future<bool> _applyVoteCast(SyncOperation op, MergeContext context) async {
     final voterId = op.payload['voter_member_id'] as String;
     if (!context.isMemberActive(voterId)) {
       return false;
     }
     final proposalId = op.payload['proposal_id'] as String;
     final voteId = op.payload['vote_id'] as String;
-    final existingVotes = await (_db.select(_db.proposalVotesSync)
-          ..where(
-            (t) =>
-                t.proposalId.equals(proposalId) &
-                t.voterMemberId.equals(voterId),
-          ))
-        .get();
+    final existingVotes =
+        await (_db.select(_db.proposalVotesSync)..where(
+              (t) =>
+                  t.proposalId.equals(proposalId) &
+                  t.voterMemberId.equals(voterId),
+            ))
+            .get();
     if (existingVotes.isNotEmpty) {
       final incumbent = existingVotes.first;
       if (!LwwRegister.shouldApply(
@@ -553,11 +563,13 @@ class MergeEngine {
       )) {
         return false;
       }
-      await (_db.delete(_db.proposalVotesSync)
-            ..where((t) => t.voteId.equals(incumbent.voteId)))
-          .go();
+      await (_db.delete(
+        _db.proposalVotesSync,
+      )..where((t) => t.voteId.equals(incumbent.voteId))).go();
     }
-    await _db.into(_db.proposalVotesSync).insert(
+    await _db
+        .into(_db.proposalVotesSync)
+        .insert(
           ProposalVotesSyncCompanion.insert(
             voteId: voteId,
             houseId: op.houseId,
@@ -573,23 +585,25 @@ class MergeEngine {
 
   Future<bool> _applyCycleCreate(SyncOperation op) async {
     final cycleId = op.payload['cycle_id'] as String;
-    final existing = await (_db.select(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
     if (existing != null) {
       return false;
     }
-    final draftingRows = await (_db.select(_db.cyclesSync)
-          ..where(
-            (t) =>
-                t.houseId.equals(op.houseId) &
-                t.status.equals(CycleStatus.drafting.wireValue),
-          ))
-        .get();
+    final draftingRows =
+        await (_db.select(_db.cyclesSync)..where(
+              (t) =>
+                  t.houseId.equals(op.houseId) &
+                  t.status.equals(CycleStatus.drafting.wireValue),
+            ))
+            .get();
     if (draftingRows.isNotEmpty) {
       return false;
     }
-    await _db.into(_db.cyclesSync).insert(
+    await _db
+        .into(_db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: op.houseId,
@@ -608,9 +622,9 @@ class MergeEngine {
         ? CycleStatus.fromWire(op.payload['from'] as String)
         : null;
     final to = CycleStatus.fromWire(op.payload['to'] as String);
-    final row = await (_db.select(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -629,9 +643,9 @@ class MergeEngine {
     )) {
       return false;
     }
-    await (_db.update(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .write(
+    await (_db.update(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).write(
       CyclesSyncCompanion(
         status: Value(to.wireValue),
         statusHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -644,9 +658,9 @@ class MergeEngine {
 
   Future<bool> _applyCycleGuardianUpdate(SyncOperation op) async {
     final cycleId = op.payload['cycle_id'] as String;
-    final row = await (_db.select(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -658,9 +672,9 @@ class MergeEngine {
     )) {
       return false;
     }
-    await (_db.update(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .write(
+    await (_db.update(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).write(
       CyclesSyncCompanion(
         activeGuardianMemberId: Value(
           op.payload['active_guardian_member_id'] as String,
@@ -679,14 +693,15 @@ class MergeEngine {
   ) async {
     final cycleId = op.payload['cycle_id'] as String;
     final memberId = op.payload['member_id'] as String;
-    final row = await (_db.select(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
-    final signoffs =
-        Map<String, dynamic>.from(jsonDecode(row.ceremonySignoffs) as Map);
+    final signoffs = Map<String, dynamic>.from(
+      jsonDecode(row.ceremonySignoffs) as Map,
+    );
     final existingEntry = signoffs[memberId];
     if (existingEntry is Map) {
       final existingHlc = existingEntry['hlc'] as String?;
@@ -705,9 +720,9 @@ class MergeEngine {
       'hlc': op.hlc,
       'device_id': op.originDeviceId,
     };
-    await (_db.update(_db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .write(
+    await (_db.update(
+      _db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).write(
       CyclesSyncCompanion(
         ceremonySignoffs: Value(jsonEncode(signoffs)),
         updatedAtHlc: Value(_decodeHlcBytes(op.hlc)),
@@ -721,13 +736,15 @@ class MergeEngine {
 
   Future<bool> _applyTaskCreate(SyncOperation op) async {
     final taskId = op.payload['task_id'] as String;
-    final existing = await (_db.select(_db.tasksSync)
-          ..where((t) => t.taskId.equals(taskId)))
-        .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).getSingleOrNull();
     if (existing != null) {
       return false;
     }
-    await _db.into(_db.tasksSync).insert(
+    await _db
+        .into(_db.tasksSync)
+        .insert(
           TasksSyncCompanion.insert(
             taskId: taskId,
             houseId: op.houseId,
@@ -743,12 +760,13 @@ class MergeEngine {
 
   Future<bool> _applyTaskFieldUpdate(
     SyncOperation op,
+    MergeContext context,
     List<MergeSideEffect> sideEffects,
   ) async {
     final taskId = op.payload['task_id'] as String;
-    final row = await (_db.select(_db.tasksSync)
-          ..where((t) => t.taskId.equals(taskId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).getSingleOrNull();
     if (row == null) {
       return false;
     }
@@ -798,6 +816,43 @@ class MergeEngine {
           updatedAtHlc: Value(hlcBytes),
         );
       case 'status':
+        final to = TaskStatus.fromWire(op.payload['value'] as String);
+        final current = TaskStatus.fromWire(row.status);
+        final fromWire = op.payload['from'] as String?;
+        if (fromWire != null && TaskStatus.fromWire(fromWire) != current) {
+          return false;
+        }
+        if (!TaskStatusMachine.canTransition(current, to)) {
+          return false;
+        }
+        if (to == TaskStatus.pendingReview && current == TaskStatus.open) {
+          final actorId = op.actorMemberId;
+          if (actorId == null || !context.isMemberActive(actorId)) {
+            return false;
+          }
+          final claimed = (jsonDecode(row.claimedByMemberIds) as List<dynamic>)
+              .cast<String>();
+          if (!claimed.contains(actorId)) {
+            return false;
+          }
+        }
+        if (current == TaskStatus.pendingReview &&
+            (to == TaskStatus.open || to == TaskStatus.approved)) {
+          final actorId = op.actorMemberId;
+          if (actorId == null || !context.isMemberActive(actorId)) {
+            return false;
+          }
+          final cycle = await (_db.select(
+            _db.cyclesSync,
+          )..where((t) => t.cycleId.equals(row.cycleId))).getSingleOrNull();
+          if (cycle == null ||
+              !isTaskReviewGuardian(
+                activeGuardianMemberId: cycle.activeGuardianMemberId,
+                actorMemberId: actorId,
+              )) {
+            return false;
+          }
+        }
         if (!LwwRegister.shouldApply(
           incomingHlc: incomingHlc,
           incomingDeviceId: op.originDeviceId,
@@ -806,8 +861,22 @@ class MergeEngine {
         )) {
           return false;
         }
+        if (to == TaskStatus.approved && current == TaskStatus.pendingReview) {
+          final claimed = (jsonDecode(row.claimedByMemberIds) as List<dynamic>)
+              .cast<String>();
+          sideEffects.add(
+            TaskApproved(
+              houseId: op.houseId,
+              taskId: taskId,
+              cycleId: row.cycleId,
+              negotiatedPoints: row.negotiatedPoints,
+              claimedByMemberIds: claimed,
+              hlc: hlcBytes,
+            ),
+          );
+        }
         updateCompanion = TasksSyncCompanion(
-          status: Value(op.payload['value'] as String),
+          status: Value(to.wireValue),
           statusHlc: Value(hlcBytes),
           statusDeviceId: Value(op.originDeviceId),
           updatedAtHlc: Value(hlcBytes),
@@ -815,14 +884,37 @@ class MergeEngine {
       default:
         return false;
     }
-    await (_db.update(_db.tasksSync)..where((t) => t.taskId.equals(taskId)))
-        .write(updateCompanion);
+    await (_db.update(
+      _db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).write(updateCompanion);
     return true;
   }
 
-  Future<bool> _applyTaskClaim(SyncOperation op) async {
+  Future<bool> _applyTaskClaim(SyncOperation op, MergeContext context) async {
+    final taskId = op.payload['task_id'] as String;
+    final memberId = op.payload['member_id'] as String;
+    if (!context.isMemberActive(memberId)) {
+      return false;
+    }
+    final row = await (_db.select(
+      _db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).getSingleOrNull();
+    if (row == null) {
+      return false;
+    }
+    if (TaskStatus.fromWire(row.status) != TaskStatus.open) {
+      return false;
+    }
+    final existingClaims = await (_db.select(
+      _db.taskClaimEvents,
+    )..where((t) => t.taskId.equals(taskId))).get();
+    if (existingClaims.isNotEmpty) {
+      return false;
+    }
     final eventId = op.payload['event_id'] as String;
-    final inserted = await _db.into(_db.taskClaimEvents).insert(
+    final inserted = await _db
+        .into(_db.taskClaimEvents)
+        .insert(
           TaskClaimEventsCompanion.insert(
             eventId: eventId,
             houseId: op.houseId,
@@ -840,29 +932,31 @@ class MergeEngine {
   }
 
   Future<void> _reprojectTaskClaims(String taskId) async {
-    final events = await (_db.select(_db.taskClaimEvents)
-          ..where((t) => t.taskId.equals(taskId)))
-        .get();
+    final events = await (_db.select(
+      _db.taskClaimEvents,
+    )..where((t) => t.taskId.equals(taskId))).get();
     final memberIds = events.map((e) => e.memberId).toSet().toList();
-    await (_db.update(_db.tasksSync)..where((t) => t.taskId.equals(taskId)))
-        .write(
-      TasksSyncCompanion(
-        claimedByMemberIds: Value(jsonEncode(memberIds)),
-      ),
+    await (_db.update(
+      _db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).write(
+      TasksSyncCompanion(claimedByMemberIds: Value(jsonEncode(memberIds))),
     );
   }
 
   Future<bool> _applyAuditLogAppend(SyncOperation op) async {
     final logId = op.payload['log_id'] as String;
-    final inserted = await _db.into(_db.auditLogAppendOnly).insert(
+    final inserted = await _db
+        .into(_db.auditLogAppendOnly)
+        .insert(
           AuditLogAppendOnlyCompanion.insert(
             logId: logId,
             houseId: op.houseId,
             taskId: op.payload['task_id'] as String,
             actorMemberId: op.payload['actor_member_id'] as String,
             action: op.payload['action'] as String,
-            justificationNotes:
-                Value(op.payload['justification_notes'] as String?),
+            justificationNotes: Value(
+              op.payload['justification_notes'] as String?,
+            ),
             hlc: _decodeHlcBytes(op.hlc),
           ),
           mode: InsertMode.insertOrIgnore,

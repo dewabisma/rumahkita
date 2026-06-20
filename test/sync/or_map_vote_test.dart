@@ -47,9 +47,9 @@ void main() {
       houseId,
     );
 
-    final votes = await (harness.db.select(harness.db.proposalVotesSync)
-          ..where((t) => t.proposalId.equals(proposalId)))
-        .get();
+    final votes = await (harness.db.select(
+      harness.db.proposalVotesSync,
+    )..where((t) => t.proposalId.equals(proposalId))).get();
     expect(votes.length, 1);
     expect(votes.single.voteCast, 0);
   });
@@ -93,9 +93,9 @@ void main() {
       houseId,
     );
 
-    final votes = await (harness.db.select(harness.db.proposalVotesSync)
-          ..where((t) => t.proposalId.equals(proposalId)))
-        .get();
+    final votes = await (harness.db.select(
+      harness.db.proposalVotesSync,
+    )..where((t) => t.proposalId.equals(proposalId))).get();
     expect(votes.length, 2);
   });
 }

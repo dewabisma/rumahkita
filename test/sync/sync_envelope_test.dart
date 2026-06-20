@@ -64,8 +64,9 @@ void main() {
         ),
       ],
     );
-    final decoded =
-        SyncEnvelope.fromJson(jsonDecode(jsonEncode(envelope.toJson())));
+    final decoded = SyncEnvelope.fromJson(
+      jsonDecode(jsonEncode(envelope.toJson())),
+    );
     expect(decoded.envelopeId, envelope.envelopeId);
     expect(decoded.ops.first.payload['action'], 'test');
   });

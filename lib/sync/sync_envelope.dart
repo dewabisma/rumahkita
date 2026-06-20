@@ -48,9 +48,7 @@ class SyncEnvelope {
 }
 
 class EnvelopeValidationResult {
-  const EnvelopeValidationResult.valid()
-      : isValid = true,
-        reason = null;
+  const EnvelopeValidationResult.valid() : isValid = true, reason = null;
 
   const EnvelopeValidationResult.invalid(this.reason) : isValid = false;
 
@@ -61,7 +59,9 @@ class EnvelopeValidationResult {
 class SyncEnvelopeValidator {
   static EnvelopeValidationResult validateProtocol(SyncEnvelope envelope) {
     if (envelope.protocolVersion != syncProtocolVersion) {
-      return const EnvelopeValidationResult.invalid(RejectReason.invalidProtocol);
+      return const EnvelopeValidationResult.invalid(
+        RejectReason.invalidProtocol,
+      );
     }
     return const EnvelopeValidationResult.valid();
   }
@@ -75,7 +75,9 @@ class SyncEnvelopeValidator {
     }
     for (final op in envelope.ops) {
       if (op.houseId != activeHouseId) {
-        return const EnvelopeValidationResult.invalid(RejectReason.houseMismatch);
+        return const EnvelopeValidationResult.invalid(
+          RejectReason.houseMismatch,
+        );
       }
     }
     return const EnvelopeValidationResult.valid();

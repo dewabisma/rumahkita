@@ -11,13 +11,21 @@ import 'sync_test_harness.dart';
 
 void main() {
   test('lower HLC nickname write is rejected after higher HLC write', () async {
-    final peerA = await SyncTestHarness.create(deviceId: 'device-a', nodeKey: 'node-a');
-    final peerB = await SyncTestHarness.create(deviceId: 'device-b', nodeKey: 'node-b');
+    final peerA = await SyncTestHarness.create(
+      deviceId: 'device-a',
+      nodeKey: 'node-a',
+    );
+    final peerB = await SyncTestHarness.create(
+      deviceId: 'device-b',
+      nodeKey: 'node-b',
+    );
     const uuid = Uuid();
     final houseId = uuid.v4();
     final memberId = uuid.v4();
 
-    await peerA.db.into(peerA.db.housematesSync).insert(
+    await peerA.db
+        .into(peerA.db.housematesSync)
+        .insert(
           HousematesSyncCompanion.insert(
             memberId: memberId,
             houseId: houseId,
@@ -55,9 +63,9 @@ void main() {
     final result = await peerB.apply(lowOp, houseId);
     expect(result.rejectedOpIds.length, 1);
 
-    final member = await (peerA.db.select(peerA.db.housematesSync)
-          ..where((t) => t.memberId.equals(memberId)))
-        .getSingle();
+    final member = await (peerA.db.select(
+      peerA.db.housematesSync,
+    )..where((t) => t.memberId.equals(memberId))).getSingle();
     expect(member.nickname, 'Winner');
     expect(member.nicknameDeviceId, peerA.deviceId);
   });

@@ -6,9 +6,11 @@ import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
+import 'package:rumah/data/repositories/drift_task_repository.dart';
 import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/domain/repositories/house_repositories.dart';
 import 'package:rumah/domain/repositories/local_settings_repository.dart';
+import 'package:rumah/domain/repositories/task_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
 import 'package:rumah/services/sync_service.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
@@ -27,6 +29,7 @@ class AppState {
     required this.housemateRepository,
     required this.auditLogRepository,
     required this.ceremonyRepository,
+    required this.taskRepository,
     required this.syncWriteCoordinator,
     required this.localSettingsRepository,
     required this.syncService,
@@ -41,6 +44,7 @@ class AppState {
   final HousemateRepository housemateRepository;
   final AuditLogRepository auditLogRepository;
   final CeremonyRepository ceremonyRepository;
+  final TaskRepository taskRepository;
   final SyncWriteCoordinator syncWriteCoordinator;
   final LocalSettingsRepository localSettingsRepository;
   final SyncService syncService;
@@ -72,6 +76,10 @@ final auditLogRepositoryProvider = Provider<AuditLogRepository>(
 
 final ceremonyRepositoryProvider = Provider<CeremonyRepository>(
   (ref) => ref.watch(appStateProvider).ceremonyRepository,
+);
+
+final taskRepositoryProvider = Provider<TaskRepository>(
+  (ref) => ref.watch(appStateProvider).taskRepository,
 );
 
 final syncWriteCoordinatorProvider = Provider<SyncWriteCoordinator>(
@@ -107,17 +115,19 @@ Future<AppState> createAppState({
 }) async {
   final db = testDatabase ?? await openAppDatabase();
   final identity = DeviceIdentityService();
-  final deviceId =
-      testDeviceId ?? await identity.getOrCreateDeviceId();
+  final deviceId = testDeviceId ?? await identity.getOrCreateDeviceId();
   final nodeKey = testNodeKey ?? await identity.getOrCreateNodeKey();
 
   final hlcService = HlcService(deviceId: deviceId);
   final hlcBytes = hlcService.toBytes(hlcService.now());
 
-  final existingSettings =
-      await (db.select(db.localUserSettings)).getSingleOrNull();
+  final existingSettings = await (db.select(
+    db.localUserSettings,
+  )).getSingleOrNull();
   if (existingSettings == null) {
-    await db.into(db.localUserSettings).insert(
+    await db
+        .into(db.localUserSettings)
+        .insert(
           LocalUserSettingsCompanion.insert(
             deviceId: deviceId,
             tailscaleNodeId: Value(nodeKey),
@@ -146,7 +156,8 @@ Future<AppState> createAppState({
   final dir = testDatabase != null
       ? null
       : await getApplicationSupportDirectory();
-  final meshService = testMeshService ??
+  final meshService =
+      testMeshService ??
       TailscaleMeshService(
         stateDirectory: dir != null
             ? p.join(dir.path, 'tailscale')
@@ -168,6 +179,10 @@ Future<AppState> createAppState({
     sync: syncWriteCoordinator,
   );
   final ceremonyRepository = DriftCeremonyRepository(
+    db: db,
+    sync: syncWriteCoordinator,
+  );
+  final taskRepository = DriftTaskRepository(
     db: db,
     sync: syncWriteCoordinator,
   );
@@ -193,6 +208,7 @@ Future<AppState> createAppState({
     housemateRepository: housemateRepository,
     auditLogRepository: auditLogRepository,
     ceremonyRepository: ceremonyRepository,
+    taskRepository: taskRepository,
     syncWriteCoordinator: syncWriteCoordinator,
     localSettingsRepository: localSettingsRepository,
     syncService: syncService,

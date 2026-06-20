@@ -12,7 +12,9 @@ void main() {
     final memberId = uuid.v4();
     final opId = uuid.v4();
 
-    await harness.db.into(harness.db.houseSync).insert(
+    await harness.db
+        .into(harness.db.houseSync)
+        .insert(
           HouseSyncCompanion.insert(
             houseId: houseId,
             displayName: 'House',

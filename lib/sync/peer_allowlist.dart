@@ -75,17 +75,17 @@ class PeerAllowlist {
 
 class AllowlistCheckResult {
   const AllowlistCheckResult.allowed()
-      : allowed = true,
-        reason = null,
-        credentialNonce = null;
+    : allowed = true,
+      reason = null,
+      credentialNonce = null;
 
   const AllowlistCheckResult.allowedWithCredential(this.credentialNonce)
-      : allowed = true,
-        reason = null;
+    : allowed = true,
+      reason = null;
 
   const AllowlistCheckResult.rejected(this.reason)
-      : allowed = false,
-        credentialNonce = null;
+    : allowed = false,
+      credentialNonce = null;
 
   final bool allowed;
   final RejectReason? reason;

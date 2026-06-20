@@ -21,7 +21,9 @@ void main() {
     final houseId = uuid.v4();
     final cycleId = uuid.v4();
 
-    await harness.db.into(harness.db.houseSync).insert(
+    await harness.db
+        .into(harness.db.houseSync)
+        .insert(
           HouseSyncCompanion.insert(
             houseId: houseId,
             displayName: 'Home',
@@ -31,7 +33,9 @@ void main() {
             updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
           ),
         );
-    await harness.db.into(harness.db.cyclesSync).insert(
+    await harness.db
+        .into(harness.db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: houseId,
@@ -54,9 +58,9 @@ void main() {
       houseId,
     );
 
-    final cycle = await (harness.db.select(harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingle();
+    final cycle = await (harness.db.select(
+      harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingle();
     expect(cycle.ceremonySignoffs, '{}');
     expect(cycle.rulesVersionAtSignoff, 2);
   });
@@ -68,7 +72,9 @@ void main() {
     final cycleId = uuid.v4();
     final taskId = uuid.v4();
 
-    await harness.db.into(harness.db.houseSync).insert(
+    await harness.db
+        .into(harness.db.houseSync)
+        .insert(
           HouseSyncCompanion.insert(
             houseId: houseId,
             displayName: 'Home',
@@ -77,7 +83,9 @@ void main() {
             updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
           ),
         );
-    await harness.db.into(harness.db.cyclesSync).insert(
+    await harness.db
+        .into(harness.db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: houseId,
@@ -87,7 +95,9 @@ void main() {
             updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
           ),
         );
-    await harness.db.into(harness.db.tasksSync).insert(
+    await harness.db
+        .into(harness.db.tasksSync)
+        .insert(
           TasksSyncCompanion.insert(
             taskId: taskId,
             houseId: houseId,
@@ -106,18 +116,14 @@ void main() {
         houseId: houseId,
         originDeviceId: harness.deviceId,
         hlc: base64Encode(harness.hlcService.toBytes(harness.hlcService.now())),
-        payload: {
-          'task_id': taskId,
-          'field': 'negotiated_points',
-          'value': 20,
-        },
+        payload: {'task_id': taskId, 'field': 'negotiated_points', 'value': 20},
       ),
       houseId,
     );
 
-    final cycle = await (harness.db.select(harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingle();
+    final cycle = await (harness.db.select(
+      harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingle();
     expect(cycle.ceremonySignoffs, '{}');
   });
 
@@ -136,14 +142,14 @@ void main() {
       actorMemberId: seed.memberA,
     );
 
-    final house = await (seed.harness.db.select(seed.harness.db.houseSync)
-          ..where((t) => t.houseId.equals(seed.houseId)))
-        .getSingle();
+    final house = await (seed.harness.db.select(
+      seed.harness.db.houseSync,
+    )..where((t) => t.houseId.equals(seed.houseId))).getSingle();
     expect(house.rulesVersion, 1);
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
+    final cycle = await (seed.harness.db.select(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
     expect(cycle.ceremonySignoffs, '{}');
     expect(cycle.rulesVersionAtSignoff, 1);
   });
@@ -157,7 +163,9 @@ void main() {
     const uuid = Uuid();
     final taskId = uuid.v4();
 
-    await seed.harness.db.into(seed.harness.db.tasksSync).insert(
+    await seed.harness.db
+        .into(seed.harness.db.tasksSync)
+        .insert(
           TasksSyncCompanion.insert(
             taskId: taskId,
             houseId: seed.houseId,
@@ -165,13 +173,14 @@ void main() {
             title: 'Dishes',
             negotiatedPoints: 10,
             status: 'open',
-            updatedAtHlc:
-                seed.harness.hlcService.toBytes(seed.harness.hlcService.now()),
+            updatedAtHlc: seed.harness.hlcService.toBytes(
+              seed.harness.hlcService.now(),
+            ),
           ),
         );
-    await (seed.harness.db.update(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .write(
+    await (seed.harness.db.update(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).write(
       const CyclesSyncCompanion(
         ceremonySignoffs: Value('{"member-a":{"accepted":true}}'),
       ),
@@ -184,9 +193,9 @@ void main() {
       actorMemberId: seed.memberA,
     );
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
+    final cycle = await (seed.harness.db.select(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
     expect(cycle.ceremonySignoffs, '{}');
     expect(cycle.rulesVersionAtSignoff, 1);
   });
@@ -200,7 +209,9 @@ void main() {
     const uuid = Uuid();
     final taskId = uuid.v4();
 
-    await seed.harness.db.into(seed.harness.db.tasksSync).insert(
+    await seed.harness.db
+        .into(seed.harness.db.tasksSync)
+        .insert(
           TasksSyncCompanion.insert(
             taskId: taskId,
             houseId: seed.houseId,
@@ -208,13 +219,14 @@ void main() {
             title: 'Trash',
             negotiatedPoints: 5,
             status: 'open',
-            updatedAtHlc:
-                seed.harness.hlcService.toBytes(seed.harness.hlcService.now()),
+            updatedAtHlc: seed.harness.hlcService.toBytes(
+              seed.harness.hlcService.now(),
+            ),
           ),
         );
-    await (seed.harness.db.update(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .write(
+    await (seed.harness.db.update(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).write(
       const CyclesSyncCompanion(
         ceremonySignoffs: Value('{"member-a":{"accepted":true}}'),
       ),
@@ -226,49 +238,52 @@ void main() {
       actorMemberId: seed.memberA,
     );
 
-    final task = await (seed.harness.db.select(seed.harness.db.tasksSync)
-          ..where((t) => t.taskId.equals(taskId)))
-        .getSingle();
+    final task = await (seed.harness.db.select(
+      seed.harness.db.tasksSync,
+    )..where((t) => t.taskId.equals(taskId))).getSingle();
     expect(task.status, TaskStatus.archived.wireValue);
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
+    final cycle = await (seed.harness.db.select(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
     expect(cycle.ceremonySignoffs, '{}');
   });
 
-  test('new member joins during drafting clears signoffs via rules bump', () async {
-    final seed = await _seedDraftingHouse(await SyncTestHarness.create());
-    await (seed.harness.db.update(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .write(
-      const CyclesSyncCompanion(
-        ceremonySignoffs: Value('{"member-a":{"accepted":true}}'),
-      ),
-    );
+  test(
+    'new member joins during drafting clears signoffs via rules bump',
+    () async {
+      final seed = await _seedDraftingHouse(await SyncTestHarness.create());
+      await (seed.harness.db.update(
+        seed.harness.db.cyclesSync,
+      )..where((t) => t.cycleId.equals(seed.cycleId))).write(
+        const CyclesSyncCompanion(
+          ceremonySignoffs: Value('{"member-a":{"accepted":true}}'),
+        ),
+      );
 
-    const uuid = Uuid();
-    final memberB = uuid.v4();
-    await seed.harness.housemateRepository.joinHousemate(
-      houseId: seed.houseId,
-      memberId: memberB,
-      tailscaleUserId: 'user-b',
-      tailscaleNodeKey: 'node-b',
-      nickname: 'B',
-      rotationOrderIndex: 1,
-    );
+      const uuid = Uuid();
+      final memberB = uuid.v4();
+      await seed.harness.housemateRepository.joinHousemate(
+        houseId: seed.houseId,
+        memberId: memberB,
+        tailscaleUserId: 'user-b',
+        tailscaleNodeKey: 'node-b',
+        nickname: 'B',
+        rotationOrderIndex: 1,
+      );
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
-    expect(cycle.ceremonySignoffs, '{}');
-    expect(cycle.rulesVersionAtSignoff, 1);
+      final cycle = await (seed.harness.db.select(
+        seed.harness.db.cyclesSync,
+      )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
+      expect(cycle.ceremonySignoffs, '{}');
+      expect(cycle.rulesVersionAtSignoff, 1);
 
-    final house = await (seed.harness.db.select(seed.harness.db.houseSync)
-          ..where((t) => t.houseId.equals(seed.houseId)))
-        .getSingle();
-    expect(house.rulesVersion, 1);
-  });
+      final house = await (seed.harness.db.select(
+        seed.harness.db.houseSync,
+      )..where((t) => t.houseId.equals(seed.houseId))).getSingle();
+      expect(house.rulesVersion, 1);
+    },
+  );
 
   test('activation rejected when rulesVersionAtSignoff is stale', () async {
     final seed = await _seedDraftingHouse(await SyncTestHarness.create());
@@ -287,9 +302,9 @@ void main() {
       memberId: seed.memberA,
     );
 
-    final cycle = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(seed.cycleId)))
-        .getSingle();
+    final cycle = await (seed.harness.db.select(
+      seed.harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(seed.cycleId))).getSingle();
     expect(cycle.status, CycleStatus.drafting.wireValue);
   });
 
@@ -308,13 +323,13 @@ void main() {
 
     expect(first.cycleId, second.cycleId);
 
-    final cycles = await (seed.harness.db.select(seed.harness.db.cyclesSync)
-          ..where(
-            (t) =>
-                t.houseId.equals(seed.houseId) &
-                t.status.equals(CycleStatus.drafting.wireValue),
-          ))
-        .get();
+    final cycles =
+        await (seed.harness.db.select(seed.harness.db.cyclesSync)..where(
+              (t) =>
+                  t.houseId.equals(seed.houseId) &
+                  t.status.equals(CycleStatus.drafting.wireValue),
+            ))
+            .get();
     expect(cycles.length, 1);
   });
 
@@ -350,7 +365,9 @@ Future<_DraftingSeed> _seedDraftingHouse(
   final memberA = uuid.v4();
   final cycleId = uuid.v4();
 
-  await harness.db.into(harness.db.houseSync).insert(
+  await harness.db
+      .into(harness.db.houseSync)
+      .insert(
         HouseSyncCompanion.insert(
           houseId: houseId,
           displayName: 'Home',
@@ -359,7 +376,9 @@ Future<_DraftingSeed> _seedDraftingHouse(
           updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
         ),
       );
-  await harness.db.into(harness.db.housematesSync).insert(
+  await harness.db
+      .into(harness.db.housematesSync)
+      .insert(
         HousematesSyncCompanion.insert(
           memberId: memberA,
           houseId: houseId,
@@ -372,7 +391,9 @@ Future<_DraftingSeed> _seedDraftingHouse(
       );
 
   if (withCycle) {
-    await harness.db.into(harness.db.cyclesSync).insert(
+    await harness.db
+        .into(harness.db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: houseId,

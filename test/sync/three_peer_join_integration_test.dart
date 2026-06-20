@@ -20,12 +20,12 @@ Future<HandleEnvelopeResult> relayEnvelopeToPeer({
   required SyncEnvelope envelope,
   required String toNodeKey,
 }) async {
-  final housemates = await (toHarness.db.select(toHarness.db.housematesSync)
-        ..where((t) => t.houseId.equals(houseId)))
-      .get();
-  final consumed = await (toHarness.db.select(toHarness.db.consumedJoinCredentials)
-        ..where((t) => t.houseId.equals(houseId)))
-      .get();
+  final housemates = await (toHarness.db.select(
+    toHarness.db.housematesSync,
+  )..where((t) => t.houseId.equals(houseId))).get();
+  final consumed = await (toHarness.db.select(
+    toHarness.db.consumedJoinCredentials,
+  )..where((t) => t.houseId.equals(houseId))).get();
   final strategy = RosterAllowlistStrategy(
     PeerAllowlist(
       activeMemberNodeKeys: housemates
@@ -91,8 +91,9 @@ Future<void> bootstrapJoiner({
 
   const uuid = Uuid();
   final memberId = uuid.v4();
-  final rotationIndex =
-      await joiner.housemateRepository.nextRotationIndex(invite.houseId);
+  final rotationIndex = await joiner.housemateRepository.nextRotationIndex(
+    invite.houseId,
+  );
 
   await joiner.housemateRepository.joinHousemate(
     houseId: invite.houseId,
@@ -113,7 +114,11 @@ Future<void> bootstrapJoiner({
     envelope: joinEnvelope,
     toNodeKey: hostNodeKey,
   );
-  expect(relayResult.applied, isTrue, reason: '$nickname join should apply on host');
+  expect(
+    relayResult.applied,
+    isTrue,
+    reason: '$nickname join should apply on host',
+  );
   expect(relayResult.mergeResult?.appliedOpIds, isNotEmpty);
 }
 
@@ -121,7 +126,9 @@ SyncService buildSyncService(SyncTestHarness harness) {
   return SyncService(
     db: harness.db,
     syncWriteCoordinator: harness.syncCoordinator,
-    meshService: TailscaleMeshService(stateDirectory: '/tmp/${harness.nodeKey}'),
+    meshService: TailscaleMeshService(
+      stateDirectory: '/tmp/${harness.nodeKey}',
+    ),
     transport: TailscaleSyncTransport(),
     joinCredentialService: harness.joinCredentialService,
     localSettings: DriftLocalSettingsRepository(db: harness.db),
@@ -129,113 +136,120 @@ SyncService buildSyncService(SyncTestHarness harness) {
 }
 
 void main() {
-  test('host→B→C converge rosters, secrets match, nonces consumed on A and B',
-      () async {
-    final host = await SyncTestHarness.create(
-      deviceId: 'device-host',
-      nodeKey: 'node-host',
-    );
-    final peerB = await SyncTestHarness.create(
-      deviceId: 'device-b',
-      nodeKey: 'node-b',
-    );
-    final peerC = await SyncTestHarness.create(
-      deviceId: 'device-c',
-      nodeKey: 'node-c',
-    );
+  test(
+    'host→B→C converge rosters, secrets match, nonces consumed on A and B',
+    () async {
+      final host = await SyncTestHarness.create(
+        deviceId: 'device-host',
+        nodeKey: 'node-host',
+      );
+      final peerB = await SyncTestHarness.create(
+        deviceId: 'device-b',
+        nodeKey: 'node-b',
+      );
+      final peerC = await SyncTestHarness.create(
+        deviceId: 'device-c',
+        nodeKey: 'node-c',
+      );
 
-    final hostSync = buildSyncService(host);
-    final syncB = buildSyncService(peerB);
-    final syncC = buildSyncService(peerC);
+      final hostSync = buildSyncService(host);
+      final syncB = buildSyncService(peerB);
+      final syncC = buildSyncService(peerC);
 
-    const uuid = Uuid();
-    final hostMemberId = uuid.v4();
-    final house = await host.houseRepository.createHouse(
-      displayName: 'Three Peer House',
-      creatorMemberId: hostMemberId,
-    );
-    await host.housemateRepository.addCreatorHousemate(
-      houseId: house.houseId,
-      memberId: hostMemberId,
-      tailscaleUserId: 'user-host',
-      tailscaleNodeKey: host.nodeKey,
-      nickname: 'Host',
-    );
+      const uuid = Uuid();
+      final hostMemberId = uuid.v4();
+      final house = await host.houseRepository.createHouse(
+        displayName: 'Three Peer House',
+        creatorMemberId: hostMemberId,
+      );
+      await host.housemateRepository.addCreatorHousemate(
+        houseId: house.houseId,
+        memberId: hostMemberId,
+        tailscaleUserId: 'user-host',
+        tailscaleNodeKey: host.nodeKey,
+        nickname: 'Host',
+      );
 
-    final inviteB = await host.houseRepository.buildInvite(
-      houseId: house.houseId,
-      hostNodeKey: host.nodeKey,
-      hostMagicDns: 'localhost',
-    );
+      final inviteB = await host.houseRepository.buildInvite(
+        houseId: house.houseId,
+        hostNodeKey: host.nodeKey,
+        hostMagicDns: 'localhost',
+      );
 
-    await bootstrapJoiner(
-      host: host,
-      joiner: peerB,
-      hostSync: hostSync,
-      joinerSync: syncB,
-      hostNodeKey: host.nodeKey,
-      invite: inviteB,
-      nickname: 'Roommate B',
-    );
+      await bootstrapJoiner(
+        host: host,
+        joiner: peerB,
+        hostSync: hostSync,
+        joinerSync: syncB,
+        hostNodeKey: host.nodeKey,
+        invite: inviteB,
+        nickname: 'Roommate B',
+      );
 
-    expect(
-      (await host.db.select(host.db.housematesSync).get()),
-      hasLength(2),
-    );
+      expect(
+        (await host.db.select(host.db.housematesSync).get()),
+        hasLength(2),
+      );
 
-    // Relay B's state to C via outbox replay path — C catch-up from host.
-    final inviteC = await host.houseRepository.buildInvite(
-      houseId: house.houseId,
-      hostNodeKey: host.nodeKey,
-      hostMagicDns: 'localhost',
-    );
+      // Relay B's state to C via outbox replay path — C catch-up from host.
+      final inviteC = await host.houseRepository.buildInvite(
+        houseId: house.houseId,
+        hostNodeKey: host.nodeKey,
+        hostMagicDns: 'localhost',
+      );
 
-    await bootstrapJoiner(
-      host: host,
-      joiner: peerC,
-      hostSync: hostSync,
-      joinerSync: syncC,
-      hostNodeKey: host.nodeKey,
-      invite: inviteC,
-      nickname: 'Roommate C',
-    );
+      await bootstrapJoiner(
+        host: host,
+        joiner: peerC,
+        hostSync: hostSync,
+        joinerSync: syncC,
+        hostNodeKey: host.nodeKey,
+        invite: inviteC,
+        nickname: 'Roommate C',
+      );
 
-    // Relay C join to B (mesh convergence).
-    final cJoinEnvelope = await latestJoinEnvelope(peerC);
-    final relayToB = await relayEnvelopeToPeer(
-      toHarness: peerB,
-      to: syncB,
-      houseId: house.houseId,
-      envelope: cJoinEnvelope,
-      toNodeKey: peerB.nodeKey,
-    );
-    expect(relayToB.applied, isTrue);
+      // Relay C join to B (mesh convergence).
+      final cJoinEnvelope = await latestJoinEnvelope(peerC);
+      final relayToB = await relayEnvelopeToPeer(
+        toHarness: peerB,
+        to: syncB,
+        houseId: house.houseId,
+        envelope: cJoinEnvelope,
+        toNodeKey: peerB.nodeKey,
+      );
+      expect(relayToB.applied, isTrue);
 
-    final rosterHost =
-        await host.db.select(host.db.housematesSync).get();
-    final rosterB = await peerB.db.select(peerB.db.housematesSync).get();
-    final rosterC = await peerC.db.select(peerC.db.housematesSync).get();
+      final rosterHost = await host.db.select(host.db.housematesSync).get();
+      final rosterB = await peerB.db.select(peerB.db.housematesSync).get();
+      final rosterC = await peerC.db.select(peerC.db.housematesSync).get();
 
-    expect(rosterHost, hasLength(3));
-    expect(rosterB, hasLength(3));
-    expect(rosterC, hasLength(3));
+      expect(rosterHost, hasLength(3));
+      expect(rosterB, hasLength(3));
+      expect(rosterC, hasLength(3));
 
-    final nicknames = rosterHost.map((m) => m.nickname).toSet();
-    expect(nicknames, {'Host', 'Roommate B', 'Roommate C'});
+      final nicknames = rosterHost.map((m) => m.nickname).toSet();
+      expect(nicknames, {'Host', 'Roommate B', 'Roommate C'});
 
-    final secretHost = await host.db.select(host.db.houseJoinSecrets).getSingle();
-    final secretB =
-        await peerB.db.select(peerB.db.houseJoinSecrets).getSingle();
-    final secretC =
-        await peerC.db.select(peerC.db.houseJoinSecrets).getSingle();
-    expect(secretB.secretBase64, secretHost.secretBase64);
-    expect(secretC.secretBase64, secretHost.secretBase64);
+      final secretHost = await host.db
+          .select(host.db.houseJoinSecrets)
+          .getSingle();
+      final secretB = await peerB.db
+          .select(peerB.db.houseJoinSecrets)
+          .getSingle();
+      final secretC = await peerC.db
+          .select(peerC.db.houseJoinSecrets)
+          .getSingle();
+      expect(secretB.secretBase64, secretHost.secretBase64);
+      expect(secretC.secretBase64, secretHost.secretBase64);
 
-    final consumedHost =
-        await host.db.select(host.db.consumedJoinCredentials).get();
-    final consumedB =
-        await peerB.db.select(peerB.db.consumedJoinCredentials).get();
-    expect(consumedHost, hasLength(2));
-    expect(consumedB, hasLength(1));
-  });
+      final consumedHost = await host.db
+          .select(host.db.consumedJoinCredentials)
+          .get();
+      final consumedB = await peerB.db
+          .select(peerB.db.consumedJoinCredentials)
+          .get();
+      expect(consumedHost, hasLength(2));
+      expect(consumedB, hasLength(1));
+    },
+  );
 }

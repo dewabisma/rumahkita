@@ -31,7 +31,9 @@ void main() {
     final houseId = uuid.v4();
     final memberId = uuid.v4();
 
-    await harness.db.into(harness.db.housematesSync).insert(
+    await harness.db
+        .into(harness.db.housematesSync)
+        .insert(
           HousematesSyncCompanion.insert(
             memberId: memberId,
             houseId: houseId,

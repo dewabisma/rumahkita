@@ -33,8 +33,9 @@ void main() {
       nickname: 'Host',
     );
 
-    final joinCredential =
-        await host.houseRepository.generateJoinCredential(house.houseId);
+    final joinCredential = await host.houseRepository.generateJoinCredential(
+      house.houseId,
+    );
 
     final hostSettings = DriftLocalSettingsRepository(db: host.db);
     final hostSync = SyncService(
@@ -81,8 +82,9 @@ void main() {
       displayName: 'Mismatch House',
       creatorMemberId: memberId,
     );
-    final joinCredential =
-        await host.houseRepository.generateJoinCredential(house.houseId);
+    final joinCredential = await host.houseRepository.generateJoinCredential(
+      house.houseId,
+    );
 
     final hostSettings = DriftLocalSettingsRepository(db: host.db);
     final hostSync = SyncService(

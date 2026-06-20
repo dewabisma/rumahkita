@@ -15,17 +15,12 @@ void main() {
     final eventId = uuid.v4();
     final memberId = uuid.v4();
 
-    await harness.db.into(harness.db.tasksSync).insert(
-          TasksSyncCompanion.insert(
-            taskId: taskId,
-            houseId: houseId,
-            cycleId: uuid.v4(),
-            title: 'Trash',
-            negotiatedPoints: 10,
-            status: 'open',
-            updatedAtHlc: harness.hlcService.toBytes(harness.hlcService.now()),
-          ),
-        );
+    await harness.seedTask(
+      houseId: houseId,
+      taskId: taskId,
+      cycleId: uuid.v4(),
+    );
+    await harness.seedHousemate(houseId: houseId, memberId: memberId);
 
     final op = harness.taskClaim(
       opId: uuid.v4(),
@@ -47,37 +42,25 @@ void main() {
       houseId,
     );
 
-    final events = await (harness.db.select(harness.db.taskClaimEvents)
-          ..where((t) => t.taskId.equals(taskId)))
-        .get();
+    final events = await (harness.db.select(
+      harness.db.taskClaimEvents,
+    )..where((t) => t.taskId.equals(taskId))).get();
     expect(events.length, 1);
   });
 
-  test('set union converges across peers', () async {
-    final peerA = await SyncTestHarness.create(deviceId: 'a', nodeKey: 'node-a');
-    final peerB = await SyncTestHarness.create(deviceId: 'b', nodeKey: 'node-b');
+  test('second claim is rejected when task already claimed', () async {
+    final harness = await SyncTestHarness.create();
     const uuid = Uuid();
     final houseId = uuid.v4();
     final taskId = uuid.v4();
     final cycleId = uuid.v4();
 
-    for (final harness in [peerA, peerB]) {
-      await harness.db.into(harness.db.tasksSync).insert(
-            TasksSyncCompanion.insert(
-              taskId: taskId,
-              houseId: houseId,
-              cycleId: cycleId,
-              title: 'Dishes',
-              negotiatedPoints: 15,
-              status: 'open',
-              updatedAtHlc:
-                  harness.hlcService.toBytes(harness.hlcService.now()),
-            ),
-          );
-    }
+    await harness.seedTask(houseId: houseId, taskId: taskId, cycleId: cycleId);
+    await harness.seedHousemate(houseId: houseId, memberId: 'member-1');
+    await harness.seedHousemate(houseId: houseId, memberId: 'member-2');
 
-    await peerA.apply(
-      peerA.taskClaim(
+    await harness.apply(
+      harness.taskClaim(
         opId: uuid.v4(),
         houseId: houseId,
         eventId: uuid.v4(),
@@ -86,8 +69,9 @@ void main() {
       ),
       houseId,
     );
-    await peerB.apply(
-      peerB.taskClaim(
+
+    final second = await harness.apply(
+      harness.taskClaim(
         opId: uuid.v4(),
         houseId: houseId,
         eventId: uuid.v4(),
@@ -96,25 +80,12 @@ void main() {
       ),
       houseId,
     );
+    expect(second.rejectedOpIds.length, 1);
 
-    final claimA = await (peerA.db.select(peerA.db.taskClaimEvents)
-          ..where((t) => t.taskId.equals(taskId)))
-        .get();
-    await peerB.apply(
-      peerB.taskClaim(
-        opId: uuid.v4(),
-        houseId: houseId,
-        eventId: claimA.single.eventId,
-        taskId: taskId,
-        memberId: claimA.single.memberId,
-      ),
-      houseId,
-    );
-
-    final taskB = await (peerB.db.select(peerB.db.tasksSync)
-          ..where((t) => t.taskId.equals(taskId)))
-        .getSingle();
-    expect(taskB.claimedByMemberIds, contains('member-1'));
-    expect(taskB.claimedByMemberIds, contains('member-2'));
+    final events = await (harness.db.select(
+      harness.db.taskClaimEvents,
+    )..where((t) => t.taskId.equals(taskId))).get();
+    expect(events.length, 1);
+    expect(events.single.memberId, 'member-1');
   });
 }

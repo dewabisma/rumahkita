@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
+import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
 import 'package:rumah/domain/enums/proposal_type.dart';
@@ -52,7 +53,9 @@ class SyncTestHarness {
   }) async {
     final db = openMemoryDatabase();
     final hlcService = HlcService(deviceId: deviceId);
-    await db.into(db.localUserSettings).insert(
+    await db
+        .into(db.localUserSettings)
+        .insert(
           LocalUserSettingsCompanion.insert(
             deviceId: deviceId,
             tailscaleNodeId: Value(nodeKey),
@@ -209,11 +212,7 @@ class SyncTestHarness {
       originDeviceId: deviceId,
       actorMemberId: memberId,
       hlc: base64Encode(hlcService.toBytes(hlcService.now())),
-      payload: {
-        'event_id': eventId,
-        'member_id': memberId,
-        'delta': delta,
-      },
+      payload: {'event_id': eventId, 'member_id': memberId, 'delta': delta},
     );
   }
 
@@ -229,13 +228,115 @@ class SyncTestHarness {
       opType: SyncOpType.taskClaim.wireValue,
       houseId: houseId,
       originDeviceId: deviceId,
+      actorMemberId: memberId,
       hlc: base64Encode(hlcService.toBytes(hlcService.now())),
-      payload: {
-        'event_id': eventId,
-        'task_id': taskId,
-        'member_id': memberId,
-      },
+      payload: {'event_id': eventId, 'task_id': taskId, 'member_id': memberId},
     );
+  }
+
+  SyncOperation taskStatusUpdate({
+    required String opId,
+    required String houseId,
+    required String taskId,
+    required String actorMemberId,
+    required TaskStatus from,
+    required TaskStatus to,
+  }) {
+    return opFactory.taskStatusUpdate(
+      opId: opId,
+      houseId: houseId,
+      taskId: taskId,
+      actorMemberId: actorMemberId,
+      from: from,
+      to: to,
+    );
+  }
+
+  SyncOperation auditLogAppend({
+    required String opId,
+    required String houseId,
+    required String logId,
+    required String taskId,
+    required String actorMemberId,
+    required String action,
+    String? justificationNotes,
+  }) {
+    return opFactory.auditLogAppend(
+      opId: opId,
+      houseId: houseId,
+      logId: logId,
+      taskId: taskId,
+      actorMemberId: actorMemberId,
+      action: action,
+      justificationNotes: justificationNotes,
+    );
+  }
+
+  Future<void> seedTask({
+    required String houseId,
+    required String taskId,
+    required String cycleId,
+    String status = 'open',
+    int points = 10,
+    List<String>? claimedByMemberIds,
+  }) async {
+    await db
+        .into(db.tasksSync)
+        .insert(
+          TasksSyncCompanion.insert(
+            taskId: taskId,
+            houseId: houseId,
+            cycleId: cycleId,
+            title: 'Test chore',
+            negotiatedPoints: points,
+            status: status,
+            claimedByMemberIds: Value(
+              claimedByMemberIds != null
+                  ? jsonEncode(claimedByMemberIds)
+                  : '[]',
+            ),
+            updatedAtHlc: hlcService.toBytes(hlcService.now()),
+          ),
+        );
+  }
+
+  Future<void> seedCycle({
+    required String houseId,
+    required String cycleId,
+    required String guardianMemberId,
+    String status = 'active',
+  }) async {
+    await db
+        .into(db.cyclesSync)
+        .insert(
+          CyclesSyncCompanion.insert(
+            cycleId: cycleId,
+            houseId: houseId,
+            activeGuardianMemberId: guardianMemberId,
+            status: status,
+            updatedAtHlc: hlcService.toBytes(hlcService.now()),
+          ),
+        );
+  }
+
+  Future<void> seedHousemate({
+    required String houseId,
+    required String memberId,
+    MemberStatus status = MemberStatus.active,
+  }) async {
+    await db
+        .into(db.housematesSync)
+        .insert(
+          HousematesSyncCompanion.insert(
+            memberId: memberId,
+            houseId: houseId,
+            tailscaleUserId: 'user-$memberId',
+            tailscaleNodeKey: 'node-$memberId',
+            nickname: 'Mate $memberId',
+            memberStatus: status.wireValue,
+            updatedAtHlc: hlcService.toBytes(hlcService.now()),
+          ),
+        );
   }
 
   SyncOperation cycleStatusTransition({
@@ -251,11 +352,7 @@ class SyncTestHarness {
       houseId: houseId,
       originDeviceId: deviceId,
       hlc: base64Encode(hlcService.toBytes(hlcService.now())),
-      payload: {
-        'cycle_id': cycleId,
-        if (from != null) 'from': from,
-        'to': to,
-      },
+      payload: {'cycle_id': cycleId, if (from != null) 'from': from, 'to': to},
     );
   }
 }

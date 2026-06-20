@@ -11,7 +11,9 @@ void main() {
     final houseId = uuid.v4();
     final cycleId = uuid.v4();
 
-    await harness.db.into(harness.db.cyclesSync).insert(
+    await harness.db
+        .into(harness.db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: houseId,
@@ -42,9 +44,9 @@ void main() {
       houseId,
     );
 
-    final cycle = await (harness.db.select(harness.db.cyclesSync)
-          ..where((t) => t.cycleId.equals(cycleId)))
-        .getSingle();
+    final cycle = await (harness.db.select(
+      harness.db.cyclesSync,
+    )..where((t) => t.cycleId.equals(cycleId))).getSingle();
     expect(cycle.status, 'completed');
   });
 
@@ -54,7 +56,9 @@ void main() {
     final houseId = uuid.v4();
     final cycleId = uuid.v4();
 
-    await harness.db.into(harness.db.cyclesSync).insert(
+    await harness.db
+        .into(harness.db.cyclesSync)
+        .insert(
           CyclesSyncCompanion.insert(
             cycleId: cycleId,
             houseId: houseId,

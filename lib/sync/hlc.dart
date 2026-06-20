@@ -5,8 +5,8 @@ import 'package:hlc_dart/hlc_dart.dart';
 /// Thin wrapper over [hlc_dart] for deterministic ordering and serialization.
 class HlcService {
   HlcService({required String deviceId})
-      : _deviceId = deviceId,
-        _clock = HybridLogicalClock.initialize();
+    : _deviceId = deviceId,
+      _clock = HybridLogicalClock.initialize();
 
   final String _deviceId;
   HybridLogicalClock _clock;
