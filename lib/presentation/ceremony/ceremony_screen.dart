@@ -48,7 +48,7 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/lobby');
+              context.push('/lobby');
             }
           },
         ),

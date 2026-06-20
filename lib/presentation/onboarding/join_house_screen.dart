@@ -109,6 +109,7 @@ class _JoinHouseScreenState extends ConsumerState<JoinHouseScreen> {
       title: 'Join a house',
       subtitle: 'Scan a QR code or paste the invite link from your roommate.',
       showBack: true,
+      backFallback: '/welcome',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -20,6 +20,7 @@ class InviteScreen extends ConsumerWidget {
       title: 'Invite roommates',
       subtitle: 'Share this link or QR so others can join your house.',
       showBack: true,
+      backFallback: '/welcome',
       header: const ConnectionStatusHeader(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

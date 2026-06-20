@@ -52,6 +52,7 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
       title: 'Name your house',
       subtitle: 'Give your shared home a cozy name and pick your nickname.',
       showBack: true,
+      backFallback: '/welcome',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

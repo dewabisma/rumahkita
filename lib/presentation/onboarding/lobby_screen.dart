@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
@@ -39,19 +40,24 @@ class LobbyScreen extends ConsumerWidget {
               children: [
                 Expanded(child: MemberRosterList(members: mates)),
                 SizedBox(height: spacing.radiusCard),
-                if (draftingCycle != null)
+                if (draftingCycle != null) ...[
                   Card(
                     color: colors.activeSurface,
                     child: Padding(
                       padding: EdgeInsets.all(spacing.radiusCard),
                       child: Text(
-                        'Ceremony in progress — head to the drafting screen to review rules.',
+                        'Ceremony in progress — review and accept house rules together.',
                         style: text.body?.copyWith(color: colors.active),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  )
-                else
+                  ),
+                  SizedBox(height: spacing.radiusSmall),
+                  FilledButton(
+                    onPressed: () => context.push('/ceremony'),
+                    child: const Text('Continue to ceremony'),
+                  ),
+                ] else
                   FilledButton(
                     onPressed: () => _startCeremony(ref, houseId, context),
                     child: const Text('Start Ceremony'),
@@ -74,5 +80,9 @@ class LobbyScreen extends ConsumerWidget {
     BuildContext context,
   ) async {
     await ref.read(ceremonyRepositoryProvider).startCeremony(houseId);
+    if (!context.mounted) {
+      return;
+    }
+    context.push('/ceremony');
   }
 }
