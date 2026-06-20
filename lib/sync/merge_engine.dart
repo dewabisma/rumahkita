@@ -129,7 +129,7 @@ class MergeEngine {
       case SyncOpType.houseCreate:
         return _applyHouseCreate(op);
       case SyncOpType.housemateCreate:
-        return _applyHousemateCreate(op);
+        return _applyHousemateCreate(op, sideEffects);
       case SyncOpType.houseDisplayNameUpdate:
         return _applyHouseDisplayNameUpdate(op);
       case SyncOpType.houseRulesVersionUpdate:
@@ -207,23 +207,28 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyHousemateCreate(SyncOperation op) async {
+  Future<bool> _applyHousemateCreate(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final payload = op.payload;
+    final memberId = payload['member_id'] as String;
     final existing =
         await (_db.select(_db.housematesSync)
-              ..where((t) => t.memberId.equals(payload['member_id'] as String)))
+              ..where((t) => t.memberId.equals(memberId)))
             .getSingleOrNull();
     if (existing != null) {
       return false;
     }
+    final nodeKey = payload['tailscale_node_key'] as String;
     await _db
         .into(_db.housematesSync)
         .insert(
           HousematesSyncCompanion.insert(
-            memberId: payload['member_id'] as String,
+            memberId: memberId,
             houseId: op.houseId,
             tailscaleUserId: payload['tailscale_user_id'] as String,
-            tailscaleNodeKey: payload['tailscale_node_key'] as String,
+            tailscaleNodeKey: nodeKey,
             nickname: payload['nickname'] as String,
             rotationOrderIndex: Value(payload['rotation_order_index'] as int?),
             memberStatus: (payload['member_status'] as String?) ?? 'active',
@@ -234,12 +239,20 @@ class MergeEngine {
         .into(_db.syncPeerAllowlist)
         .insert(
           SyncPeerAllowlistCompanion.insert(
-            tailscaleNodeKey: payload['tailscale_node_key'] as String,
+            tailscaleNodeKey: nodeKey,
             houseId: op.houseId,
-            memberId: Value(payload['member_id'] as String),
+            memberId: Value(memberId),
           ),
           mode: InsertMode.insertOrIgnore,
         );
+    sideEffects.add(
+      HousemateJoined(
+        houseId: op.houseId,
+        memberId: memberId,
+        tailscaleNodeKey: nodeKey,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
     return true;
   }
 

@@ -11,6 +11,7 @@ import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
 import 'package:rumah/domain/repositories/local_settings_repository.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
+import 'package:rumah/services/tailscale_acl_builder.dart';
 import 'package:rumah/services/tailscale_admin_api.dart';
 import 'package:rumah/sync/removal_op_ids.dart';
 import 'package:uuid/uuid.dart';
@@ -46,7 +47,9 @@ class RemovalExecutionWatcher {
       houseId: houseId,
       db: _ref.read(databaseProvider),
       sync: _ref.read(syncWriteCoordinatorProvider),
-      tailscaleAdmin: _ref.read(tailscaleAdminApiProvider),
+      tailscaleAdmin: await createTailscaleAdminApi(
+        _ref.read(localSettingsRepositoryProvider),
+      ),
       localSettings: _ref.read(localSettingsRepositoryProvider),
     );
   }
@@ -76,6 +79,13 @@ Future<void> runRemovalExecutionPoll({
   final nodeKey = settings?.tailscaleNodeId ?? 'local-node';
   final localNodeKey = await localSettings.getTailscaleNodeKey();
 
+  final isCreatorWithAdminKey = await _isCreatorWithAdminKey(
+    db: db,
+    houseId: houseId,
+    localNodeKey: localNodeKey,
+    localSettings: localSettings,
+  );
+
   for (final proposal in ready) {
     final executedOpId = removalExecutedOpId(proposal.proposalId);
     final applied = await (db.select(db.syncAppliedOps)
@@ -92,10 +102,50 @@ Future<void> runRemovalExecutionPoll({
       continue;
     }
 
+    if (!isCreatorWithAdminKey) {
+      final pendingOpId = removalPendingCreatorOpId(proposal.proposalId);
+      final pendingApplied = await (db.select(db.syncAppliedOps)
+            ..where((t) => t.opId.equals(pendingOpId)))
+          .getSingleOrNull();
+      if (pendingApplied == null) {
+        final logId = idGen.v4();
+        await sync.emitLocalOps(
+          houseId: houseId,
+          tailscaleNodeKey: nodeKey,
+          senderMemberId: null,
+          ops: [
+            sync.opFactory.auditLogAppend(
+              opId: pendingOpId,
+              houseId: houseId,
+              logId: logId,
+              taskId: proposal.proposalId,
+              actorMemberId: proposal.targetMemberId,
+              action: 'removal_execution_pending_creator',
+              justificationNotes: jsonEncode({
+                'proposal_id': proposal.proposalId,
+                'target_member_id': proposal.targetMemberId,
+              }),
+            ),
+          ],
+        );
+      }
+      continue;
+    }
+
     try {
       await tailscaleAdmin.invalidateNodeKey(
         tailscaleNodeKey: target.tailscaleNodeKey,
         houseId: houseId,
+      );
+
+      final activeMembers = await _loadActiveMembers(
+        db: db,
+        houseId: houseId,
+        excludeMemberId: proposal.targetMemberId,
+      );
+      await tailscaleAdmin.reconcileHouseAcl(
+        houseId: houseId,
+        activeMembers: activeMembers,
       );
     } on Object catch (e) {
       final logId = idGen.v4();
@@ -165,6 +215,51 @@ Future<void> runRemovalExecutionPoll({
       await localSettings.setActiveHouseId(null);
     }
   }
+}
+
+Future<bool> _isCreatorWithAdminKey({
+  required AppDatabase db,
+  required String houseId,
+  required String localNodeKey,
+  required LocalSettingsRepository localSettings,
+}) async {
+  final adminKey = await localSettings.getTailscaleAdminApiKey();
+  if (adminKey == null || adminKey.isEmpty) {
+    return false;
+  }
+  final house = await (db.select(db.houseSync)
+        ..where((t) => t.houseId.equals(houseId)))
+      .getSingleOrNull();
+  if (house == null) {
+    return false;
+  }
+  final creator = await (db.select(db.housematesSync)
+        ..where((t) => t.memberId.equals(house.creatorMemberId)))
+      .getSingleOrNull();
+  return creator?.tailscaleNodeKey == localNodeKey;
+}
+
+Future<List<HouseAclMember>> _loadActiveMembers({
+  required AppDatabase db,
+  required String houseId,
+  String? excludeMemberId,
+}) async {
+  final rows = await (db.select(db.housematesSync)
+        ..where(
+          (t) =>
+              t.houseId.equals(houseId) &
+              t.memberStatus.equals(MemberStatus.active.wireValue),
+        ))
+      .get();
+  return rows
+      .where((r) => r.memberId != excludeMemberId)
+      .map(
+        (r) => HouseAclMember(
+          memberId: r.memberId,
+          tailscaleNodeKey: r.tailscaleNodeKey,
+        ),
+      )
+      .toList();
 }
 
 final removalExecutionWatcherProvider = Provider<RemovalExecutionWatcher>((ref) {

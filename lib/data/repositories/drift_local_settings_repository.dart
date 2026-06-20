@@ -1,20 +1,22 @@
 import 'package:drift/drift.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rumah/data/local/app_database.dart';
+import 'package:rumah/data/repositories/secure_key_value_store.dart';
 import 'package:rumah/domain/repositories/local_settings_repository.dart';
 
 class DriftLocalSettingsRepository implements LocalSettingsRepository {
   DriftLocalSettingsRepository({
     required AppDatabase db,
-    FlutterSecureStorage? secureStorage,
+    SecureKeyValueStore? secureStorage,
   })  : _db = db,
-        _secureStorage = secureStorage ?? const FlutterSecureStorage();
+        _secureStorage =
+            secureStorage ?? FlutterSecureKeyValueStore();
 
   static const _bootstrapHostKey = 'rumah_bootstrap_host_node_key';
   static const _tailscaleAuthKey = 'rumah_tailscale_auth_key';
+  static const _tailscaleAdminApiKey = 'rumah_tailscale_admin_api_key';
 
   final AppDatabase _db;
-  final FlutterSecureStorage _secureStorage;
+  final SecureKeyValueStore _secureStorage;
 
   @override
   Stream<String?> watchActiveHouseId() {
@@ -63,6 +65,19 @@ class DriftLocalSettingsRepository implements LocalSettingsRepository {
       await _secureStorage.delete(key: _tailscaleAuthKey);
     } else {
       await _secureStorage.write(key: _tailscaleAuthKey, value: authKey);
+    }
+  }
+
+  @override
+  Future<String?> getTailscaleAdminApiKey() =>
+      _secureStorage.read(key: _tailscaleAdminApiKey);
+
+  @override
+  Future<void> setTailscaleAdminApiKey(String? apiKey) async {
+    if (apiKey == null) {
+      await _secureStorage.delete(key: _tailscaleAdminApiKey);
+    } else {
+      await _secureStorage.write(key: _tailscaleAdminApiKey, value: apiKey);
     }
   }
 

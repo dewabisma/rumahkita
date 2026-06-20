@@ -14,6 +14,7 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
   final _displayNameController = TextEditingController();
   final _nicknameController = TextEditingController();
   final _authKeyController = TextEditingController();
+  final _adminApiKeyController = TextEditingController();
   bool _loading = false;
 
   @override
@@ -21,6 +22,7 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
     _displayNameController.dispose();
     _nicknameController.dispose();
     _authKeyController.dispose();
+    _adminApiKeyController.dispose();
     super.dispose();
   }
 
@@ -39,6 +41,9 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
           tailscaleAuthKey: _authKeyController.text.trim().isEmpty
               ? null
               : _authKeyController.text.trim(),
+          tailscaleAdminApiKey: _adminApiKeyController.text.trim().isEmpty
+              ? null
+              : _adminApiKeyController.text.trim(),
         );
     if (!mounted) {
       return;
@@ -73,6 +78,17 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
             decoration: const InputDecoration(
               labelText: 'Tailscale auth key (optional for dev)',
               hintText: 'tskey-auth-...',
+            ),
+            obscureText: true,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _adminApiKeyController,
+            decoration: const InputDecoration(
+              labelText: 'Tailscale admin API key (optional)',
+              hintText: 'tskey-api-...',
+              helperText:
+                  'Needs acl:write and devices:write scopes for house network isolation.',
             ),
             obscureText: true,
           ),

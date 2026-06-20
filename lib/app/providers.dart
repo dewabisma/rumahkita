@@ -14,7 +14,6 @@ import 'package:rumah/domain/repositories/local_settings_repository.dart';
 import 'package:rumah/domain/repositories/removal_repository.dart';
 import 'package:rumah/domain/repositories/task_repository.dart';
 import 'package:rumah/services/device_identity_service.dart';
-import 'package:rumah/services/stub_tailscale_admin_api.dart';
 import 'package:rumah/services/sync_service.dart';
 import 'package:rumah/services/tailscale_admin_api.dart';
 import 'package:rumah/services/tailscale_sync_transport.dart';
@@ -24,6 +23,7 @@ import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
 import 'package:rumah/sync/removal_merge_side_effect_handler.dart';
+import 'package:rumah/sync/tailscale_acl_merge_side_effect_handler.dart';
 import 'package:rumah/sync/join_credential.dart';
 import 'package:rumah/sync/merge_engine.dart';
 
@@ -162,11 +162,16 @@ Future<AppState> createAppState({
   final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
   final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(db);
   final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
+  final tailscaleAclSideEffectHandler = TailscaleAclMergeSideEffectHandler(
+    db: db,
+    localSettings: localSettingsRepository,
+  );
   final sideEffectHandler = CompositeMergeSideEffectHandler([
     ceremonySideEffectHandler,
     handoverSideEffectHandler,
     privilegeTierSideEffectHandler,
     removalSideEffectHandler,
+    tailscaleAclSideEffectHandler,
   ]);
   final syncWriteCoordinator = SyncWriteCoordinator(
     db: db,
@@ -179,7 +184,7 @@ Future<AppState> createAppState({
   privilegeTierSideEffectHandler.bindSync(syncWriteCoordinator);
   removalSideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
-  final tailscaleAdminApi = StubTailscaleAdminApi();
+  final tailscaleAdminApi = await createTailscaleAdminApi(localSettingsRepository);
 
   final dir = testDatabase != null
       ? null

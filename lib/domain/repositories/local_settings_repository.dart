@@ -13,6 +13,10 @@ abstract class LocalSettingsRepository {
 
   Future<void> setTailscaleAuthKey(String? authKey);
 
+  Future<String?> getTailscaleAdminApiKey();
+
+  Future<void> setTailscaleAdminApiKey(String? apiKey);
+
   Future<String> getDeviceId();
 
   Future<String> getTailscaleNodeKey();

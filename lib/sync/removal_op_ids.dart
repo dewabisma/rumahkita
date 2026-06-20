@@ -10,6 +10,9 @@ String removalEvictMemberOpId(String proposalId) => 'removal-evict-$proposalId';
 
 String removalAuditOpId(String logId) => 'removal-audit-$logId';
 
+String removalPendingCreatorOpId(String proposalId) =>
+    'removal-pending-creator-$proposalId';
+
 String removalProposalCreatedAuditOpId(String proposalId) =>
     'removal-audit-created-$proposalId';
 

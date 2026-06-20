@@ -145,6 +145,20 @@ class ProposalStatusChanged extends MergeSideEffect {
   final List<int> hlc;
 }
 
+class HousemateJoined extends MergeSideEffect {
+  const HousemateJoined({
+    required this.houseId,
+    required this.memberId,
+    required this.tailscaleNodeKey,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String memberId;
+  final String tailscaleNodeKey;
+  final List<int> hlc;
+}
+
 class RemovalReadyToExecute extends MergeSideEffect {
   const RemovalReadyToExecute({
     required this.houseId,

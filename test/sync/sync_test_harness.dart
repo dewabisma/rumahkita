@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/data/repositories/drift_local_settings_repository.dart';
+import 'package:rumah/data/repositories/secure_key_value_store.dart';
 import 'package:rumah/data/repositories/drift_removal_repository.dart';
 import 'package:rumah/domain/repositories/removal_repository.dart';
 import 'package:rumah/domain/enums/task_status.dart';
@@ -122,7 +123,10 @@ class SyncTestHarness {
       db: db,
       sync: syncCoordinator,
     );
-    final localSettingsRepository = DriftLocalSettingsRepository(db: db);
+    final localSettingsRepository = DriftLocalSettingsRepository(
+      db: db,
+      secureStorage: InMemorySecureKeyValueStore(),
+    );
     final removalRepository = DriftRemovalRepository(
       db: db,
       sync: syncCoordinator,

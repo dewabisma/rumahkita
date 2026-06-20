@@ -53,6 +53,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     required String displayName,
     required String nickname,
     String? tailscaleAuthKey,
+    String? tailscaleAdminApiKey,
   }) async {
     state = state.copyWith(
       phase: LobbyPhase.connectingTailscale,
@@ -67,6 +68,9 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
 
       if (tailscaleAuthKey != null && tailscaleAuthKey.isNotEmpty) {
         await localSettings.setTailscaleAuthKey(tailscaleAuthKey);
+      }
+      if (tailscaleAdminApiKey != null && tailscaleAdminApiKey.isNotEmpty) {
+        await localSettings.setTailscaleAdminApiKey(tailscaleAdminApiKey);
       }
       await mesh.up(authKey: tailscaleAuthKey);
 
