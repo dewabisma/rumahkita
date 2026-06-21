@@ -25,7 +25,7 @@ class LobbyScreen extends ConsumerWidget {
     return OnboardingScaffold(
       title: 'House lobby',
       subtitle: 'Everyone who has joined so far.',
-      showBack: true,
+      showSettingsMenu: true,
       header: const ConnectionStatusHeader(),
       child: houseIdAsync.when(
         data: (houseId) {

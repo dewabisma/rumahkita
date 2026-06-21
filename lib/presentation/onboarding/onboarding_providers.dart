@@ -22,6 +22,7 @@ class OnboardingState {
     this.invite,
     this.inviteLink,
     this.pendingJoinInvite,
+    this.pendingNickname,
     this.joinAttemptGeneration = 0,
   });
 
@@ -31,6 +32,7 @@ class OnboardingState {
   final JoinInvitePayload? invite;
   final String? inviteLink;
   final JoinInvitePayload? pendingJoinInvite;
+  final String? pendingNickname;
   final int joinAttemptGeneration;
 
   OnboardingState copyWith({
@@ -40,9 +42,11 @@ class OnboardingState {
     JoinInvitePayload? invite,
     String? inviteLink,
     JoinInvitePayload? pendingJoinInvite,
+    String? pendingNickname,
     int? joinAttemptGeneration,
     bool clearError = false,
     bool clearPendingJoinInvite = false,
+    bool clearPendingNickname = false,
   }) {
     return OnboardingState(
       phase: phase ?? this.phase,
@@ -53,6 +57,9 @@ class OnboardingState {
       pendingJoinInvite: clearPendingJoinInvite
           ? null
           : (pendingJoinInvite ?? this.pendingJoinInvite),
+      pendingNickname: clearPendingNickname
+          ? null
+          : (pendingNickname ?? this.pendingNickname),
       joinAttemptGeneration:
           joinAttemptGeneration ?? this.joinAttemptGeneration,
     );
@@ -65,8 +72,13 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
   @override
   OnboardingState build() => const OnboardingState();
 
+  void setPendingNickname(String nickname) {
+    state = state.copyWith(pendingNickname: nickname.trim());
+  }
+
   Future<void> bootstrapHost({
     required String displayName,
+    required String nickname,
     required String tailscaleAuthKey,
     required String tailscaleAdminApiKey,
   }) async {
@@ -93,8 +105,6 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       );
       final nodeKey = await localSettings.getTailscaleNodeKey();
       final deviceId = await localSettings.getDeviceId();
-      final nickname = generateRandomNickname();
-
       await housemateRepo.addCreatorHousemate(
         houseId: house.houseId,
         memberId: memberId,
@@ -270,7 +280,10 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
 
       state = state.copyWith(phase: LobbyPhase.joiningHouse);
       final memberId = _uuid.v4();
-      final nickname = generateRandomNickname();
+      final nickname =
+          state.pendingNickname?.trim().isNotEmpty == true
+              ? state.pendingNickname!.trim()
+              : generateRandomNickname();
       final rotationIndex = await housemateRepo.nextRotationIndex(
         invite.houseId,
       );
@@ -311,6 +324,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         phase: LobbyPhase.ready,
         houseId: invite.houseId,
         clearPendingJoinInvite: true,
+        clearPendingNickname: true,
       );
     } on Object catch (e) {
       if (_isJoinAttemptStale(generation)) {
@@ -330,6 +344,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     state = state.copyWith(
       joinAttemptGeneration: state.joinAttemptGeneration + 1,
       clearPendingJoinInvite: true,
+      clearPendingNickname: true,
       phase: LobbyPhase.idle,
       clearError: true,
     );
@@ -346,6 +361,39 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     await localSettings.setTailscaleAuthKey(null);
     await mesh.down();
     await mesh.clearAuthKey();
+  }
+
+  /// Clears local house data when this device is the only active member.
+  Future<bool> disbandSoloHouse() async {
+    final houseId =
+        state.houseId ?? await ref.read(activeHouseIdProvider.future);
+    if (houseId == null) {
+      return false;
+    }
+
+    final localMember = await ref.read(localMemberProvider.future);
+    final mates = await ref.read(housematesProvider(houseId).future);
+    final activeOthers = mates
+        .where(
+          (m) =>
+              m.memberStatus == MemberStatus.active &&
+              m.memberId != localMember?.memberId,
+        )
+        .length;
+    if (activeOthers > 0) {
+      return false;
+    }
+
+    final localSettings = ref.read(localSettingsRepositoryProvider);
+    final mesh = ref.read(meshServiceProvider);
+    final sync = ref.read(syncServiceProvider);
+
+    await sync.discardPartialJoin(houseId);
+    await localSettings.setActiveHouseId(null);
+    await localSettings.setBootstrapHostNodeKey(null);
+    await mesh.down();
+    state = const OnboardingState();
+    return true;
   }
 }
 
@@ -409,6 +457,26 @@ final canShareInviteProvider = FutureProvider<bool>((ref) async {
   }
 
   return ref.watch(isHouseCreatorProvider.future);
+});
+
+final canDisbandSoloHouseProvider = FutureProvider<bool>((ref) async {
+  final houseId = await ref.watch(activeHouseIdProvider.future);
+  if (houseId == null) {
+    return false;
+  }
+  final localMember = await ref.watch(localMemberProvider.future);
+  if (localMember == null) {
+    return false;
+  }
+  final mates = await ref.watch(housematesProvider(houseId).future);
+  final activeOthers = mates
+      .where(
+        (m) =>
+            m.memberStatus == MemberStatus.active &&
+            m.memberId != localMember.memberId,
+      )
+      .length;
+  return activeOthers == 0;
 });
 
 final localMemberProvider = FutureProvider<Housemate?>((ref) async {

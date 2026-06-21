@@ -8,6 +8,7 @@ import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
+import 'package:rumah/presentation/onboarding/widgets/onboarding_settings_action_sheet.dart';
 import 'package:rumah/theme/app_colors.dart';
 import 'package:rumah/theme/app_spacing.dart';
 import 'package:rumah/theme/app_text_styles.dart';
@@ -55,6 +56,13 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
         automaticallyImplyLeading: false,
         title: Text('Ceremony', style: text.sectionTitle),
         backgroundColor: colors.background,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => showOnboardingSettingsActionSheet(context, ref),
+          ),
+        ],
       ),
       body: SafeArea(
         child: houseIdAsync.when(

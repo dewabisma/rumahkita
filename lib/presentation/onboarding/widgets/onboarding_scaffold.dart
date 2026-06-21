@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rumah/presentation/onboarding/widgets/onboarding_app_bar.dart';
 import 'package:rumah/theme/app_colors.dart';
+import 'package:rumah/theme/app_spacing.dart';
+import 'package:rumah/theme/app_text_styles.dart';
 
 class OnboardingScaffold extends StatelessWidget {
   const OnboardingScaffold({
@@ -12,6 +15,7 @@ class OnboardingScaffold extends StatelessWidget {
     this.showBack = false,
     this.backFallback,
     this.onBack,
+    this.showSettingsMenu = false,
   });
 
   final String title;
@@ -21,55 +25,73 @@ class OnboardingScaffold extends StatelessWidget {
   final bool showBack;
   final String? backFallback;
   final Future<void> Function()? onBack;
+  final bool showSettingsMenu;
+
+  Future<void> _handleBack(BuildContext context) async {
+    if (onBack != null) {
+      await onBack!();
+    } else if (context.canPop()) {
+      context.pop();
+    } else if (backFallback != null) {
+      context.go(backFallback!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const colors = AppColors.defaultTheme();
+    final colors = context.themeColors;
+    final text = context.themeText;
+    final spacing = context.themeSpacing;
     final canNavigateBack =
         showBack && (context.canPop() || backFallback != null);
+    final inlineBack = canNavigateBack && !showSettingsMenu;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: canNavigateBack
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () async {
-                  if (onBack != null) {
-                    await onBack!();
-                  } else if (context.canPop()) {
-                    context.pop();
-                  } else if (backFallback != null) {
-                    context.go(backFallback!);
-                  }
-                },
-              )
-            : null,
-        automaticallyImplyLeading: false,
-      ),
+      backgroundColor: colors.background,
+      appBar: showSettingsMenu
+          ? OnboardingAppBar(
+              showBack: showBack,
+              backFallback: backFallback,
+              onBack: onBack,
+              showSettingsMenu: true,
+            )
+          : null,
       body: SafeArea(
+        top: !showSettingsMenu,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(spacing.radiusCard),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (inlineBack) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    onPressed: () => _handleBack(context),
+                  ),
+                ),
+                SizedBox(height: spacing.radiusSmall),
+              ],
               if (header != null) ...[
                 header!,
-                const SizedBox(height: 16),
+                SizedBox(height: spacing.radiusCard),
               ],
               Text(
                 title,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: colors.textPrimary,
-                    ),
+                style: text.sectionTitle?.copyWith(color: colors.textPrimary),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: spacing.radiusSmall),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: text.bodySmall?.copyWith(color: colors.textSecondary),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: spacing.radiusLarge),
               Expanded(child: child),
             ],
           ),

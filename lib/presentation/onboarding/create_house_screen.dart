@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rumah/domain/generate_random_nickname.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/onboarding_scaffold.dart';
 
@@ -12,13 +13,21 @@ class CreateHouseScreen extends ConsumerStatefulWidget {
 
 class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
   final _displayNameController = TextEditingController();
+  final _nicknameController = TextEditingController();
   final _authKeyController = TextEditingController();
   final _adminApiKeyController = TextEditingController();
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _nicknameController.text = generateRandomNickname();
+  }
+
+  @override
   void dispose() {
     _displayNameController.dispose();
+    _nicknameController.dispose();
     _authKeyController.dispose();
     _adminApiKeyController.dispose();
     super.dispose();
@@ -28,6 +37,12 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
     if (_displayNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a house name')),
+      );
+      return;
+    }
+    if (_nicknameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a nickname')),
       );
       return;
     }
@@ -43,6 +58,7 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
     setState(() => _loading = true);
     await ref.read(onboardingNotifierProvider.notifier).bootstrapHost(
           displayName: _displayNameController.text.trim(),
+          nickname: _nicknameController.text.trim(),
           tailscaleAuthKey: _authKeyController.text.trim(),
           tailscaleAdminApiKey: _adminApiKeyController.text.trim(),
         );
@@ -71,6 +87,16 @@ class _CreateHouseScreenState extends ConsumerState<CreateHouseScreen> {
                   TextField(
                     controller: _displayNameController,
                     decoration: const InputDecoration(labelText: 'House name'),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _nicknameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Your nickname',
+                      hintText: 'Roommate-a3f2',
+                      helperText: 'How roommates will see you in this house.',
+                    ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),

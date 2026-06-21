@@ -74,6 +74,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           subtitle: 'Have your roommate scan this QR code from Join a house.',
           showBack: true,
           backFallback: '/lobby',
+          showSettingsMenu: true,
           header: const ConnectionStatusHeader(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

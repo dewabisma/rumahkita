@@ -32,3 +32,10 @@ When appending, use the next `MEM-###` ID and this structure:
 - **Do instead:** Never trap users. Use `push`/`pop` to preserve stack where back should work; use `pushReplacement` only when the prior screen should be discarded. Every screen must have a clear exit: back button (`canPop` or `backFallback`), or a forward action to the next valid destination. Bidirectional flows (lobby ↔ ceremony) need buttons both ways. After actions that change phase (e.g. start ceremony), navigate to the appropriate screen.
 - **Context:** GoRouter routes, onboarding/ceremony/home flows, `OnboardingScaffold`, any new screen.
 - **Source:** user
+
+### MEM-003 — 2026-06-21
+- **Category:** ui
+- **Mistake:** Used web-style dropdown menus (`PopupMenuButton`, anchored popovers) for mobile settings and actions.
+- **Do instead:** Use mobile-native patterns: **modal bottom sheets / action sheets** for a short list of actions, or **navigate to a dedicated screen** when options need forms or more context. Reserve dropdowns for desktop/web layouts only.
+- **Context:** All Flutter presentation code — app bars, overflow menus, settings, destructive actions.
+- **Source:** user
