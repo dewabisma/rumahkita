@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rumah/app/providers.dart';
-import 'package:rumah/domain/entities/privilege_template.dart';
+import 'package:rumah/domain/entities/house_privilege.dart';
+import 'package:rumah/domain/entities/house_entities.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/domain/enums/member_status.dart';
 import 'package:rumah/presentation/ceremony/ceremony_providers.dart';
+import 'package:rumah/presentation/ceremony/widgets/ceremony_add_sheets.dart';
+import 'package:rumah/presentation/ceremony/widgets/ceremony_assignee_sheet.dart';
+import 'package:rumah/presentation/ceremony/widgets/ceremony_description_field.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 import 'package:rumah/presentation/onboarding/widgets/connection_status_header.dart';
 import 'package:rumah/presentation/onboarding/widgets/onboarding_settings_action_sheet.dart';
@@ -21,17 +26,13 @@ class CeremonyScreen extends ConsumerStatefulWidget {
 }
 
 class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
-  final _taskTitleController = TextEditingController();
-  final _taskPointsController = TextEditingController(text: '10');
   final Map<String, int> _taskPointsBaseline = {};
   final Map<String, String> _taskTitleBaseline = {};
-
-  @override
-  void dispose() {
-    _taskTitleController.dispose();
-    _taskPointsController.dispose();
-    super.dispose();
-  }
+  final Map<String, String> _taskDescriptionBaseline = {};
+  final Map<String, String> _taskAssigneeBaseline = {};
+  final Map<String, int> _privilegeCostBaseline = {};
+  final Map<String, String> _privilegeNameBaseline = {};
+  final Map<String, String> _privilegeDescriptionBaseline = {};
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +55,7 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
           },
         ),
         automaticallyImplyLeading: false,
+        centerTitle: true,
         title: Text('Ceremony', style: text.sectionTitle),
         backgroundColor: colors.background,
         actions: [
@@ -78,8 +80,8 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
                 }
                 final tasksAsync =
                     ref.watch(tasksForCycleProvider(cycle.cycleId));
-                final templatesAsync =
-                    ref.watch(privilegeTemplatesProvider(houseId));
+                final privilegesAsync =
+                    ref.watch(privilegesForCycleProvider(cycle.cycleId));
                 final signoffAsync =
                     ref.watch(ceremonySignoffStatusProvider(cycle.cycleId));
                 final matesAsync = ref.watch(housematesProvider(houseId));
@@ -107,50 +109,77 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
                             ),
                           ),
                           SizedBox(height: spacing.radiusCard),
-                          Text('Chores', style: text.sectionTitle),
+                          CeremonySectionHeader(
+                            title: 'Chores',
+                            addTooltip: 'Add chore',
+                            onAdd: () => showAddChoreSheet(
+                              context,
+                              houseId: houseId,
+                              cycleId: cycle.cycleId,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           tasksAsync.when(
                             data: (tasks) {
                               _seedTaskBaselines(tasks);
+                              final housemates =
+                                  matesAsync.asData?.value ?? const <Housemate>[];
                               return Column(
                                 children: [
-                                  ...tasks.map(
-                                    (task) => _TaskCard(
-                                      task: task,
-                                      colors: colors,
-                                      text: text,
-                                      spacing: spacing,
-                                      showDelta: _hasTaskDelta(task),
-                                      previousPoints:
-                                          _taskPointsBaseline[task.taskId],
-                                      previousTitle:
-                                          _taskTitleBaseline[task.taskId],
-                                      onArchive: () => _archiveTask(
-                                        houseId: houseId,
+                                  if (tasks.isEmpty)
+                                    const CeremonySectionEmptyState(
+                                      icon: Icons.checklist_outlined,
+                                      message:
+                                          'No chores yet — tap + when you\'re '
+                                          'ready to add the first one together.',
+                                    )
+                                  else
+                                    ...tasks.map(
+                                      (task) => _TaskCard(
                                         task: task,
-                                      ),
-                                      onPointsChanged: (points) =>
-                                          _updatePoints(
-                                        houseId: houseId,
-                                        task: task,
-                                        points: points,
-                                      ),
-                                      onTitleChanged: (title) => _updateTitle(
-                                        houseId: houseId,
-                                        task: task,
-                                        title: title,
+                                        housemates: housemates,
+                                        colors: colors,
+                                        text: text,
+                                        spacing: spacing,
+                                        showDelta: _hasTaskDelta(task),
+                                        previousPoints:
+                                            _taskPointsBaseline[task.taskId],
+                                        previousTitle:
+                                            _taskTitleBaseline[task.taskId],
+                                        previousDescription:
+                                            _taskDescriptionBaseline[task.taskId],
+                                        previousAssignee:
+                                            _taskAssigneeBaseline[task.taskId],
+                                        onArchive: () => _archiveTask(
+                                          houseId: houseId,
+                                          task: task,
+                                        ),
+                                        onPointsChanged: (points) =>
+                                            _updatePoints(
+                                          houseId: houseId,
+                                          task: task,
+                                          points: points,
+                                        ),
+                                        onTitleChanged: (title) =>
+                                            _updateTitle(
+                                          houseId: houseId,
+                                          task: task,
+                                          title: title,
+                                        ),
+                                        onDescriptionChanged: (description) =>
+                                            _updateDescription(
+                                          houseId: houseId,
+                                          task: task,
+                                          description: description,
+                                        ),
+                                        onAssigneeChanged: (assigneeId) =>
+                                            _updateAssignee(
+                                          houseId: houseId,
+                                          task: task,
+                                          assignedToMemberId: assigneeId,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  _AddTaskRow(
-                                    titleController: _taskTitleController,
-                                    pointsController: _taskPointsController,
-                                    spacing: spacing,
-                                    onAdd: () => _addTask(
-                                      houseId: houseId,
-                                      cycleId: cycle.cycleId,
-                                    ),
-                                  ),
                                 ],
                               );
                             },
@@ -159,27 +188,68 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
                             error: (e, _) => Text('Error: $e'),
                           ),
                           SizedBox(height: spacing.radiusCard),
-                          Text('Privileges', style: text.sectionTitle),
+                          CeremonySectionHeader(
+                            title: 'Privileges',
+                            addTooltip: 'Add perk',
+                            onAdd: () => showAddPrivilegeSheet(
+                              context,
+                              houseId: houseId,
+                              cycleId: cycle.cycleId,
+                            ),
+                          ),
                           const SizedBox(height: 8),
-                          templatesAsync.when(
-                            data: (templates) => Column(
-                              children: templates.values
-                                  .map(
-                                    (template) => _PrivilegeCard(
-                                      template: template,
+                          privilegesAsync.when(
+                            data: (privileges) {
+                              _seedPrivilegeBaselines(privileges);
+                              return Column(
+                                children: [
+                                  if (privileges.isEmpty)
+                                    const CeremonySectionEmptyState(
+                                      icon: Icons.emoji_events_outlined,
+                                      message:
+                                          'No perks yet — tap + to dream up '
+                                          'something worth earning points for.',
+                                    )
+                                  else
+                                    ...privileges.map(
+                                      (privilege) => _PrivilegeCard(
+                                      privilege: privilege,
                                       colors: colors,
                                       text: text,
                                       spacing: spacing,
-                                      onChanged: (updated) =>
-                                          _updatePrivilege(
+                                      showDelta: _hasPrivilegeDelta(privilege),
+                                      previousCost:
+                                          _privilegeCostBaseline[privilege.privilegeId],
+                                      previousName:
+                                          _privilegeNameBaseline[privilege.privilegeId],
+                                      previousDescription:
+                                          _privilegeDescriptionBaseline[
+                                              privilege.privilegeId],
+                                      onArchive: () => _archivePrivilege(
                                         houseId: houseId,
-                                        templates: templates,
-                                        updated: updated,
+                                        privilege: privilege,
+                                      ),
+                                      onCostChanged: (cost) => _updatePrivilegeCost(
+                                        houseId: houseId,
+                                        privilege: privilege,
+                                        pointCost: cost,
+                                      ),
+                                      onNameChanged: (name) => _updatePrivilegeName(
+                                        houseId: houseId,
+                                        privilege: privilege,
+                                        name: name,
+                                      ),
+                                      onDescriptionChanged: (description) =>
+                                          _updatePrivilegeDescription(
+                                        houseId: houseId,
+                                        privilege: privilege,
+                                        description: description,
                                       ),
                                     ),
-                                  )
-                                  .toList(),
-                            ),
+                                  ),
+                                ],
+                              );
+                            },
                             loading: () =>
                                 const Center(child: CircularProgressIndicator()),
                             error: (e, _) => Text('Error: $e'),
@@ -275,16 +345,32 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
         () => task.negotiatedPoints,
       );
       _taskTitleBaseline.putIfAbsent(task.taskId, () => task.title);
+      _taskDescriptionBaseline.putIfAbsent(
+        task.taskId,
+        () => task.description,
+      );
+      _taskAssigneeBaseline.putIfAbsent(
+        task.taskId,
+        () => task.assignedToMemberId,
+      );
     }
   }
 
   bool _hasTaskDelta(Task task) {
     final prevPoints = _taskPointsBaseline[task.taskId];
     final prevTitle = _taskTitleBaseline[task.taskId];
+    final prevDescription = _taskDescriptionBaseline[task.taskId];
+    final prevAssignee = _taskAssigneeBaseline[task.taskId];
     if (prevPoints != null && prevPoints != task.negotiatedPoints) {
       return true;
     }
     if (prevTitle != null && prevTitle != task.title) {
+      return true;
+    }
+    if (prevDescription != null && prevDescription != task.description) {
+      return true;
+    }
+    if (prevAssignee != null && prevAssignee != task.assignedToMemberId) {
       return true;
     }
     return false;
@@ -296,31 +382,14 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
       () => task.negotiatedPoints,
     );
     _taskTitleBaseline.putIfAbsent(task.taskId, () => task.title);
-  }
-
-  Future<void> _addTask({
-    required String houseId,
-    required String cycleId,
-  }) async {
-    final member = await ref.read(localMemberProvider.future);
-    if (member == null) {
-      return;
-    }
-    final title = _taskTitleController.text.trim();
-    final points = int.tryParse(_taskPointsController.text) ?? 10;
-    if (title.isEmpty) {
-      return;
-    }
-    final repo = ref.read(ceremonyRepositoryProvider);
-    await repo.addTask(
-      houseId: houseId,
-      cycleId: cycleId,
-      title: title,
-      points: points,
-      actorMemberId: member.memberId,
+    _taskDescriptionBaseline.putIfAbsent(
+      task.taskId,
+      () => task.description,
     );
-    _taskTitleController.clear();
-    _taskPointsController.text = '10';
+    _taskAssigneeBaseline.putIfAbsent(
+      task.taskId,
+      () => task.assignedToMemberId,
+    );
   }
 
   Future<void> _updateTitle({
@@ -337,6 +406,42 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
           houseId: houseId,
           taskId: task.taskId,
           title: title,
+          actorMemberId: member.memberId,
+        );
+  }
+
+  Future<void> _updateDescription({
+    required String houseId,
+    required Task task,
+    required String description,
+  }) async {
+    _captureBaseline(task);
+    final member = await ref.read(localMemberProvider.future);
+    if (member == null) {
+      return;
+    }
+    await ref.read(ceremonyRepositoryProvider).updateTaskDescription(
+          houseId: houseId,
+          taskId: task.taskId,
+          description: description,
+          actorMemberId: member.memberId,
+        );
+  }
+
+  Future<void> _updateAssignee({
+    required String houseId,
+    required Task task,
+    required String assignedToMemberId,
+  }) async {
+    _captureBaseline(task);
+    final member = await ref.read(localMemberProvider.future);
+    if (member == null) {
+      return;
+    }
+    await ref.read(ceremonyRepositoryProvider).updateTaskAssignee(
+          houseId: houseId,
+          taskId: task.taskId,
+          assignedToMemberId: assignedToMemberId,
           actorMemberId: member.memberId,
         );
   }
@@ -374,20 +479,120 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
         );
   }
 
-  Future<void> _updatePrivilege({
+  void _seedPrivilegeBaselines(List<HousePrivilege> privileges) {
+    for (final privilege in privileges) {
+      _privilegeCostBaseline.putIfAbsent(
+        privilege.privilegeId,
+        () => privilege.pointCost,
+      );
+      _privilegeNameBaseline.putIfAbsent(
+        privilege.privilegeId,
+        () => privilege.name,
+      );
+      _privilegeDescriptionBaseline.putIfAbsent(
+        privilege.privilegeId,
+        () => privilege.description,
+      );
+    }
+  }
+
+  bool _hasPrivilegeDelta(HousePrivilege privilege) {
+    final prevCost = _privilegeCostBaseline[privilege.privilegeId];
+    final prevName = _privilegeNameBaseline[privilege.privilegeId];
+    final prevDescription =
+        _privilegeDescriptionBaseline[privilege.privilegeId];
+    if (prevCost != null && prevCost != privilege.pointCost) {
+      return true;
+    }
+    if (prevName != null && prevName != privilege.name) {
+      return true;
+    }
+    if (prevDescription != null && prevDescription != privilege.description) {
+      return true;
+    }
+    return false;
+  }
+
+  void _capturePrivilegeBaseline(HousePrivilege privilege) {
+    _privilegeCostBaseline.putIfAbsent(
+      privilege.privilegeId,
+      () => privilege.pointCost,
+    );
+    _privilegeNameBaseline.putIfAbsent(
+      privilege.privilegeId,
+      () => privilege.name,
+    );
+    _privilegeDescriptionBaseline.putIfAbsent(
+      privilege.privilegeId,
+      () => privilege.description,
+    );
+  }
+
+  Future<void> _updatePrivilegeName({
     required String houseId,
-    required Map<String, PrivilegeTemplate> templates,
-    required PrivilegeTemplate updated,
+    required HousePrivilege privilege,
+    required String name,
+  }) async {
+    _capturePrivilegeBaseline(privilege);
+    final member = await ref.read(localMemberProvider.future);
+    if (member == null) {
+      return;
+    }
+    await ref.read(ceremonyRepositoryProvider).updatePrivilegeName(
+          houseId: houseId,
+          privilegeId: privilege.privilegeId,
+          name: name,
+          actorMemberId: member.memberId,
+        );
+  }
+
+  Future<void> _updatePrivilegeDescription({
+    required String houseId,
+    required HousePrivilege privilege,
+    required String description,
+  }) async {
+    _capturePrivilegeBaseline(privilege);
+    final member = await ref.read(localMemberProvider.future);
+    if (member == null) {
+      return;
+    }
+    await ref.read(ceremonyRepositoryProvider).updatePrivilegeDescription(
+          houseId: houseId,
+          privilegeId: privilege.privilegeId,
+          description: description,
+          actorMemberId: member.memberId,
+        );
+  }
+
+  Future<void> _updatePrivilegeCost({
+    required String houseId,
+    required HousePrivilege privilege,
+    required int pointCost,
+  }) async {
+    _capturePrivilegeBaseline(privilege);
+    final member = await ref.read(localMemberProvider.future);
+    if (member == null) {
+      return;
+    }
+    await ref.read(ceremonyRepositoryProvider).updatePrivilegePointCost(
+          houseId: houseId,
+          privilegeId: privilege.privilegeId,
+          pointCost: pointCost,
+          actorMemberId: member.memberId,
+        );
+  }
+
+  Future<void> _archivePrivilege({
+    required String houseId,
+    required HousePrivilege privilege,
   }) async {
     final member = await ref.read(localMemberProvider.future);
     if (member == null) {
       return;
     }
-    final next = Map<String, PrivilegeTemplate>.from(templates);
-    next[updated.id] = updated;
-    await ref.read(ceremonyRepositoryProvider).updatePrivilegeTemplates(
+    await ref.read(ceremonyRepositoryProvider).archivePrivilege(
           houseId: houseId,
-          templates: next,
+          privilegeId: privilege.privilegeId,
           actorMemberId: member.memberId,
         );
   }
@@ -405,6 +610,11 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
     setState(() {
       _taskPointsBaseline.clear();
       _taskTitleBaseline.clear();
+      _taskDescriptionBaseline.clear();
+      _taskAssigneeBaseline.clear();
+      _privilegeCostBaseline.clear();
+      _privilegeNameBaseline.clear();
+      _privilegeDescriptionBaseline.clear();
     });
   }
 }
@@ -412,31 +622,57 @@ class _CeremonyScreenState extends ConsumerState<CeremonyScreen> {
 class _TaskCard extends StatelessWidget {
   const _TaskCard({
     required this.task,
+    required this.housemates,
     required this.colors,
     required this.text,
     required this.spacing,
     required this.showDelta,
     required this.previousPoints,
     required this.previousTitle,
+    required this.previousDescription,
+    required this.previousAssignee,
     required this.onArchive,
     required this.onPointsChanged,
     required this.onTitleChanged,
+    required this.onDescriptionChanged,
+    required this.onAssigneeChanged,
   });
 
   final Task task;
+  final List<Housemate> housemates;
   final AppColors colors;
   final AppTextTheme text;
   final AppSizeTheme spacing;
   final bool showDelta;
   final int? previousPoints;
   final String? previousTitle;
+  final String? previousDescription;
+  final String? previousAssignee;
   final VoidCallback onArchive;
   final ValueChanged<int> onPointsChanged;
   final ValueChanged<String> onTitleChanged;
+  final ValueChanged<String> onDescriptionChanged;
+  final ValueChanged<String> onAssigneeChanged;
+
+  Future<void> _pickAssignee(BuildContext context) async {
+    final selected = await showCeremonyAssigneeSheet(
+      context,
+      housemates: housemates,
+      currentMemberId: task.assignedToMemberId,
+    );
+    if (selected != null) {
+      onAssigneeChanged(selected);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final deltaText = _deltaLabel();
+    final assigneeText = assigneeLabel(
+      assignedToMemberId: task.assignedToMemberId,
+      housemates: housemates,
+    );
+
     return Card(
       color: showDelta ? colors.activeSurface : colors.surfaceCard,
       margin: EdgeInsets.only(bottom: spacing.radiusSmall),
@@ -455,15 +691,22 @@ class _TaskCard extends StatelessWidget {
               onFieldSubmitted: onTitleChanged,
             ),
             const SizedBox(height: 8),
+            CeremonyDescriptionField(
+              initialValue: task.description,
+              style: text.body,
+              onSubmitted: onDescriptionChanged,
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     initialValue: '${task.negotiatedPoints}',
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: text.body,
                     decoration: const InputDecoration(
-                      labelText: 'Points',
+                      labelText: 'Points worth',
                       border: OutlineInputBorder(),
                     ),
                     onFieldSubmitted: (v) {
@@ -475,17 +718,23 @@ class _TaskCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Archive chore',
+                  tooltip: 'Remove chore',
                   onPressed: onArchive,
-                  icon: Icon(Icons.archive_outlined, color: colors.textMuted),
+                  icon: Icon(Icons.delete_outline, color: colors.textMuted),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _pickAssignee(context),
+              icon: const Icon(Icons.person_outline),
+              label: Text('Assigned to: $assigneeText'),
             ),
             if (deltaText != null) ...[
               SizedBox(height: spacing.radiusSmall),
               Text(
                 deltaText,
-                style: text.bodySmall?.copyWith(color: colors.active),
+                style: text.bodySmall?.copyWith(color: colors.textOnSunnyButter),
               ),
             ],
           ],
@@ -501,149 +750,126 @@ class _TaskCard extends StatelessWidget {
     if (previousTitle != null && previousTitle != task.title) {
       return 'Title updated: $previousTitle → ${task.title}';
     }
+    if (previousDescription != null &&
+        previousDescription != task.description) {
+      return 'Description updated';
+    }
+    if (previousAssignee != null &&
+        previousAssignee != task.assignedToMemberId) {
+      return 'Assignment updated';
+    }
     return null;
   }
 }
 
-class _AddTaskRow extends StatelessWidget {
-  const _AddTaskRow({
-    required this.titleController,
-    required this.pointsController,
-    required this.spacing,
-    required this.onAdd,
-  });
-
-  final TextEditingController titleController;
-  final TextEditingController pointsController;
-  final AppSizeTheme spacing;
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: 'New chore',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        SizedBox(width: spacing.radiusSmall),
-        SizedBox(
-          width: 72,
-          child: TextField(
-            controller: pointsController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Pts',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        IconButton(onPressed: onAdd, icon: const Icon(Icons.add_circle)),
-      ],
-    );
-  }
-}
-
-class _PrivilegeCard extends StatefulWidget {
+class _PrivilegeCard extends StatelessWidget {
   const _PrivilegeCard({
-    required this.template,
+    required this.privilege,
     required this.colors,
     required this.text,
     required this.spacing,
-    required this.onChanged,
+    required this.showDelta,
+    required this.previousCost,
+    required this.previousName,
+    required this.previousDescription,
+    required this.onArchive,
+    required this.onCostChanged,
+    required this.onNameChanged,
+    required this.onDescriptionChanged,
   });
 
-  final PrivilegeTemplate template;
+  final HousePrivilege privilege;
   final AppColors colors;
   final AppTextTheme text;
   final AppSizeTheme spacing;
-  final ValueChanged<PrivilegeTemplate> onChanged;
-
-  @override
-  State<_PrivilegeCard> createState() => _PrivilegeCardState();
-}
-
-class _PrivilegeCardState extends State<_PrivilegeCard> {
-  late double _threshold;
-
-  @override
-  void initState() {
-    super.initState();
-    _threshold = widget.template.unlockThreshold.toDouble();
-  }
-
-  @override
-  void didUpdateWidget(_PrivilegeCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.template.unlockThreshold != widget.template.unlockThreshold) {
-      _threshold = widget.template.unlockThreshold.toDouble();
-    }
-  }
+  final bool showDelta;
+  final int? previousCost;
+  final String? previousName;
+  final String? previousDescription;
+  final VoidCallback onArchive;
+  final ValueChanged<int> onCostChanged;
+  final ValueChanged<String> onNameChanged;
+  final ValueChanged<String> onDescriptionChanged;
 
   @override
   Widget build(BuildContext context) {
-    final template = widget.template;
+    final deltaText = _deltaLabel();
     return Card(
-      color: widget.colors.surfaceCard,
-      margin: EdgeInsets.only(bottom: widget.spacing.radiusSmall),
+      color: showDelta ? colors.activeSurface : colors.surfaceCard,
+      margin: EdgeInsets.only(bottom: spacing.radiusSmall),
       child: Padding(
-        padding: EdgeInsets.all(widget.spacing.radiusCard),
+        padding: EdgeInsets.all(spacing.radiusCard),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(template.name, style: widget.text.sectionTitle),
-                ),
-                Switch(
-                  value: template.enabled,
-                  onChanged: (v) =>
-                      widget.onChanged(template.copyWith(enabled: v)),
-                ),
-              ],
-            ),
-            Text(
-              template.description,
-              style: widget.text.bodySmall?.copyWith(
-                color: widget.colors.textSecondary,
+            TextFormField(
+              initialValue: privilege.name,
+              style: text.body,
+              decoration: const InputDecoration(
+                labelText: 'Perk name',
+                border: OutlineInputBorder(),
               ),
+              onFieldSubmitted: onNameChanged,
+            ),
+            const SizedBox(height: 8),
+            CeremonyDescriptionField(
+              initialValue: privilege.description,
+              style: text.body,
+              onSubmitted: onDescriptionChanged,
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Text('Threshold', style: widget.text.label),
-                SizedBox(width: widget.spacing.radiusSmall),
                 Expanded(
-                  child: Slider(
-                    value: _threshold,
-                    min: 0,
-                    max: 100,
-                    divisions: 20,
-                    label: '${_threshold.round()}',
-                    onChanged: template.enabled
-                        ? (v) => setState(() => _threshold = v)
-                        : null,
-                    onChangeEnd: template.enabled
-                        ? (v) => widget.onChanged(
-                              template.copyWith(unlockThreshold: v.round()),
-                            )
-                        : null,
+                  child: TextFormField(
+                    initialValue: '${privilege.pointCost}',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: text.body,
+                    decoration: const InputDecoration(
+                      labelText: 'Point cost',
+                      border: OutlineInputBorder(),
+                    ),
+                    onFieldSubmitted: (v) {
+                      final parsed = int.tryParse(v);
+                      if (parsed != null) {
+                        onCostChanged(parsed);
+                      }
+                    },
                   ),
                 ),
-                Text('${_threshold.round()}', style: widget.text.label),
+                IconButton(
+                  tooltip: 'Remove perk',
+                  onPressed: onArchive,
+                  icon: Icon(Icons.delete_outline, color: colors.textMuted),
+                ),
               ],
             ),
+            if (deltaText != null) ...[
+              SizedBox(height: spacing.radiusSmall),
+              Text(
+                deltaText,
+                style: text.bodySmall?.copyWith(color: colors.textOnSunnyButter),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  String? _deltaLabel() {
+    if (previousCost != null && previousCost != privilege.pointCost) {
+      return 'Cost updated: $previousCost → ${privilege.pointCost}';
+    }
+    if (previousName != null && previousName != privilege.name) {
+      return 'Name updated: $previousName → ${privilege.name}';
+    }
+    if (previousDescription != null &&
+        previousDescription != privilege.description) {
+      return 'Description updated';
+    }
+    return null;
   }
 }
 

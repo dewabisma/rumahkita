@@ -6,17 +6,22 @@ import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/handover_step.dart';
 import 'package:rumah/domain/enums/member_status.dart';
+import 'package:rumah/domain/enums/privilege_status.dart';
 import 'package:rumah/domain/enums/proposal_status.dart';
+import 'package:rumah/domain/enums/redemption_status.dart';
 import 'package:rumah/domain/enums/sync_op_type.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/sync/ceremony_guardian.dart';
-import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/handover_cycle_helpers.dart';
+import 'package:rumah/sync/hlc.dart';
+import 'package:rumah/domain/enums/privilege_usage_mode.dart';
+import 'package:rumah/sync/privilege_redeem_ids.dart';
 import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
 import 'package:rumah/sync/state_machines/cycle_status_machine.dart';
 import 'package:rumah/sync/state_machines/handover_step_machine.dart';
 import 'package:rumah/sync/state_machines/member_status_machine.dart';
+import 'package:rumah/sync/state_machines/privilege_status_machine.dart';
 import 'package:rumah/sync/state_machines/proposal_status_machine.dart';
 import 'package:rumah/sync/state_machines/task_status_machine.dart';
 import 'package:rumah/sync/sync_operation.dart';
@@ -151,7 +156,7 @@ class MergeEngine {
       case SyncOpType.voteCast:
         return _applyVoteCast(op, context, sideEffects);
       case SyncOpType.cycleCreate:
-        return _applyCycleCreate(op);
+        return _applyCycleCreate(op, sideEffects);
       case SyncOpType.cycleStatusTransition:
         return _applyCycleStatusTransition(op, sideEffects);
       case SyncOpType.cycleGuardianUpdate:
@@ -168,6 +173,14 @@ class MergeEngine {
         return _applyTaskFieldUpdate(op, context, sideEffects);
       case SyncOpType.taskClaim:
         return _applyTaskClaim(op, context);
+      case SyncOpType.privilegeCreate:
+        return _applyPrivilegeCreate(op);
+      case SyncOpType.privilegeFieldUpdate:
+        return _applyPrivilegeFieldUpdate(op, context);
+      case SyncOpType.privilegeRedemptionCreate:
+        return _applyPrivilegeRedemptionCreate(op, context, sideEffects);
+      case SyncOpType.privilegeRedemptionFieldUpdate:
+        return _applyPrivilegeRedemptionFieldUpdate(op, context);
       case SyncOpType.auditLogAppend:
         return _applyAuditLogAppend(op);
     }
@@ -484,6 +497,16 @@ class MergeEngine {
         return false;
       }
     }
+    if (isPrivilegeRedeemReasonRef(reasonRef)) {
+      final redemptionId = redemptionIdFromReasonRef(reasonRef!);
+      final redemptionRow = await (_db.select(_db.privilegeRedemptionEvents)
+            ..where((t) => t.redemptionId.equals(redemptionId)))
+          .getSingleOrNull();
+      if (redemptionRow == null ||
+          redemptionRow.status != RedemptionStatus.active.wireValue) {
+        return false;
+      }
+    }
     final eventId = op.payload['event_id'] as String;
     final memberRow = await (_db.select(_db.housematesSync)
           ..where((t) => t.memberId.equals(memberId)))
@@ -721,7 +744,10 @@ class MergeEngine {
     return true;
   }
 
-  Future<bool> _applyCycleCreate(SyncOperation op) async {
+  Future<bool> _applyCycleCreate(
+    SyncOperation op,
+    List<MergeSideEffect> sideEffects,
+  ) async {
     final cycleId = op.payload['cycle_id'] as String;
     final existing = await (_db.select(
       _db.cyclesSync,
@@ -772,6 +798,13 @@ class MergeEngine {
             updatedAtHlc: _decodeHlcBytes(op.hlc),
           ),
         );
+    sideEffects.add(
+      DraftingCycleCreated(
+        houseId: op.houseId,
+        cycleId: cycleId,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
     return true;
   }
 
@@ -1036,7 +1069,11 @@ class MergeEngine {
             houseId: op.houseId,
             cycleId: op.payload['cycle_id'] as String,
             title: op.payload['title'] as String,
+            description: Value(op.payload['description'] as String? ?? ''),
             negotiatedPoints: op.payload['negotiated_points'] as int,
+            assignedToMemberId: Value(
+              op.payload['assigned_to_member_id'] as String? ?? '',
+            ),
             status: (op.payload['status'] as String?) ?? 'open',
             updatedAtHlc: _decodeHlcBytes(op.hlc),
           ),
@@ -1084,6 +1121,21 @@ class MergeEngine {
           titleDeviceId: Value(op.originDeviceId),
           updatedAtHlc: Value(hlcBytes),
         );
+      case 'description':
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.descriptionHlc,
+          existingDeviceId: row.descriptionDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = TasksSyncCompanion(
+          description: Value(op.payload['value'] as String),
+          descriptionHlc: Value(hlcBytes),
+          descriptionDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
       case 'negotiated_points':
         if (!LwwRegister.shouldApply(
           incomingHlc: incomingHlc,
@@ -1107,6 +1159,21 @@ class MergeEngine {
           negotiatedPoints: Value(newPoints),
           pointsHlc: Value(hlcBytes),
           pointsDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
+      case 'assigned_to_member_id':
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.assignedToMemberIdHlc,
+          existingDeviceId: row.assignedToMemberIdDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = TasksSyncCompanion(
+          assignedToMemberId: Value(op.payload['value'] as String),
+          assignedToMemberIdHlc: Value(hlcBytes),
+          assignedToMemberIdDeviceId: Value(op.originDeviceId),
           updatedAtHlc: Value(hlcBytes),
         );
       case 'status':
@@ -1252,6 +1319,298 @@ class MergeEngine {
     )..where((t) => t.taskId.equals(taskId))).write(
       TasksSyncCompanion(claimedByMemberIds: Value(jsonEncode(memberIds))),
     );
+  }
+
+  Future<bool> _applyPrivilegeCreate(SyncOperation op) async {
+    final privilegeId = op.payload['privilege_id'] as String;
+    final cycleId = op.payload['cycle_id'] as String;
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(cycleId)))
+        .getSingleOrNull();
+    if (cycleRow == null ||
+        cycleRow.status != CycleStatus.drafting.wireValue) {
+      return false;
+    }
+    final existing = await (_db.select(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      return false;
+    }
+    await _db.into(_db.privilegesSync).insert(
+          PrivilegesSyncCompanion.insert(
+            privilegeId: privilegeId,
+            houseId: op.houseId,
+            cycleId: cycleId,
+            name: op.payload['name'] as String,
+            description: op.payload['description'] as String? ?? '',
+            pointCost: op.payload['point_cost'] as int,
+            status: (op.payload['status'] as String?) ?? 'active',
+            usageMode: (op.payload['usage_mode'] as String?) ?? 'durable',
+            updatedAtHlc: _decodeHlcBytes(op.hlc),
+          ),
+        );
+    return true;
+  }
+
+  Future<bool> _applyPrivilegeFieldUpdate(
+    SyncOperation op,
+    MergeContext context,
+  ) async {
+    final privilegeId = op.payload['privilege_id'] as String;
+    final row = await (_db.select(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .getSingleOrNull();
+    if (row == null) {
+      return false;
+    }
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(row.cycleId)))
+        .getSingleOrNull();
+    if (cycleRow == null ||
+        cycleRow.status != CycleStatus.drafting.wireValue) {
+      return false;
+    }
+    final field = op.payload['field'] as String;
+    final incomingHlc = _decodeHlc(op.hlc);
+    final hlcBytes = _decodeHlcBytes(op.hlc);
+    PrivilegesSyncCompanion updateCompanion;
+    switch (field) {
+      case 'name':
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.nameHlc,
+          existingDeviceId: row.nameDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = PrivilegesSyncCompanion(
+          name: Value(op.payload['value'] as String),
+          nameHlc: Value(hlcBytes),
+          nameDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
+      case 'description':
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.descriptionHlc,
+          existingDeviceId: row.descriptionDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = PrivilegesSyncCompanion(
+          description: Value(op.payload['value'] as String),
+          descriptionHlc: Value(hlcBytes),
+          descriptionDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
+      case 'point_cost':
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.pointCostHlc,
+          existingDeviceId: row.pointCostDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = PrivilegesSyncCompanion(
+          pointCost: Value(op.payload['value'] as int),
+          pointCostHlc: Value(hlcBytes),
+          pointCostDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
+      case 'status':
+        final to = PrivilegeStatus.fromWire(op.payload['value'] as String);
+        final current = PrivilegeStatus.fromWire(row.status);
+        final fromWire = op.payload['from'] as String?;
+        if (fromWire != null && PrivilegeStatus.fromWire(fromWire) != current) {
+          return false;
+        }
+        if (!PrivilegeStatusMachine.canTransition(current, to)) {
+          return false;
+        }
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: row.statusHlc,
+          existingDeviceId: row.statusDeviceId,
+        )) {
+          return false;
+        }
+        updateCompanion = PrivilegesSyncCompanion(
+          status: Value(to.wireValue),
+          statusHlc: Value(hlcBytes),
+          statusDeviceId: Value(op.originDeviceId),
+          updatedAtHlc: Value(hlcBytes),
+        );
+      default:
+        return false;
+    }
+    await (_db.update(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .write(updateCompanion);
+    return true;
+  }
+
+  Future<bool> _applyPrivilegeRedemptionCreate(
+    SyncOperation op,
+    MergeContext context,
+    List<MergeSideEffect> sideEffects,
+  ) async {
+    final memberId = op.payload['member_id'] as String;
+    if (!context.isMemberActive(memberId)) {
+      return false;
+    }
+    final redemptionId = op.payload['redemption_id'] as String;
+    final privilegeId = op.payload['privilege_id'] as String;
+    final cycleId = op.payload['cycle_id'] as String;
+    final payloadPointCost = op.payload['point_cost'] as int;
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(cycleId)))
+        .getSingleOrNull();
+    if (cycleRow == null ||
+        cycleRow.status != CycleStatus.active.wireValue) {
+      return false;
+    }
+    final privilegeRow = await (_db.select(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .getSingleOrNull();
+    if (privilegeRow == null ||
+        privilegeRow.status != PrivilegeStatus.active.wireValue ||
+        privilegeRow.cycleId != cycleId) {
+      return false;
+    }
+    if (payloadPointCost != privilegeRow.pointCost) {
+      return false;
+    }
+    final scoreEvents = await (_db.select(_db.scoreEvents)
+          ..where((t) => t.memberId.equals(memberId)))
+        .get();
+    final projectedBalance =
+        scoreEvents.fold<int>(0, (acc, event) => acc + event.delta);
+    if (projectedBalance < privilegeRow.pointCost) {
+      return false;
+    }
+    final existing = await (_db.select(_db.privilegeRedemptionEvents)
+          ..where((t) => t.redemptionId.equals(redemptionId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      if (existing.status == RedemptionStatus.consumed.wireValue &&
+          privilegeRow.usageMode == PrivilegeUsageMode.oneShot.wireValue) {
+        final incomingHlc = _decodeHlc(op.hlc);
+        final hlcBytes = _decodeHlcBytes(op.hlc);
+        if (!LwwRegister.shouldApply(
+          incomingHlc: incomingHlc,
+          incomingDeviceId: op.originDeviceId,
+          existingHlcBytes: existing.statusHlc,
+          existingDeviceId: existing.statusDeviceId,
+        )) {
+          return false;
+        }
+        await (_db.update(_db.privilegeRedemptionEvents)
+              ..where((t) => t.redemptionId.equals(redemptionId)))
+            .write(
+          PrivilegeRedemptionEventsCompanion(
+            status: Value(RedemptionStatus.active.wireValue),
+            statusHlc: Value(hlcBytes),
+            statusDeviceId: Value(op.originDeviceId),
+          ),
+        );
+        sideEffects.add(
+          PrivilegeRedeemed(
+            houseId: op.houseId,
+            redemptionId: redemptionId,
+            memberId: memberId,
+            privilegeId: privilegeId,
+            privilegeName: privilegeRow.name,
+            pointCost: privilegeRow.pointCost,
+            hlc: hlcBytes,
+          ),
+        );
+        return true;
+      }
+      return false;
+    }
+    final inserted = await _db
+        .into(_db.privilegeRedemptionEvents)
+        .insert(
+          PrivilegeRedemptionEventsCompanion.insert(
+            redemptionId: redemptionId,
+            houseId: op.houseId,
+            memberId: memberId,
+            privilegeId: privilegeId,
+            cycleId: cycleId,
+            pointCost: privilegeRow.pointCost,
+            status: (op.payload['status'] as String?) ?? 'active',
+            hlc: _decodeHlcBytes(op.hlc),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+    if (inserted == 0) {
+      return false;
+    }
+    sideEffects.add(
+      PrivilegeRedeemed(
+        houseId: op.houseId,
+        redemptionId: redemptionId,
+        memberId: memberId,
+        privilegeId: privilegeId,
+        privilegeName: privilegeRow.name,
+        pointCost: privilegeRow.pointCost,
+        hlc: _decodeHlcBytes(op.hlc),
+      ),
+    );
+    return true;
+  }
+
+  Future<bool> _applyPrivilegeRedemptionFieldUpdate(
+    SyncOperation op,
+    MergeContext context,
+  ) async {
+    final redemptionId = op.payload['redemption_id'] as String;
+    final row = await (_db.select(_db.privilegeRedemptionEvents)
+          ..where((t) => t.redemptionId.equals(redemptionId)))
+        .getSingleOrNull();
+    if (row == null) {
+      return false;
+    }
+    final actorId = op.actorMemberId;
+    if (actorId == null ||
+        !context.isMemberActive(actorId) ||
+        actorId != row.memberId) {
+      return false;
+    }
+    final field = op.payload['field'] as String;
+    if (field != 'status') {
+      return false;
+    }
+    final to = RedemptionStatus.fromWire(op.payload['value'] as String);
+    final current = RedemptionStatus.fromWire(row.status);
+    if (to != RedemptionStatus.consumed || current != RedemptionStatus.active) {
+      return false;
+    }
+    final incomingHlc = _decodeHlc(op.hlc);
+    final hlcBytes = _decodeHlcBytes(op.hlc);
+    if (!LwwRegister.shouldApply(
+      incomingHlc: incomingHlc,
+      incomingDeviceId: op.originDeviceId,
+      existingHlcBytes: row.statusHlc,
+      existingDeviceId: row.statusDeviceId,
+    )) {
+      return false;
+    }
+    await (_db.update(_db.privilegeRedemptionEvents)
+          ..where((t) => t.redemptionId.equals(redemptionId)))
+        .write(
+      PrivilegeRedemptionEventsCompanion(
+        status: Value(to.wireValue),
+        statusHlc: Value(hlcBytes),
+        statusDeviceId: Value(op.originDeviceId),
+      ),
+    );
+    return true;
   }
 
   Future<bool> _applyAuditLogAppend(SyncOperation op) async {

@@ -122,13 +122,34 @@ class CrdtFieldRegistry {
     ),
     'tasks_sync.task_id': const FieldSpec(kind: CrdtKind.appendOnlyCreate),
     'tasks_sync.title': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'tasks_sync.description': const FieldSpec(kind: CrdtKind.lwwRegister),
     'tasks_sync.negotiated_points': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'tasks_sync.assigned_to_member_id': const FieldSpec(kind: CrdtKind.lwwRegister),
     'tasks_sync.status': const FieldSpec(
       kind: CrdtKind.stateMachine,
       stateMachineId: 'task_status',
     ),
     'tasks_sync.claimed_by_member_ids': const FieldSpec(
       kind: CrdtKind.projected,
+    ),
+    'privileges_sync.privilege_id': const FieldSpec(
+      kind: CrdtKind.appendOnlyCreate,
+    ),
+    'privileges_sync.name': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'privileges_sync.description': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'privileges_sync.point_cost': const FieldSpec(kind: CrdtKind.lwwRegister),
+    'privileges_sync.status': const FieldSpec(
+      kind: CrdtKind.stateMachine,
+      stateMachineId: 'privilege_status',
+    ),
+    'privilege_redemption_events.redemption_id': const FieldSpec(
+      kind: CrdtKind.appendOnlyCreate,
+    ),
+    'privilege_redemption_events.point_cost': const FieldSpec(
+      kind: CrdtKind.appendOnly,
+    ),
+    'privilege_redemption_events.status': const FieldSpec(
+      kind: CrdtKind.lwwRegister,
     ),
     'task_claim_events.event_id': const FieldSpec(kind: CrdtKind.appendOnly),
     'audit_log_append_only.log_id': const FieldSpec(kind: CrdtKind.appendOnly),

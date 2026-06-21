@@ -58,6 +58,10 @@ class CeremonyMergeSideEffectHandler implements MergeSideEffectHandler {
           break;
         case RemovalReadyToExecute():
           break;
+        case DraftingCycleCreated():
+          break;
+        case PrivilegeRedeemed():
+          break;
         case HousemateJoined():
           break;
       }

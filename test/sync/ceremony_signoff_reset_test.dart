@@ -138,6 +138,7 @@ void main() {
       houseId: seed.houseId,
       cycleId: seed.cycleId,
       title: 'Laundry',
+      description: 'Weekly laundry run',
       points: 15,
       actorMemberId: seed.memberA,
     );

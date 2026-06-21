@@ -5084,6 +5084,18 @@ class $TasksSyncTable extends TasksSync
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _negotiatedPointsMeta = const VerificationMeta(
     'negotiatedPoints',
   );
@@ -5104,6 +5116,18 @@ class $TasksSyncTable extends TasksSync
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _assignedToMemberIdMeta =
+      const VerificationMeta('assignedToMemberId');
+  @override
+  late final GeneratedColumn<String> assignedToMemberId =
+      GeneratedColumn<String>(
+        'assigned_to_member_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
   static const VerificationMeta _claimedByMemberIdsMeta =
       const VerificationMeta('claimedByMemberIds');
   @override
@@ -5150,6 +5174,29 @@ class $TasksSyncTable extends TasksSync
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _descriptionHlcMeta = const VerificationMeta(
+    'descriptionHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> descriptionHlc =
+      GeneratedColumn<Uint8List>(
+        'description_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _descriptionDeviceIdMeta =
+      const VerificationMeta('descriptionDeviceId');
+  @override
+  late final GeneratedColumn<String> descriptionDeviceId =
+      GeneratedColumn<String>(
+        'description_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _pointsHlcMeta = const VerificationMeta(
     'pointsHlc',
   );
@@ -5172,6 +5219,28 @@ class $TasksSyncTable extends TasksSync
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _assignedToMemberIdHlcMeta =
+      const VerificationMeta('assignedToMemberIdHlc');
+  @override
+  late final GeneratedColumn<Uint8List> assignedToMemberIdHlc =
+      GeneratedColumn<Uint8List>(
+        'assigned_to_member_id_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _assignedToMemberIdDeviceIdMeta =
+      const VerificationMeta('assignedToMemberIdDeviceId');
+  @override
+  late final GeneratedColumn<String> assignedToMemberIdDeviceId =
+      GeneratedColumn<String>(
+        'assigned_to_member_id_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _statusHlcMeta = const VerificationMeta(
     'statusHlc',
   );
@@ -5200,14 +5269,20 @@ class $TasksSyncTable extends TasksSync
     houseId,
     cycleId,
     title,
+    description,
     negotiatedPoints,
     status,
+    assignedToMemberId,
     claimedByMemberIds,
     updatedAtHlc,
     titleHlc,
     titleDeviceId,
+    descriptionHlc,
+    descriptionDeviceId,
     pointsHlc,
     pointsDeviceId,
+    assignedToMemberIdHlc,
+    assignedToMemberIdDeviceId,
     statusHlc,
     statusDeviceId,
   ];
@@ -5255,6 +5330,15 @@ class $TasksSyncTable extends TasksSync
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('negotiated_points')) {
       context.handle(
         _negotiatedPointsMeta,
@@ -5273,6 +5357,15 @@ class $TasksSyncTable extends TasksSync
       );
     } else if (isInserting) {
       context.missing(_statusMeta);
+    }
+    if (data.containsKey('assigned_to_member_id')) {
+      context.handle(
+        _assignedToMemberIdMeta,
+        assignedToMemberId.isAcceptableOrUnknown(
+          data['assigned_to_member_id']!,
+          _assignedToMemberIdMeta,
+        ),
+      );
     }
     if (data.containsKey('claimed_by_member_ids')) {
       context.handle(
@@ -5309,6 +5402,24 @@ class $TasksSyncTable extends TasksSync
         ),
       );
     }
+    if (data.containsKey('description_hlc')) {
+      context.handle(
+        _descriptionHlcMeta,
+        descriptionHlc.isAcceptableOrUnknown(
+          data['description_hlc']!,
+          _descriptionHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('description_device_id')) {
+      context.handle(
+        _descriptionDeviceIdMeta,
+        descriptionDeviceId.isAcceptableOrUnknown(
+          data['description_device_id']!,
+          _descriptionDeviceIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('points_hlc')) {
       context.handle(
         _pointsHlcMeta,
@@ -5321,6 +5432,24 @@ class $TasksSyncTable extends TasksSync
         pointsDeviceId.isAcceptableOrUnknown(
           data['points_device_id']!,
           _pointsDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('assigned_to_member_id_hlc')) {
+      context.handle(
+        _assignedToMemberIdHlcMeta,
+        assignedToMemberIdHlc.isAcceptableOrUnknown(
+          data['assigned_to_member_id_hlc']!,
+          _assignedToMemberIdHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('assigned_to_member_id_device_id')) {
+      context.handle(
+        _assignedToMemberIdDeviceIdMeta,
+        assignedToMemberIdDeviceId.isAcceptableOrUnknown(
+          data['assigned_to_member_id_device_id']!,
+          _assignedToMemberIdDeviceIdMeta,
         ),
       );
     }
@@ -5364,6 +5493,10 @@ class $TasksSyncTable extends TasksSync
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
       negotiatedPoints: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}negotiated_points'],
@@ -5371,6 +5504,10 @@ class $TasksSyncTable extends TasksSync
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
+      )!,
+      assignedToMemberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}assigned_to_member_id'],
       )!,
       claimedByMemberIds: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -5388,6 +5525,14 @@ class $TasksSyncTable extends TasksSync
         DriftSqlType.string,
         data['${effectivePrefix}title_device_id'],
       ),
+      descriptionHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}description_hlc'],
+      ),
+      descriptionDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description_device_id'],
+      ),
       pointsHlc: attachedDatabase.typeMapping.read(
         DriftSqlType.blob,
         data['${effectivePrefix}points_hlc'],
@@ -5395,6 +5540,14 @@ class $TasksSyncTable extends TasksSync
       pointsDeviceId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}points_device_id'],
+      ),
+      assignedToMemberIdHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}assigned_to_member_id_hlc'],
+      ),
+      assignedToMemberIdDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}assigned_to_member_id_device_id'],
       ),
       statusHlc: attachedDatabase.typeMapping.read(
         DriftSqlType.blob,
@@ -5418,14 +5571,20 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
   final String houseId;
   final String cycleId;
   final String title;
+  final String description;
   final int negotiatedPoints;
   final String status;
+  final String assignedToMemberId;
   final String claimedByMemberIds;
   final Uint8List updatedAtHlc;
   final Uint8List? titleHlc;
   final String? titleDeviceId;
+  final Uint8List? descriptionHlc;
+  final String? descriptionDeviceId;
   final Uint8List? pointsHlc;
   final String? pointsDeviceId;
+  final Uint8List? assignedToMemberIdHlc;
+  final String? assignedToMemberIdDeviceId;
   final Uint8List? statusHlc;
   final String? statusDeviceId;
   const TasksSyncData({
@@ -5433,14 +5592,20 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     required this.houseId,
     required this.cycleId,
     required this.title,
+    required this.description,
     required this.negotiatedPoints,
     required this.status,
+    required this.assignedToMemberId,
     required this.claimedByMemberIds,
     required this.updatedAtHlc,
     this.titleHlc,
     this.titleDeviceId,
+    this.descriptionHlc,
+    this.descriptionDeviceId,
     this.pointsHlc,
     this.pointsDeviceId,
+    this.assignedToMemberIdHlc,
+    this.assignedToMemberIdDeviceId,
     this.statusHlc,
     this.statusDeviceId,
   });
@@ -5451,8 +5616,10 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     map['house_id'] = Variable<String>(houseId);
     map['cycle_id'] = Variable<String>(cycleId);
     map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
     map['negotiated_points'] = Variable<int>(negotiatedPoints);
     map['status'] = Variable<String>(status);
+    map['assigned_to_member_id'] = Variable<String>(assignedToMemberId);
     map['claimed_by_member_ids'] = Variable<String>(claimedByMemberIds);
     map['updated_at_hlc'] = Variable<Uint8List>(updatedAtHlc);
     if (!nullToAbsent || titleHlc != null) {
@@ -5461,11 +5628,27 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     if (!nullToAbsent || titleDeviceId != null) {
       map['title_device_id'] = Variable<String>(titleDeviceId);
     }
+    if (!nullToAbsent || descriptionHlc != null) {
+      map['description_hlc'] = Variable<Uint8List>(descriptionHlc);
+    }
+    if (!nullToAbsent || descriptionDeviceId != null) {
+      map['description_device_id'] = Variable<String>(descriptionDeviceId);
+    }
     if (!nullToAbsent || pointsHlc != null) {
       map['points_hlc'] = Variable<Uint8List>(pointsHlc);
     }
     if (!nullToAbsent || pointsDeviceId != null) {
       map['points_device_id'] = Variable<String>(pointsDeviceId);
+    }
+    if (!nullToAbsent || assignedToMemberIdHlc != null) {
+      map['assigned_to_member_id_hlc'] = Variable<Uint8List>(
+        assignedToMemberIdHlc,
+      );
+    }
+    if (!nullToAbsent || assignedToMemberIdDeviceId != null) {
+      map['assigned_to_member_id_device_id'] = Variable<String>(
+        assignedToMemberIdDeviceId,
+      );
     }
     if (!nullToAbsent || statusHlc != null) {
       map['status_hlc'] = Variable<Uint8List>(statusHlc);
@@ -5482,8 +5665,10 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       houseId: Value(houseId),
       cycleId: Value(cycleId),
       title: Value(title),
+      description: Value(description),
       negotiatedPoints: Value(negotiatedPoints),
       status: Value(status),
+      assignedToMemberId: Value(assignedToMemberId),
       claimedByMemberIds: Value(claimedByMemberIds),
       updatedAtHlc: Value(updatedAtHlc),
       titleHlc: titleHlc == null && nullToAbsent
@@ -5492,12 +5677,25 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       titleDeviceId: titleDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(titleDeviceId),
+      descriptionHlc: descriptionHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descriptionHlc),
+      descriptionDeviceId: descriptionDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descriptionDeviceId),
       pointsHlc: pointsHlc == null && nullToAbsent
           ? const Value.absent()
           : Value(pointsHlc),
       pointsDeviceId: pointsDeviceId == null && nullToAbsent
           ? const Value.absent()
           : Value(pointsDeviceId),
+      assignedToMemberIdHlc: assignedToMemberIdHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignedToMemberIdHlc),
+      assignedToMemberIdDeviceId:
+          assignedToMemberIdDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignedToMemberIdDeviceId),
       statusHlc: statusHlc == null && nullToAbsent
           ? const Value.absent()
           : Value(statusHlc),
@@ -5517,16 +5715,30 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       houseId: serializer.fromJson<String>(json['houseId']),
       cycleId: serializer.fromJson<String>(json['cycleId']),
       title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
       negotiatedPoints: serializer.fromJson<int>(json['negotiatedPoints']),
       status: serializer.fromJson<String>(json['status']),
+      assignedToMemberId: serializer.fromJson<String>(
+        json['assignedToMemberId'],
+      ),
       claimedByMemberIds: serializer.fromJson<String>(
         json['claimedByMemberIds'],
       ),
       updatedAtHlc: serializer.fromJson<Uint8List>(json['updatedAtHlc']),
       titleHlc: serializer.fromJson<Uint8List?>(json['titleHlc']),
       titleDeviceId: serializer.fromJson<String?>(json['titleDeviceId']),
+      descriptionHlc: serializer.fromJson<Uint8List?>(json['descriptionHlc']),
+      descriptionDeviceId: serializer.fromJson<String?>(
+        json['descriptionDeviceId'],
+      ),
       pointsHlc: serializer.fromJson<Uint8List?>(json['pointsHlc']),
       pointsDeviceId: serializer.fromJson<String?>(json['pointsDeviceId']),
+      assignedToMemberIdHlc: serializer.fromJson<Uint8List?>(
+        json['assignedToMemberIdHlc'],
+      ),
+      assignedToMemberIdDeviceId: serializer.fromJson<String?>(
+        json['assignedToMemberIdDeviceId'],
+      ),
       statusHlc: serializer.fromJson<Uint8List?>(json['statusHlc']),
       statusDeviceId: serializer.fromJson<String?>(json['statusDeviceId']),
     );
@@ -5539,14 +5751,24 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       'houseId': serializer.toJson<String>(houseId),
       'cycleId': serializer.toJson<String>(cycleId),
       'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
       'negotiatedPoints': serializer.toJson<int>(negotiatedPoints),
       'status': serializer.toJson<String>(status),
+      'assignedToMemberId': serializer.toJson<String>(assignedToMemberId),
       'claimedByMemberIds': serializer.toJson<String>(claimedByMemberIds),
       'updatedAtHlc': serializer.toJson<Uint8List>(updatedAtHlc),
       'titleHlc': serializer.toJson<Uint8List?>(titleHlc),
       'titleDeviceId': serializer.toJson<String?>(titleDeviceId),
+      'descriptionHlc': serializer.toJson<Uint8List?>(descriptionHlc),
+      'descriptionDeviceId': serializer.toJson<String?>(descriptionDeviceId),
       'pointsHlc': serializer.toJson<Uint8List?>(pointsHlc),
       'pointsDeviceId': serializer.toJson<String?>(pointsDeviceId),
+      'assignedToMemberIdHlc': serializer.toJson<Uint8List?>(
+        assignedToMemberIdHlc,
+      ),
+      'assignedToMemberIdDeviceId': serializer.toJson<String?>(
+        assignedToMemberIdDeviceId,
+      ),
       'statusHlc': serializer.toJson<Uint8List?>(statusHlc),
       'statusDeviceId': serializer.toJson<String?>(statusDeviceId),
     };
@@ -5557,14 +5779,20 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     String? houseId,
     String? cycleId,
     String? title,
+    String? description,
     int? negotiatedPoints,
     String? status,
+    String? assignedToMemberId,
     String? claimedByMemberIds,
     Uint8List? updatedAtHlc,
     Value<Uint8List?> titleHlc = const Value.absent(),
     Value<String?> titleDeviceId = const Value.absent(),
+    Value<Uint8List?> descriptionHlc = const Value.absent(),
+    Value<String?> descriptionDeviceId = const Value.absent(),
     Value<Uint8List?> pointsHlc = const Value.absent(),
     Value<String?> pointsDeviceId = const Value.absent(),
+    Value<Uint8List?> assignedToMemberIdHlc = const Value.absent(),
+    Value<String?> assignedToMemberIdDeviceId = const Value.absent(),
     Value<Uint8List?> statusHlc = const Value.absent(),
     Value<String?> statusDeviceId = const Value.absent(),
   }) => TasksSyncData(
@@ -5572,18 +5800,32 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     houseId: houseId ?? this.houseId,
     cycleId: cycleId ?? this.cycleId,
     title: title ?? this.title,
+    description: description ?? this.description,
     negotiatedPoints: negotiatedPoints ?? this.negotiatedPoints,
     status: status ?? this.status,
+    assignedToMemberId: assignedToMemberId ?? this.assignedToMemberId,
     claimedByMemberIds: claimedByMemberIds ?? this.claimedByMemberIds,
     updatedAtHlc: updatedAtHlc ?? this.updatedAtHlc,
     titleHlc: titleHlc.present ? titleHlc.value : this.titleHlc,
     titleDeviceId: titleDeviceId.present
         ? titleDeviceId.value
         : this.titleDeviceId,
+    descriptionHlc: descriptionHlc.present
+        ? descriptionHlc.value
+        : this.descriptionHlc,
+    descriptionDeviceId: descriptionDeviceId.present
+        ? descriptionDeviceId.value
+        : this.descriptionDeviceId,
     pointsHlc: pointsHlc.present ? pointsHlc.value : this.pointsHlc,
     pointsDeviceId: pointsDeviceId.present
         ? pointsDeviceId.value
         : this.pointsDeviceId,
+    assignedToMemberIdHlc: assignedToMemberIdHlc.present
+        ? assignedToMemberIdHlc.value
+        : this.assignedToMemberIdHlc,
+    assignedToMemberIdDeviceId: assignedToMemberIdDeviceId.present
+        ? assignedToMemberIdDeviceId.value
+        : this.assignedToMemberIdDeviceId,
     statusHlc: statusHlc.present ? statusHlc.value : this.statusHlc,
     statusDeviceId: statusDeviceId.present
         ? statusDeviceId.value
@@ -5595,10 +5837,16 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       houseId: data.houseId.present ? data.houseId.value : this.houseId,
       cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
       title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       negotiatedPoints: data.negotiatedPoints.present
           ? data.negotiatedPoints.value
           : this.negotiatedPoints,
       status: data.status.present ? data.status.value : this.status,
+      assignedToMemberId: data.assignedToMemberId.present
+          ? data.assignedToMemberId.value
+          : this.assignedToMemberId,
       claimedByMemberIds: data.claimedByMemberIds.present
           ? data.claimedByMemberIds.value
           : this.claimedByMemberIds,
@@ -5609,10 +5857,22 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
       titleDeviceId: data.titleDeviceId.present
           ? data.titleDeviceId.value
           : this.titleDeviceId,
+      descriptionHlc: data.descriptionHlc.present
+          ? data.descriptionHlc.value
+          : this.descriptionHlc,
+      descriptionDeviceId: data.descriptionDeviceId.present
+          ? data.descriptionDeviceId.value
+          : this.descriptionDeviceId,
       pointsHlc: data.pointsHlc.present ? data.pointsHlc.value : this.pointsHlc,
       pointsDeviceId: data.pointsDeviceId.present
           ? data.pointsDeviceId.value
           : this.pointsDeviceId,
+      assignedToMemberIdHlc: data.assignedToMemberIdHlc.present
+          ? data.assignedToMemberIdHlc.value
+          : this.assignedToMemberIdHlc,
+      assignedToMemberIdDeviceId: data.assignedToMemberIdDeviceId.present
+          ? data.assignedToMemberIdDeviceId.value
+          : this.assignedToMemberIdDeviceId,
       statusHlc: data.statusHlc.present ? data.statusHlc.value : this.statusHlc,
       statusDeviceId: data.statusDeviceId.present
           ? data.statusDeviceId.value
@@ -5627,14 +5887,20 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
           ..write('houseId: $houseId, ')
           ..write('cycleId: $cycleId, ')
           ..write('title: $title, ')
+          ..write('description: $description, ')
           ..write('negotiatedPoints: $negotiatedPoints, ')
           ..write('status: $status, ')
+          ..write('assignedToMemberId: $assignedToMemberId, ')
           ..write('claimedByMemberIds: $claimedByMemberIds, ')
           ..write('updatedAtHlc: $updatedAtHlc, ')
           ..write('titleHlc: $titleHlc, ')
           ..write('titleDeviceId: $titleDeviceId, ')
+          ..write('descriptionHlc: $descriptionHlc, ')
+          ..write('descriptionDeviceId: $descriptionDeviceId, ')
           ..write('pointsHlc: $pointsHlc, ')
           ..write('pointsDeviceId: $pointsDeviceId, ')
+          ..write('assignedToMemberIdHlc: $assignedToMemberIdHlc, ')
+          ..write('assignedToMemberIdDeviceId: $assignedToMemberIdDeviceId, ')
           ..write('statusHlc: $statusHlc, ')
           ..write('statusDeviceId: $statusDeviceId')
           ..write(')'))
@@ -5647,14 +5913,20 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
     houseId,
     cycleId,
     title,
+    description,
     negotiatedPoints,
     status,
+    assignedToMemberId,
     claimedByMemberIds,
     $driftBlobEquality.hash(updatedAtHlc),
     $driftBlobEquality.hash(titleHlc),
     titleDeviceId,
+    $driftBlobEquality.hash(descriptionHlc),
+    descriptionDeviceId,
     $driftBlobEquality.hash(pointsHlc),
     pointsDeviceId,
+    $driftBlobEquality.hash(assignedToMemberIdHlc),
+    assignedToMemberIdDeviceId,
     $driftBlobEquality.hash(statusHlc),
     statusDeviceId,
   );
@@ -5666,14 +5938,26 @@ class TasksSyncData extends DataClass implements Insertable<TasksSyncData> {
           other.houseId == this.houseId &&
           other.cycleId == this.cycleId &&
           other.title == this.title &&
+          other.description == this.description &&
           other.negotiatedPoints == this.negotiatedPoints &&
           other.status == this.status &&
+          other.assignedToMemberId == this.assignedToMemberId &&
           other.claimedByMemberIds == this.claimedByMemberIds &&
           $driftBlobEquality.equals(other.updatedAtHlc, this.updatedAtHlc) &&
           $driftBlobEquality.equals(other.titleHlc, this.titleHlc) &&
           other.titleDeviceId == this.titleDeviceId &&
+          $driftBlobEquality.equals(
+            other.descriptionHlc,
+            this.descriptionHlc,
+          ) &&
+          other.descriptionDeviceId == this.descriptionDeviceId &&
           $driftBlobEquality.equals(other.pointsHlc, this.pointsHlc) &&
           other.pointsDeviceId == this.pointsDeviceId &&
+          $driftBlobEquality.equals(
+            other.assignedToMemberIdHlc,
+            this.assignedToMemberIdHlc,
+          ) &&
+          other.assignedToMemberIdDeviceId == this.assignedToMemberIdDeviceId &&
           $driftBlobEquality.equals(other.statusHlc, this.statusHlc) &&
           other.statusDeviceId == this.statusDeviceId);
 }
@@ -5683,14 +5967,20 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
   final Value<String> houseId;
   final Value<String> cycleId;
   final Value<String> title;
+  final Value<String> description;
   final Value<int> negotiatedPoints;
   final Value<String> status;
+  final Value<String> assignedToMemberId;
   final Value<String> claimedByMemberIds;
   final Value<Uint8List> updatedAtHlc;
   final Value<Uint8List?> titleHlc;
   final Value<String?> titleDeviceId;
+  final Value<Uint8List?> descriptionHlc;
+  final Value<String?> descriptionDeviceId;
   final Value<Uint8List?> pointsHlc;
   final Value<String?> pointsDeviceId;
+  final Value<Uint8List?> assignedToMemberIdHlc;
+  final Value<String?> assignedToMemberIdDeviceId;
   final Value<Uint8List?> statusHlc;
   final Value<String?> statusDeviceId;
   final Value<int> rowid;
@@ -5699,14 +5989,20 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     this.houseId = const Value.absent(),
     this.cycleId = const Value.absent(),
     this.title = const Value.absent(),
+    this.description = const Value.absent(),
     this.negotiatedPoints = const Value.absent(),
     this.status = const Value.absent(),
+    this.assignedToMemberId = const Value.absent(),
     this.claimedByMemberIds = const Value.absent(),
     this.updatedAtHlc = const Value.absent(),
     this.titleHlc = const Value.absent(),
     this.titleDeviceId = const Value.absent(),
+    this.descriptionHlc = const Value.absent(),
+    this.descriptionDeviceId = const Value.absent(),
     this.pointsHlc = const Value.absent(),
     this.pointsDeviceId = const Value.absent(),
+    this.assignedToMemberIdHlc = const Value.absent(),
+    this.assignedToMemberIdDeviceId = const Value.absent(),
     this.statusHlc = const Value.absent(),
     this.statusDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5716,14 +6012,20 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     required String houseId,
     required String cycleId,
     required String title,
+    this.description = const Value.absent(),
     required int negotiatedPoints,
     required String status,
+    this.assignedToMemberId = const Value.absent(),
     this.claimedByMemberIds = const Value.absent(),
     required Uint8List updatedAtHlc,
     this.titleHlc = const Value.absent(),
     this.titleDeviceId = const Value.absent(),
+    this.descriptionHlc = const Value.absent(),
+    this.descriptionDeviceId = const Value.absent(),
     this.pointsHlc = const Value.absent(),
     this.pointsDeviceId = const Value.absent(),
+    this.assignedToMemberIdHlc = const Value.absent(),
+    this.assignedToMemberIdDeviceId = const Value.absent(),
     this.statusHlc = const Value.absent(),
     this.statusDeviceId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5739,14 +6041,20 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     Expression<String>? houseId,
     Expression<String>? cycleId,
     Expression<String>? title,
+    Expression<String>? description,
     Expression<int>? negotiatedPoints,
     Expression<String>? status,
+    Expression<String>? assignedToMemberId,
     Expression<String>? claimedByMemberIds,
     Expression<Uint8List>? updatedAtHlc,
     Expression<Uint8List>? titleHlc,
     Expression<String>? titleDeviceId,
+    Expression<Uint8List>? descriptionHlc,
+    Expression<String>? descriptionDeviceId,
     Expression<Uint8List>? pointsHlc,
     Expression<String>? pointsDeviceId,
+    Expression<Uint8List>? assignedToMemberIdHlc,
+    Expression<String>? assignedToMemberIdDeviceId,
     Expression<Uint8List>? statusHlc,
     Expression<String>? statusDeviceId,
     Expression<int>? rowid,
@@ -5756,15 +6064,25 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
       if (houseId != null) 'house_id': houseId,
       if (cycleId != null) 'cycle_id': cycleId,
       if (title != null) 'title': title,
+      if (description != null) 'description': description,
       if (negotiatedPoints != null) 'negotiated_points': negotiatedPoints,
       if (status != null) 'status': status,
+      if (assignedToMemberId != null)
+        'assigned_to_member_id': assignedToMemberId,
       if (claimedByMemberIds != null)
         'claimed_by_member_ids': claimedByMemberIds,
       if (updatedAtHlc != null) 'updated_at_hlc': updatedAtHlc,
       if (titleHlc != null) 'title_hlc': titleHlc,
       if (titleDeviceId != null) 'title_device_id': titleDeviceId,
+      if (descriptionHlc != null) 'description_hlc': descriptionHlc,
+      if (descriptionDeviceId != null)
+        'description_device_id': descriptionDeviceId,
       if (pointsHlc != null) 'points_hlc': pointsHlc,
       if (pointsDeviceId != null) 'points_device_id': pointsDeviceId,
+      if (assignedToMemberIdHlc != null)
+        'assigned_to_member_id_hlc': assignedToMemberIdHlc,
+      if (assignedToMemberIdDeviceId != null)
+        'assigned_to_member_id_device_id': assignedToMemberIdDeviceId,
       if (statusHlc != null) 'status_hlc': statusHlc,
       if (statusDeviceId != null) 'status_device_id': statusDeviceId,
       if (rowid != null) 'rowid': rowid,
@@ -5776,14 +6094,20 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     Value<String>? houseId,
     Value<String>? cycleId,
     Value<String>? title,
+    Value<String>? description,
     Value<int>? negotiatedPoints,
     Value<String>? status,
+    Value<String>? assignedToMemberId,
     Value<String>? claimedByMemberIds,
     Value<Uint8List>? updatedAtHlc,
     Value<Uint8List?>? titleHlc,
     Value<String?>? titleDeviceId,
+    Value<Uint8List?>? descriptionHlc,
+    Value<String?>? descriptionDeviceId,
     Value<Uint8List?>? pointsHlc,
     Value<String?>? pointsDeviceId,
+    Value<Uint8List?>? assignedToMemberIdHlc,
+    Value<String?>? assignedToMemberIdDeviceId,
     Value<Uint8List?>? statusHlc,
     Value<String?>? statusDeviceId,
     Value<int>? rowid,
@@ -5793,14 +6117,22 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
       houseId: houseId ?? this.houseId,
       cycleId: cycleId ?? this.cycleId,
       title: title ?? this.title,
+      description: description ?? this.description,
       negotiatedPoints: negotiatedPoints ?? this.negotiatedPoints,
       status: status ?? this.status,
+      assignedToMemberId: assignedToMemberId ?? this.assignedToMemberId,
       claimedByMemberIds: claimedByMemberIds ?? this.claimedByMemberIds,
       updatedAtHlc: updatedAtHlc ?? this.updatedAtHlc,
       titleHlc: titleHlc ?? this.titleHlc,
       titleDeviceId: titleDeviceId ?? this.titleDeviceId,
+      descriptionHlc: descriptionHlc ?? this.descriptionHlc,
+      descriptionDeviceId: descriptionDeviceId ?? this.descriptionDeviceId,
       pointsHlc: pointsHlc ?? this.pointsHlc,
       pointsDeviceId: pointsDeviceId ?? this.pointsDeviceId,
+      assignedToMemberIdHlc:
+          assignedToMemberIdHlc ?? this.assignedToMemberIdHlc,
+      assignedToMemberIdDeviceId:
+          assignedToMemberIdDeviceId ?? this.assignedToMemberIdDeviceId,
       statusHlc: statusHlc ?? this.statusHlc,
       statusDeviceId: statusDeviceId ?? this.statusDeviceId,
       rowid: rowid ?? this.rowid,
@@ -5822,11 +6154,17 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (negotiatedPoints.present) {
       map['negotiated_points'] = Variable<int>(negotiatedPoints.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
+    }
+    if (assignedToMemberId.present) {
+      map['assigned_to_member_id'] = Variable<String>(assignedToMemberId.value);
     }
     if (claimedByMemberIds.present) {
       map['claimed_by_member_ids'] = Variable<String>(claimedByMemberIds.value);
@@ -5840,11 +6178,29 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
     if (titleDeviceId.present) {
       map['title_device_id'] = Variable<String>(titleDeviceId.value);
     }
+    if (descriptionHlc.present) {
+      map['description_hlc'] = Variable<Uint8List>(descriptionHlc.value);
+    }
+    if (descriptionDeviceId.present) {
+      map['description_device_id'] = Variable<String>(
+        descriptionDeviceId.value,
+      );
+    }
     if (pointsHlc.present) {
       map['points_hlc'] = Variable<Uint8List>(pointsHlc.value);
     }
     if (pointsDeviceId.present) {
       map['points_device_id'] = Variable<String>(pointsDeviceId.value);
+    }
+    if (assignedToMemberIdHlc.present) {
+      map['assigned_to_member_id_hlc'] = Variable<Uint8List>(
+        assignedToMemberIdHlc.value,
+      );
+    }
+    if (assignedToMemberIdDeviceId.present) {
+      map['assigned_to_member_id_device_id'] = Variable<String>(
+        assignedToMemberIdDeviceId.value,
+      );
     }
     if (statusHlc.present) {
       map['status_hlc'] = Variable<Uint8List>(statusHlc.value);
@@ -5865,14 +6221,1676 @@ class TasksSyncCompanion extends UpdateCompanion<TasksSyncData> {
           ..write('houseId: $houseId, ')
           ..write('cycleId: $cycleId, ')
           ..write('title: $title, ')
+          ..write('description: $description, ')
           ..write('negotiatedPoints: $negotiatedPoints, ')
           ..write('status: $status, ')
+          ..write('assignedToMemberId: $assignedToMemberId, ')
           ..write('claimedByMemberIds: $claimedByMemberIds, ')
           ..write('updatedAtHlc: $updatedAtHlc, ')
           ..write('titleHlc: $titleHlc, ')
           ..write('titleDeviceId: $titleDeviceId, ')
+          ..write('descriptionHlc: $descriptionHlc, ')
+          ..write('descriptionDeviceId: $descriptionDeviceId, ')
           ..write('pointsHlc: $pointsHlc, ')
           ..write('pointsDeviceId: $pointsDeviceId, ')
+          ..write('assignedToMemberIdHlc: $assignedToMemberIdHlc, ')
+          ..write('assignedToMemberIdDeviceId: $assignedToMemberIdDeviceId, ')
+          ..write('statusHlc: $statusHlc, ')
+          ..write('statusDeviceId: $statusDeviceId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PrivilegesSyncTable extends PrivilegesSync
+    with TableInfo<$PrivilegesSyncTable, PrivilegesSyncData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PrivilegesSyncTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _privilegeIdMeta = const VerificationMeta(
+    'privilegeId',
+  );
+  @override
+  late final GeneratedColumn<String> privilegeId = GeneratedColumn<String>(
+    'privilege_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _houseIdMeta = const VerificationMeta(
+    'houseId',
+  );
+  @override
+  late final GeneratedColumn<String> houseId = GeneratedColumn<String>(
+    'house_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pointCostMeta = const VerificationMeta(
+    'pointCost',
+  );
+  @override
+  late final GeneratedColumn<int> pointCost = GeneratedColumn<int>(
+    'point_cost',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usageModeMeta = const VerificationMeta(
+    'usageMode',
+  );
+  @override
+  late final GeneratedColumn<String> usageMode = GeneratedColumn<String>(
+    'usage_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtHlcMeta = const VerificationMeta(
+    'updatedAtHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> updatedAtHlc =
+      GeneratedColumn<Uint8List>(
+        'updated_at_hlc',
+        aliasedName,
+        false,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _nameHlcMeta = const VerificationMeta(
+    'nameHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> nameHlc = GeneratedColumn<Uint8List>(
+    'name_hlc',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameDeviceIdMeta = const VerificationMeta(
+    'nameDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> nameDeviceId = GeneratedColumn<String>(
+    'name_device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _descriptionHlcMeta = const VerificationMeta(
+    'descriptionHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> descriptionHlc =
+      GeneratedColumn<Uint8List>(
+        'description_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _descriptionDeviceIdMeta =
+      const VerificationMeta('descriptionDeviceId');
+  @override
+  late final GeneratedColumn<String> descriptionDeviceId =
+      GeneratedColumn<String>(
+        'description_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _pointCostHlcMeta = const VerificationMeta(
+    'pointCostHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> pointCostHlc =
+      GeneratedColumn<Uint8List>(
+        'point_cost_hlc',
+        aliasedName,
+        true,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _pointCostDeviceIdMeta = const VerificationMeta(
+    'pointCostDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> pointCostDeviceId =
+      GeneratedColumn<String>(
+        'point_cost_device_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _statusHlcMeta = const VerificationMeta(
+    'statusHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> statusHlc = GeneratedColumn<Uint8List>(
+    'status_hlc',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusDeviceIdMeta = const VerificationMeta(
+    'statusDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> statusDeviceId = GeneratedColumn<String>(
+    'status_device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    privilegeId,
+    houseId,
+    cycleId,
+    name,
+    description,
+    pointCost,
+    status,
+    usageMode,
+    updatedAtHlc,
+    nameHlc,
+    nameDeviceId,
+    descriptionHlc,
+    descriptionDeviceId,
+    pointCostHlc,
+    pointCostDeviceId,
+    statusHlc,
+    statusDeviceId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'privileges_sync';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PrivilegesSyncData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('privilege_id')) {
+      context.handle(
+        _privilegeIdMeta,
+        privilegeId.isAcceptableOrUnknown(
+          data['privilege_id']!,
+          _privilegeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_privilegeIdMeta);
+    }
+    if (data.containsKey('house_id')) {
+      context.handle(
+        _houseIdMeta,
+        houseId.isAcceptableOrUnknown(data['house_id']!, _houseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_houseIdMeta);
+    }
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('point_cost')) {
+      context.handle(
+        _pointCostMeta,
+        pointCost.isAcceptableOrUnknown(data['point_cost']!, _pointCostMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pointCostMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('usage_mode')) {
+      context.handle(
+        _usageModeMeta,
+        usageMode.isAcceptableOrUnknown(data['usage_mode']!, _usageModeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usageModeMeta);
+    }
+    if (data.containsKey('updated_at_hlc')) {
+      context.handle(
+        _updatedAtHlcMeta,
+        updatedAtHlc.isAcceptableOrUnknown(
+          data['updated_at_hlc']!,
+          _updatedAtHlcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtHlcMeta);
+    }
+    if (data.containsKey('name_hlc')) {
+      context.handle(
+        _nameHlcMeta,
+        nameHlc.isAcceptableOrUnknown(data['name_hlc']!, _nameHlcMeta),
+      );
+    }
+    if (data.containsKey('name_device_id')) {
+      context.handle(
+        _nameDeviceIdMeta,
+        nameDeviceId.isAcceptableOrUnknown(
+          data['name_device_id']!,
+          _nameDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('description_hlc')) {
+      context.handle(
+        _descriptionHlcMeta,
+        descriptionHlc.isAcceptableOrUnknown(
+          data['description_hlc']!,
+          _descriptionHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('description_device_id')) {
+      context.handle(
+        _descriptionDeviceIdMeta,
+        descriptionDeviceId.isAcceptableOrUnknown(
+          data['description_device_id']!,
+          _descriptionDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('point_cost_hlc')) {
+      context.handle(
+        _pointCostHlcMeta,
+        pointCostHlc.isAcceptableOrUnknown(
+          data['point_cost_hlc']!,
+          _pointCostHlcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('point_cost_device_id')) {
+      context.handle(
+        _pointCostDeviceIdMeta,
+        pointCostDeviceId.isAcceptableOrUnknown(
+          data['point_cost_device_id']!,
+          _pointCostDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status_hlc')) {
+      context.handle(
+        _statusHlcMeta,
+        statusHlc.isAcceptableOrUnknown(data['status_hlc']!, _statusHlcMeta),
+      );
+    }
+    if (data.containsKey('status_device_id')) {
+      context.handle(
+        _statusDeviceIdMeta,
+        statusDeviceId.isAcceptableOrUnknown(
+          data['status_device_id']!,
+          _statusDeviceIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {privilegeId};
+  @override
+  PrivilegesSyncData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PrivilegesSyncData(
+      privilegeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privilege_id'],
+      )!,
+      houseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}house_id'],
+      )!,
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      pointCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}point_cost'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      usageMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}usage_mode'],
+      )!,
+      updatedAtHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}updated_at_hlc'],
+      )!,
+      nameHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}name_hlc'],
+      ),
+      nameDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_device_id'],
+      ),
+      descriptionHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}description_hlc'],
+      ),
+      descriptionDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description_device_id'],
+      ),
+      pointCostHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}point_cost_hlc'],
+      ),
+      pointCostDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}point_cost_device_id'],
+      ),
+      statusHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}status_hlc'],
+      ),
+      statusDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status_device_id'],
+      ),
+    );
+  }
+
+  @override
+  $PrivilegesSyncTable createAlias(String alias) {
+    return $PrivilegesSyncTable(attachedDatabase, alias);
+  }
+}
+
+class PrivilegesSyncData extends DataClass
+    implements Insertable<PrivilegesSyncData> {
+  final String privilegeId;
+  final String houseId;
+  final String cycleId;
+  final String name;
+  final String description;
+  final int pointCost;
+  final String status;
+  final String usageMode;
+  final Uint8List updatedAtHlc;
+  final Uint8List? nameHlc;
+  final String? nameDeviceId;
+  final Uint8List? descriptionHlc;
+  final String? descriptionDeviceId;
+  final Uint8List? pointCostHlc;
+  final String? pointCostDeviceId;
+  final Uint8List? statusHlc;
+  final String? statusDeviceId;
+  const PrivilegesSyncData({
+    required this.privilegeId,
+    required this.houseId,
+    required this.cycleId,
+    required this.name,
+    required this.description,
+    required this.pointCost,
+    required this.status,
+    required this.usageMode,
+    required this.updatedAtHlc,
+    this.nameHlc,
+    this.nameDeviceId,
+    this.descriptionHlc,
+    this.descriptionDeviceId,
+    this.pointCostHlc,
+    this.pointCostDeviceId,
+    this.statusHlc,
+    this.statusDeviceId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['privilege_id'] = Variable<String>(privilegeId);
+    map['house_id'] = Variable<String>(houseId);
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['name'] = Variable<String>(name);
+    map['description'] = Variable<String>(description);
+    map['point_cost'] = Variable<int>(pointCost);
+    map['status'] = Variable<String>(status);
+    map['usage_mode'] = Variable<String>(usageMode);
+    map['updated_at_hlc'] = Variable<Uint8List>(updatedAtHlc);
+    if (!nullToAbsent || nameHlc != null) {
+      map['name_hlc'] = Variable<Uint8List>(nameHlc);
+    }
+    if (!nullToAbsent || nameDeviceId != null) {
+      map['name_device_id'] = Variable<String>(nameDeviceId);
+    }
+    if (!nullToAbsent || descriptionHlc != null) {
+      map['description_hlc'] = Variable<Uint8List>(descriptionHlc);
+    }
+    if (!nullToAbsent || descriptionDeviceId != null) {
+      map['description_device_id'] = Variable<String>(descriptionDeviceId);
+    }
+    if (!nullToAbsent || pointCostHlc != null) {
+      map['point_cost_hlc'] = Variable<Uint8List>(pointCostHlc);
+    }
+    if (!nullToAbsent || pointCostDeviceId != null) {
+      map['point_cost_device_id'] = Variable<String>(pointCostDeviceId);
+    }
+    if (!nullToAbsent || statusHlc != null) {
+      map['status_hlc'] = Variable<Uint8List>(statusHlc);
+    }
+    if (!nullToAbsent || statusDeviceId != null) {
+      map['status_device_id'] = Variable<String>(statusDeviceId);
+    }
+    return map;
+  }
+
+  PrivilegesSyncCompanion toCompanion(bool nullToAbsent) {
+    return PrivilegesSyncCompanion(
+      privilegeId: Value(privilegeId),
+      houseId: Value(houseId),
+      cycleId: Value(cycleId),
+      name: Value(name),
+      description: Value(description),
+      pointCost: Value(pointCost),
+      status: Value(status),
+      usageMode: Value(usageMode),
+      updatedAtHlc: Value(updatedAtHlc),
+      nameHlc: nameHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nameHlc),
+      nameDeviceId: nameDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nameDeviceId),
+      descriptionHlc: descriptionHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descriptionHlc),
+      descriptionDeviceId: descriptionDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descriptionDeviceId),
+      pointCostHlc: pointCostHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pointCostHlc),
+      pointCostDeviceId: pointCostDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pointCostDeviceId),
+      statusHlc: statusHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusHlc),
+      statusDeviceId: statusDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusDeviceId),
+    );
+  }
+
+  factory PrivilegesSyncData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PrivilegesSyncData(
+      privilegeId: serializer.fromJson<String>(json['privilegeId']),
+      houseId: serializer.fromJson<String>(json['houseId']),
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String>(json['description']),
+      pointCost: serializer.fromJson<int>(json['pointCost']),
+      status: serializer.fromJson<String>(json['status']),
+      usageMode: serializer.fromJson<String>(json['usageMode']),
+      updatedAtHlc: serializer.fromJson<Uint8List>(json['updatedAtHlc']),
+      nameHlc: serializer.fromJson<Uint8List?>(json['nameHlc']),
+      nameDeviceId: serializer.fromJson<String?>(json['nameDeviceId']),
+      descriptionHlc: serializer.fromJson<Uint8List?>(json['descriptionHlc']),
+      descriptionDeviceId: serializer.fromJson<String?>(
+        json['descriptionDeviceId'],
+      ),
+      pointCostHlc: serializer.fromJson<Uint8List?>(json['pointCostHlc']),
+      pointCostDeviceId: serializer.fromJson<String?>(
+        json['pointCostDeviceId'],
+      ),
+      statusHlc: serializer.fromJson<Uint8List?>(json['statusHlc']),
+      statusDeviceId: serializer.fromJson<String?>(json['statusDeviceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'privilegeId': serializer.toJson<String>(privilegeId),
+      'houseId': serializer.toJson<String>(houseId),
+      'cycleId': serializer.toJson<String>(cycleId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String>(description),
+      'pointCost': serializer.toJson<int>(pointCost),
+      'status': serializer.toJson<String>(status),
+      'usageMode': serializer.toJson<String>(usageMode),
+      'updatedAtHlc': serializer.toJson<Uint8List>(updatedAtHlc),
+      'nameHlc': serializer.toJson<Uint8List?>(nameHlc),
+      'nameDeviceId': serializer.toJson<String?>(nameDeviceId),
+      'descriptionHlc': serializer.toJson<Uint8List?>(descriptionHlc),
+      'descriptionDeviceId': serializer.toJson<String?>(descriptionDeviceId),
+      'pointCostHlc': serializer.toJson<Uint8List?>(pointCostHlc),
+      'pointCostDeviceId': serializer.toJson<String?>(pointCostDeviceId),
+      'statusHlc': serializer.toJson<Uint8List?>(statusHlc),
+      'statusDeviceId': serializer.toJson<String?>(statusDeviceId),
+    };
+  }
+
+  PrivilegesSyncData copyWith({
+    String? privilegeId,
+    String? houseId,
+    String? cycleId,
+    String? name,
+    String? description,
+    int? pointCost,
+    String? status,
+    String? usageMode,
+    Uint8List? updatedAtHlc,
+    Value<Uint8List?> nameHlc = const Value.absent(),
+    Value<String?> nameDeviceId = const Value.absent(),
+    Value<Uint8List?> descriptionHlc = const Value.absent(),
+    Value<String?> descriptionDeviceId = const Value.absent(),
+    Value<Uint8List?> pointCostHlc = const Value.absent(),
+    Value<String?> pointCostDeviceId = const Value.absent(),
+    Value<Uint8List?> statusHlc = const Value.absent(),
+    Value<String?> statusDeviceId = const Value.absent(),
+  }) => PrivilegesSyncData(
+    privilegeId: privilegeId ?? this.privilegeId,
+    houseId: houseId ?? this.houseId,
+    cycleId: cycleId ?? this.cycleId,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    pointCost: pointCost ?? this.pointCost,
+    status: status ?? this.status,
+    usageMode: usageMode ?? this.usageMode,
+    updatedAtHlc: updatedAtHlc ?? this.updatedAtHlc,
+    nameHlc: nameHlc.present ? nameHlc.value : this.nameHlc,
+    nameDeviceId: nameDeviceId.present ? nameDeviceId.value : this.nameDeviceId,
+    descriptionHlc: descriptionHlc.present
+        ? descriptionHlc.value
+        : this.descriptionHlc,
+    descriptionDeviceId: descriptionDeviceId.present
+        ? descriptionDeviceId.value
+        : this.descriptionDeviceId,
+    pointCostHlc: pointCostHlc.present ? pointCostHlc.value : this.pointCostHlc,
+    pointCostDeviceId: pointCostDeviceId.present
+        ? pointCostDeviceId.value
+        : this.pointCostDeviceId,
+    statusHlc: statusHlc.present ? statusHlc.value : this.statusHlc,
+    statusDeviceId: statusDeviceId.present
+        ? statusDeviceId.value
+        : this.statusDeviceId,
+  );
+  PrivilegesSyncData copyWithCompanion(PrivilegesSyncCompanion data) {
+    return PrivilegesSyncData(
+      privilegeId: data.privilegeId.present
+          ? data.privilegeId.value
+          : this.privilegeId,
+      houseId: data.houseId.present ? data.houseId.value : this.houseId,
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      pointCost: data.pointCost.present ? data.pointCost.value : this.pointCost,
+      status: data.status.present ? data.status.value : this.status,
+      usageMode: data.usageMode.present ? data.usageMode.value : this.usageMode,
+      updatedAtHlc: data.updatedAtHlc.present
+          ? data.updatedAtHlc.value
+          : this.updatedAtHlc,
+      nameHlc: data.nameHlc.present ? data.nameHlc.value : this.nameHlc,
+      nameDeviceId: data.nameDeviceId.present
+          ? data.nameDeviceId.value
+          : this.nameDeviceId,
+      descriptionHlc: data.descriptionHlc.present
+          ? data.descriptionHlc.value
+          : this.descriptionHlc,
+      descriptionDeviceId: data.descriptionDeviceId.present
+          ? data.descriptionDeviceId.value
+          : this.descriptionDeviceId,
+      pointCostHlc: data.pointCostHlc.present
+          ? data.pointCostHlc.value
+          : this.pointCostHlc,
+      pointCostDeviceId: data.pointCostDeviceId.present
+          ? data.pointCostDeviceId.value
+          : this.pointCostDeviceId,
+      statusHlc: data.statusHlc.present ? data.statusHlc.value : this.statusHlc,
+      statusDeviceId: data.statusDeviceId.present
+          ? data.statusDeviceId.value
+          : this.statusDeviceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivilegesSyncData(')
+          ..write('privilegeId: $privilegeId, ')
+          ..write('houseId: $houseId, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('pointCost: $pointCost, ')
+          ..write('status: $status, ')
+          ..write('usageMode: $usageMode, ')
+          ..write('updatedAtHlc: $updatedAtHlc, ')
+          ..write('nameHlc: $nameHlc, ')
+          ..write('nameDeviceId: $nameDeviceId, ')
+          ..write('descriptionHlc: $descriptionHlc, ')
+          ..write('descriptionDeviceId: $descriptionDeviceId, ')
+          ..write('pointCostHlc: $pointCostHlc, ')
+          ..write('pointCostDeviceId: $pointCostDeviceId, ')
+          ..write('statusHlc: $statusHlc, ')
+          ..write('statusDeviceId: $statusDeviceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    privilegeId,
+    houseId,
+    cycleId,
+    name,
+    description,
+    pointCost,
+    status,
+    usageMode,
+    $driftBlobEquality.hash(updatedAtHlc),
+    $driftBlobEquality.hash(nameHlc),
+    nameDeviceId,
+    $driftBlobEquality.hash(descriptionHlc),
+    descriptionDeviceId,
+    $driftBlobEquality.hash(pointCostHlc),
+    pointCostDeviceId,
+    $driftBlobEquality.hash(statusHlc),
+    statusDeviceId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PrivilegesSyncData &&
+          other.privilegeId == this.privilegeId &&
+          other.houseId == this.houseId &&
+          other.cycleId == this.cycleId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.pointCost == this.pointCost &&
+          other.status == this.status &&
+          other.usageMode == this.usageMode &&
+          $driftBlobEquality.equals(other.updatedAtHlc, this.updatedAtHlc) &&
+          $driftBlobEquality.equals(other.nameHlc, this.nameHlc) &&
+          other.nameDeviceId == this.nameDeviceId &&
+          $driftBlobEquality.equals(
+            other.descriptionHlc,
+            this.descriptionHlc,
+          ) &&
+          other.descriptionDeviceId == this.descriptionDeviceId &&
+          $driftBlobEquality.equals(other.pointCostHlc, this.pointCostHlc) &&
+          other.pointCostDeviceId == this.pointCostDeviceId &&
+          $driftBlobEquality.equals(other.statusHlc, this.statusHlc) &&
+          other.statusDeviceId == this.statusDeviceId);
+}
+
+class PrivilegesSyncCompanion extends UpdateCompanion<PrivilegesSyncData> {
+  final Value<String> privilegeId;
+  final Value<String> houseId;
+  final Value<String> cycleId;
+  final Value<String> name;
+  final Value<String> description;
+  final Value<int> pointCost;
+  final Value<String> status;
+  final Value<String> usageMode;
+  final Value<Uint8List> updatedAtHlc;
+  final Value<Uint8List?> nameHlc;
+  final Value<String?> nameDeviceId;
+  final Value<Uint8List?> descriptionHlc;
+  final Value<String?> descriptionDeviceId;
+  final Value<Uint8List?> pointCostHlc;
+  final Value<String?> pointCostDeviceId;
+  final Value<Uint8List?> statusHlc;
+  final Value<String?> statusDeviceId;
+  final Value<int> rowid;
+  const PrivilegesSyncCompanion({
+    this.privilegeId = const Value.absent(),
+    this.houseId = const Value.absent(),
+    this.cycleId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.pointCost = const Value.absent(),
+    this.status = const Value.absent(),
+    this.usageMode = const Value.absent(),
+    this.updatedAtHlc = const Value.absent(),
+    this.nameHlc = const Value.absent(),
+    this.nameDeviceId = const Value.absent(),
+    this.descriptionHlc = const Value.absent(),
+    this.descriptionDeviceId = const Value.absent(),
+    this.pointCostHlc = const Value.absent(),
+    this.pointCostDeviceId = const Value.absent(),
+    this.statusHlc = const Value.absent(),
+    this.statusDeviceId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PrivilegesSyncCompanion.insert({
+    required String privilegeId,
+    required String houseId,
+    required String cycleId,
+    required String name,
+    required String description,
+    required int pointCost,
+    required String status,
+    required String usageMode,
+    required Uint8List updatedAtHlc,
+    this.nameHlc = const Value.absent(),
+    this.nameDeviceId = const Value.absent(),
+    this.descriptionHlc = const Value.absent(),
+    this.descriptionDeviceId = const Value.absent(),
+    this.pointCostHlc = const Value.absent(),
+    this.pointCostDeviceId = const Value.absent(),
+    this.statusHlc = const Value.absent(),
+    this.statusDeviceId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : privilegeId = Value(privilegeId),
+       houseId = Value(houseId),
+       cycleId = Value(cycleId),
+       name = Value(name),
+       description = Value(description),
+       pointCost = Value(pointCost),
+       status = Value(status),
+       usageMode = Value(usageMode),
+       updatedAtHlc = Value(updatedAtHlc);
+  static Insertable<PrivilegesSyncData> custom({
+    Expression<String>? privilegeId,
+    Expression<String>? houseId,
+    Expression<String>? cycleId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<int>? pointCost,
+    Expression<String>? status,
+    Expression<String>? usageMode,
+    Expression<Uint8List>? updatedAtHlc,
+    Expression<Uint8List>? nameHlc,
+    Expression<String>? nameDeviceId,
+    Expression<Uint8List>? descriptionHlc,
+    Expression<String>? descriptionDeviceId,
+    Expression<Uint8List>? pointCostHlc,
+    Expression<String>? pointCostDeviceId,
+    Expression<Uint8List>? statusHlc,
+    Expression<String>? statusDeviceId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (privilegeId != null) 'privilege_id': privilegeId,
+      if (houseId != null) 'house_id': houseId,
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (pointCost != null) 'point_cost': pointCost,
+      if (status != null) 'status': status,
+      if (usageMode != null) 'usage_mode': usageMode,
+      if (updatedAtHlc != null) 'updated_at_hlc': updatedAtHlc,
+      if (nameHlc != null) 'name_hlc': nameHlc,
+      if (nameDeviceId != null) 'name_device_id': nameDeviceId,
+      if (descriptionHlc != null) 'description_hlc': descriptionHlc,
+      if (descriptionDeviceId != null)
+        'description_device_id': descriptionDeviceId,
+      if (pointCostHlc != null) 'point_cost_hlc': pointCostHlc,
+      if (pointCostDeviceId != null) 'point_cost_device_id': pointCostDeviceId,
+      if (statusHlc != null) 'status_hlc': statusHlc,
+      if (statusDeviceId != null) 'status_device_id': statusDeviceId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PrivilegesSyncCompanion copyWith({
+    Value<String>? privilegeId,
+    Value<String>? houseId,
+    Value<String>? cycleId,
+    Value<String>? name,
+    Value<String>? description,
+    Value<int>? pointCost,
+    Value<String>? status,
+    Value<String>? usageMode,
+    Value<Uint8List>? updatedAtHlc,
+    Value<Uint8List?>? nameHlc,
+    Value<String?>? nameDeviceId,
+    Value<Uint8List?>? descriptionHlc,
+    Value<String?>? descriptionDeviceId,
+    Value<Uint8List?>? pointCostHlc,
+    Value<String?>? pointCostDeviceId,
+    Value<Uint8List?>? statusHlc,
+    Value<String?>? statusDeviceId,
+    Value<int>? rowid,
+  }) {
+    return PrivilegesSyncCompanion(
+      privilegeId: privilegeId ?? this.privilegeId,
+      houseId: houseId ?? this.houseId,
+      cycleId: cycleId ?? this.cycleId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      pointCost: pointCost ?? this.pointCost,
+      status: status ?? this.status,
+      usageMode: usageMode ?? this.usageMode,
+      updatedAtHlc: updatedAtHlc ?? this.updatedAtHlc,
+      nameHlc: nameHlc ?? this.nameHlc,
+      nameDeviceId: nameDeviceId ?? this.nameDeviceId,
+      descriptionHlc: descriptionHlc ?? this.descriptionHlc,
+      descriptionDeviceId: descriptionDeviceId ?? this.descriptionDeviceId,
+      pointCostHlc: pointCostHlc ?? this.pointCostHlc,
+      pointCostDeviceId: pointCostDeviceId ?? this.pointCostDeviceId,
+      statusHlc: statusHlc ?? this.statusHlc,
+      statusDeviceId: statusDeviceId ?? this.statusDeviceId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (privilegeId.present) {
+      map['privilege_id'] = Variable<String>(privilegeId.value);
+    }
+    if (houseId.present) {
+      map['house_id'] = Variable<String>(houseId.value);
+    }
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (pointCost.present) {
+      map['point_cost'] = Variable<int>(pointCost.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (usageMode.present) {
+      map['usage_mode'] = Variable<String>(usageMode.value);
+    }
+    if (updatedAtHlc.present) {
+      map['updated_at_hlc'] = Variable<Uint8List>(updatedAtHlc.value);
+    }
+    if (nameHlc.present) {
+      map['name_hlc'] = Variable<Uint8List>(nameHlc.value);
+    }
+    if (nameDeviceId.present) {
+      map['name_device_id'] = Variable<String>(nameDeviceId.value);
+    }
+    if (descriptionHlc.present) {
+      map['description_hlc'] = Variable<Uint8List>(descriptionHlc.value);
+    }
+    if (descriptionDeviceId.present) {
+      map['description_device_id'] = Variable<String>(
+        descriptionDeviceId.value,
+      );
+    }
+    if (pointCostHlc.present) {
+      map['point_cost_hlc'] = Variable<Uint8List>(pointCostHlc.value);
+    }
+    if (pointCostDeviceId.present) {
+      map['point_cost_device_id'] = Variable<String>(pointCostDeviceId.value);
+    }
+    if (statusHlc.present) {
+      map['status_hlc'] = Variable<Uint8List>(statusHlc.value);
+    }
+    if (statusDeviceId.present) {
+      map['status_device_id'] = Variable<String>(statusDeviceId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivilegesSyncCompanion(')
+          ..write('privilegeId: $privilegeId, ')
+          ..write('houseId: $houseId, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('pointCost: $pointCost, ')
+          ..write('status: $status, ')
+          ..write('usageMode: $usageMode, ')
+          ..write('updatedAtHlc: $updatedAtHlc, ')
+          ..write('nameHlc: $nameHlc, ')
+          ..write('nameDeviceId: $nameDeviceId, ')
+          ..write('descriptionHlc: $descriptionHlc, ')
+          ..write('descriptionDeviceId: $descriptionDeviceId, ')
+          ..write('pointCostHlc: $pointCostHlc, ')
+          ..write('pointCostDeviceId: $pointCostDeviceId, ')
+          ..write('statusHlc: $statusHlc, ')
+          ..write('statusDeviceId: $statusDeviceId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PrivilegeRedemptionEventsTable extends PrivilegeRedemptionEvents
+    with TableInfo<$PrivilegeRedemptionEventsTable, PrivilegeRedemptionEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PrivilegeRedemptionEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _redemptionIdMeta = const VerificationMeta(
+    'redemptionId',
+  );
+  @override
+  late final GeneratedColumn<String> redemptionId = GeneratedColumn<String>(
+    'redemption_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _houseIdMeta = const VerificationMeta(
+    'houseId',
+  );
+  @override
+  late final GeneratedColumn<String> houseId = GeneratedColumn<String>(
+    'house_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _privilegeIdMeta = const VerificationMeta(
+    'privilegeId',
+  );
+  @override
+  late final GeneratedColumn<String> privilegeId = GeneratedColumn<String>(
+    'privilege_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pointCostMeta = const VerificationMeta(
+    'pointCost',
+  );
+  @override
+  late final GeneratedColumn<int> pointCost = GeneratedColumn<int>(
+    'point_cost',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<Uint8List> hlc = GeneratedColumn<Uint8List>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusHlcMeta = const VerificationMeta(
+    'statusHlc',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> statusHlc = GeneratedColumn<Uint8List>(
+    'status_hlc',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusDeviceIdMeta = const VerificationMeta(
+    'statusDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> statusDeviceId = GeneratedColumn<String>(
+    'status_device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    redemptionId,
+    houseId,
+    memberId,
+    privilegeId,
+    cycleId,
+    pointCost,
+    status,
+    hlc,
+    statusHlc,
+    statusDeviceId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'privilege_redemption_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PrivilegeRedemptionEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('redemption_id')) {
+      context.handle(
+        _redemptionIdMeta,
+        redemptionId.isAcceptableOrUnknown(
+          data['redemption_id']!,
+          _redemptionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_redemptionIdMeta);
+    }
+    if (data.containsKey('house_id')) {
+      context.handle(
+        _houseIdMeta,
+        houseId.isAcceptableOrUnknown(data['house_id']!, _houseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_houseIdMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memberIdMeta);
+    }
+    if (data.containsKey('privilege_id')) {
+      context.handle(
+        _privilegeIdMeta,
+        privilegeId.isAcceptableOrUnknown(
+          data['privilege_id']!,
+          _privilegeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_privilegeIdMeta);
+    }
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('point_cost')) {
+      context.handle(
+        _pointCostMeta,
+        pointCost.isAcceptableOrUnknown(data['point_cost']!, _pointCostMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pointCostMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('status_hlc')) {
+      context.handle(
+        _statusHlcMeta,
+        statusHlc.isAcceptableOrUnknown(data['status_hlc']!, _statusHlcMeta),
+      );
+    }
+    if (data.containsKey('status_device_id')) {
+      context.handle(
+        _statusDeviceIdMeta,
+        statusDeviceId.isAcceptableOrUnknown(
+          data['status_device_id']!,
+          _statusDeviceIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {redemptionId};
+  @override
+  PrivilegeRedemptionEvent map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PrivilegeRedemptionEvent(
+      redemptionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}redemption_id'],
+      )!,
+      houseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}house_id'],
+      )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      )!,
+      privilegeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privilege_id'],
+      )!,
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      pointCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}point_cost'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}hlc'],
+      )!,
+      statusHlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}status_hlc'],
+      ),
+      statusDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status_device_id'],
+      ),
+    );
+  }
+
+  @override
+  $PrivilegeRedemptionEventsTable createAlias(String alias) {
+    return $PrivilegeRedemptionEventsTable(attachedDatabase, alias);
+  }
+}
+
+class PrivilegeRedemptionEvent extends DataClass
+    implements Insertable<PrivilegeRedemptionEvent> {
+  final String redemptionId;
+  final String houseId;
+  final String memberId;
+  final String privilegeId;
+  final String cycleId;
+  final int pointCost;
+  final String status;
+  final Uint8List hlc;
+  final Uint8List? statusHlc;
+  final String? statusDeviceId;
+  const PrivilegeRedemptionEvent({
+    required this.redemptionId,
+    required this.houseId,
+    required this.memberId,
+    required this.privilegeId,
+    required this.cycleId,
+    required this.pointCost,
+    required this.status,
+    required this.hlc,
+    this.statusHlc,
+    this.statusDeviceId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['redemption_id'] = Variable<String>(redemptionId);
+    map['house_id'] = Variable<String>(houseId);
+    map['member_id'] = Variable<String>(memberId);
+    map['privilege_id'] = Variable<String>(privilegeId);
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['point_cost'] = Variable<int>(pointCost);
+    map['status'] = Variable<String>(status);
+    map['hlc'] = Variable<Uint8List>(hlc);
+    if (!nullToAbsent || statusHlc != null) {
+      map['status_hlc'] = Variable<Uint8List>(statusHlc);
+    }
+    if (!nullToAbsent || statusDeviceId != null) {
+      map['status_device_id'] = Variable<String>(statusDeviceId);
+    }
+    return map;
+  }
+
+  PrivilegeRedemptionEventsCompanion toCompanion(bool nullToAbsent) {
+    return PrivilegeRedemptionEventsCompanion(
+      redemptionId: Value(redemptionId),
+      houseId: Value(houseId),
+      memberId: Value(memberId),
+      privilegeId: Value(privilegeId),
+      cycleId: Value(cycleId),
+      pointCost: Value(pointCost),
+      status: Value(status),
+      hlc: Value(hlc),
+      statusHlc: statusHlc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusHlc),
+      statusDeviceId: statusDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusDeviceId),
+    );
+  }
+
+  factory PrivilegeRedemptionEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PrivilegeRedemptionEvent(
+      redemptionId: serializer.fromJson<String>(json['redemptionId']),
+      houseId: serializer.fromJson<String>(json['houseId']),
+      memberId: serializer.fromJson<String>(json['memberId']),
+      privilegeId: serializer.fromJson<String>(json['privilegeId']),
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      pointCost: serializer.fromJson<int>(json['pointCost']),
+      status: serializer.fromJson<String>(json['status']),
+      hlc: serializer.fromJson<Uint8List>(json['hlc']),
+      statusHlc: serializer.fromJson<Uint8List?>(json['statusHlc']),
+      statusDeviceId: serializer.fromJson<String?>(json['statusDeviceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'redemptionId': serializer.toJson<String>(redemptionId),
+      'houseId': serializer.toJson<String>(houseId),
+      'memberId': serializer.toJson<String>(memberId),
+      'privilegeId': serializer.toJson<String>(privilegeId),
+      'cycleId': serializer.toJson<String>(cycleId),
+      'pointCost': serializer.toJson<int>(pointCost),
+      'status': serializer.toJson<String>(status),
+      'hlc': serializer.toJson<Uint8List>(hlc),
+      'statusHlc': serializer.toJson<Uint8List?>(statusHlc),
+      'statusDeviceId': serializer.toJson<String?>(statusDeviceId),
+    };
+  }
+
+  PrivilegeRedemptionEvent copyWith({
+    String? redemptionId,
+    String? houseId,
+    String? memberId,
+    String? privilegeId,
+    String? cycleId,
+    int? pointCost,
+    String? status,
+    Uint8List? hlc,
+    Value<Uint8List?> statusHlc = const Value.absent(),
+    Value<String?> statusDeviceId = const Value.absent(),
+  }) => PrivilegeRedemptionEvent(
+    redemptionId: redemptionId ?? this.redemptionId,
+    houseId: houseId ?? this.houseId,
+    memberId: memberId ?? this.memberId,
+    privilegeId: privilegeId ?? this.privilegeId,
+    cycleId: cycleId ?? this.cycleId,
+    pointCost: pointCost ?? this.pointCost,
+    status: status ?? this.status,
+    hlc: hlc ?? this.hlc,
+    statusHlc: statusHlc.present ? statusHlc.value : this.statusHlc,
+    statusDeviceId: statusDeviceId.present
+        ? statusDeviceId.value
+        : this.statusDeviceId,
+  );
+  PrivilegeRedemptionEvent copyWithCompanion(
+    PrivilegeRedemptionEventsCompanion data,
+  ) {
+    return PrivilegeRedemptionEvent(
+      redemptionId: data.redemptionId.present
+          ? data.redemptionId.value
+          : this.redemptionId,
+      houseId: data.houseId.present ? data.houseId.value : this.houseId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      privilegeId: data.privilegeId.present
+          ? data.privilegeId.value
+          : this.privilegeId,
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      pointCost: data.pointCost.present ? data.pointCost.value : this.pointCost,
+      status: data.status.present ? data.status.value : this.status,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      statusHlc: data.statusHlc.present ? data.statusHlc.value : this.statusHlc,
+      statusDeviceId: data.statusDeviceId.present
+          ? data.statusDeviceId.value
+          : this.statusDeviceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivilegeRedemptionEvent(')
+          ..write('redemptionId: $redemptionId, ')
+          ..write('houseId: $houseId, ')
+          ..write('memberId: $memberId, ')
+          ..write('privilegeId: $privilegeId, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('pointCost: $pointCost, ')
+          ..write('status: $status, ')
+          ..write('hlc: $hlc, ')
+          ..write('statusHlc: $statusHlc, ')
+          ..write('statusDeviceId: $statusDeviceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    redemptionId,
+    houseId,
+    memberId,
+    privilegeId,
+    cycleId,
+    pointCost,
+    status,
+    $driftBlobEquality.hash(hlc),
+    $driftBlobEquality.hash(statusHlc),
+    statusDeviceId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PrivilegeRedemptionEvent &&
+          other.redemptionId == this.redemptionId &&
+          other.houseId == this.houseId &&
+          other.memberId == this.memberId &&
+          other.privilegeId == this.privilegeId &&
+          other.cycleId == this.cycleId &&
+          other.pointCost == this.pointCost &&
+          other.status == this.status &&
+          $driftBlobEquality.equals(other.hlc, this.hlc) &&
+          $driftBlobEquality.equals(other.statusHlc, this.statusHlc) &&
+          other.statusDeviceId == this.statusDeviceId);
+}
+
+class PrivilegeRedemptionEventsCompanion
+    extends UpdateCompanion<PrivilegeRedemptionEvent> {
+  final Value<String> redemptionId;
+  final Value<String> houseId;
+  final Value<String> memberId;
+  final Value<String> privilegeId;
+  final Value<String> cycleId;
+  final Value<int> pointCost;
+  final Value<String> status;
+  final Value<Uint8List> hlc;
+  final Value<Uint8List?> statusHlc;
+  final Value<String?> statusDeviceId;
+  final Value<int> rowid;
+  const PrivilegeRedemptionEventsCompanion({
+    this.redemptionId = const Value.absent(),
+    this.houseId = const Value.absent(),
+    this.memberId = const Value.absent(),
+    this.privilegeId = const Value.absent(),
+    this.cycleId = const Value.absent(),
+    this.pointCost = const Value.absent(),
+    this.status = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.statusHlc = const Value.absent(),
+    this.statusDeviceId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PrivilegeRedemptionEventsCompanion.insert({
+    required String redemptionId,
+    required String houseId,
+    required String memberId,
+    required String privilegeId,
+    required String cycleId,
+    required int pointCost,
+    required String status,
+    required Uint8List hlc,
+    this.statusHlc = const Value.absent(),
+    this.statusDeviceId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : redemptionId = Value(redemptionId),
+       houseId = Value(houseId),
+       memberId = Value(memberId),
+       privilegeId = Value(privilegeId),
+       cycleId = Value(cycleId),
+       pointCost = Value(pointCost),
+       status = Value(status),
+       hlc = Value(hlc);
+  static Insertable<PrivilegeRedemptionEvent> custom({
+    Expression<String>? redemptionId,
+    Expression<String>? houseId,
+    Expression<String>? memberId,
+    Expression<String>? privilegeId,
+    Expression<String>? cycleId,
+    Expression<int>? pointCost,
+    Expression<String>? status,
+    Expression<Uint8List>? hlc,
+    Expression<Uint8List>? statusHlc,
+    Expression<String>? statusDeviceId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (redemptionId != null) 'redemption_id': redemptionId,
+      if (houseId != null) 'house_id': houseId,
+      if (memberId != null) 'member_id': memberId,
+      if (privilegeId != null) 'privilege_id': privilegeId,
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (pointCost != null) 'point_cost': pointCost,
+      if (status != null) 'status': status,
+      if (hlc != null) 'hlc': hlc,
+      if (statusHlc != null) 'status_hlc': statusHlc,
+      if (statusDeviceId != null) 'status_device_id': statusDeviceId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PrivilegeRedemptionEventsCompanion copyWith({
+    Value<String>? redemptionId,
+    Value<String>? houseId,
+    Value<String>? memberId,
+    Value<String>? privilegeId,
+    Value<String>? cycleId,
+    Value<int>? pointCost,
+    Value<String>? status,
+    Value<Uint8List>? hlc,
+    Value<Uint8List?>? statusHlc,
+    Value<String?>? statusDeviceId,
+    Value<int>? rowid,
+  }) {
+    return PrivilegeRedemptionEventsCompanion(
+      redemptionId: redemptionId ?? this.redemptionId,
+      houseId: houseId ?? this.houseId,
+      memberId: memberId ?? this.memberId,
+      privilegeId: privilegeId ?? this.privilegeId,
+      cycleId: cycleId ?? this.cycleId,
+      pointCost: pointCost ?? this.pointCost,
+      status: status ?? this.status,
+      hlc: hlc ?? this.hlc,
+      statusHlc: statusHlc ?? this.statusHlc,
+      statusDeviceId: statusDeviceId ?? this.statusDeviceId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (redemptionId.present) {
+      map['redemption_id'] = Variable<String>(redemptionId.value);
+    }
+    if (houseId.present) {
+      map['house_id'] = Variable<String>(houseId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (privilegeId.present) {
+      map['privilege_id'] = Variable<String>(privilegeId.value);
+    }
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (pointCost.present) {
+      map['point_cost'] = Variable<int>(pointCost.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<Uint8List>(hlc.value);
+    }
+    if (statusHlc.present) {
+      map['status_hlc'] = Variable<Uint8List>(statusHlc.value);
+    }
+    if (statusDeviceId.present) {
+      map['status_device_id'] = Variable<String>(statusDeviceId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivilegeRedemptionEventsCompanion(')
+          ..write('redemptionId: $redemptionId, ')
+          ..write('houseId: $houseId, ')
+          ..write('memberId: $memberId, ')
+          ..write('privilegeId: $privilegeId, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('pointCost: $pointCost, ')
+          ..write('status: $status, ')
+          ..write('hlc: $hlc, ')
           ..write('statusHlc: $statusHlc, ')
           ..write('statusDeviceId: $statusDeviceId, ')
           ..write('rowid: $rowid')
@@ -8636,6 +10654,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ProposalVotesSyncTable(this);
   late final $CyclesSyncTable cyclesSync = $CyclesSyncTable(this);
   late final $TasksSyncTable tasksSync = $TasksSyncTable(this);
+  late final $PrivilegesSyncTable privilegesSync = $PrivilegesSyncTable(this);
+  late final $PrivilegeRedemptionEventsTable privilegeRedemptionEvents =
+      $PrivilegeRedemptionEventsTable(this);
   late final $TaskClaimEventsTable taskClaimEvents = $TaskClaimEventsTable(
     this,
   );
@@ -8665,6 +10686,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     proposalVotesSync,
     cyclesSync,
     tasksSync,
+    privilegesSync,
+    privilegeRedemptionEvents,
     taskClaimEvents,
     auditLogAppendOnly,
     syncOutboxEntries,
@@ -11021,14 +13044,20 @@ typedef $$TasksSyncTableCreateCompanionBuilder =
       required String houseId,
       required String cycleId,
       required String title,
+      Value<String> description,
       required int negotiatedPoints,
       required String status,
+      Value<String> assignedToMemberId,
       Value<String> claimedByMemberIds,
       required Uint8List updatedAtHlc,
       Value<Uint8List?> titleHlc,
       Value<String?> titleDeviceId,
+      Value<Uint8List?> descriptionHlc,
+      Value<String?> descriptionDeviceId,
       Value<Uint8List?> pointsHlc,
       Value<String?> pointsDeviceId,
+      Value<Uint8List?> assignedToMemberIdHlc,
+      Value<String?> assignedToMemberIdDeviceId,
       Value<Uint8List?> statusHlc,
       Value<String?> statusDeviceId,
       Value<int> rowid,
@@ -11039,14 +13068,20 @@ typedef $$TasksSyncTableUpdateCompanionBuilder =
       Value<String> houseId,
       Value<String> cycleId,
       Value<String> title,
+      Value<String> description,
       Value<int> negotiatedPoints,
       Value<String> status,
+      Value<String> assignedToMemberId,
       Value<String> claimedByMemberIds,
       Value<Uint8List> updatedAtHlc,
       Value<Uint8List?> titleHlc,
       Value<String?> titleDeviceId,
+      Value<Uint8List?> descriptionHlc,
+      Value<String?> descriptionDeviceId,
       Value<Uint8List?> pointsHlc,
       Value<String?> pointsDeviceId,
+      Value<Uint8List?> assignedToMemberIdHlc,
+      Value<String?> assignedToMemberIdDeviceId,
       Value<Uint8List?> statusHlc,
       Value<String?> statusDeviceId,
       Value<int> rowid,
@@ -11081,6 +13116,11 @@ class $$TasksSyncTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get negotiatedPoints => $composableBuilder(
     column: $table.negotiatedPoints,
     builder: (column) => ColumnFilters(column),
@@ -11088,6 +13128,11 @@ class $$TasksSyncTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assignedToMemberId => $composableBuilder(
+    column: $table.assignedToMemberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11111,6 +13156,16 @@ class $$TasksSyncTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<Uint8List> get pointsHlc => $composableBuilder(
     column: $table.pointsHlc,
     builder: (column) => ColumnFilters(column),
@@ -11118,6 +13173,16 @@ class $$TasksSyncTableFilterComposer
 
   ColumnFilters<String> get pointsDeviceId => $composableBuilder(
     column: $table.pointsDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get assignedToMemberIdHlc => $composableBuilder(
+    column: $table.assignedToMemberIdHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assignedToMemberIdDeviceId => $composableBuilder(
+    column: $table.assignedToMemberIdDeviceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11161,6 +13226,11 @@ class $$TasksSyncTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get negotiatedPoints => $composableBuilder(
     column: $table.negotiatedPoints,
     builder: (column) => ColumnOrderings(column),
@@ -11168,6 +13238,11 @@ class $$TasksSyncTableOrderingComposer
 
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assignedToMemberId => $composableBuilder(
+    column: $table.assignedToMemberId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11191,6 +13266,16 @@ class $$TasksSyncTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<Uint8List> get pointsHlc => $composableBuilder(
     column: $table.pointsHlc,
     builder: (column) => ColumnOrderings(column),
@@ -11198,6 +13283,16 @@ class $$TasksSyncTableOrderingComposer
 
   ColumnOrderings<String> get pointsDeviceId => $composableBuilder(
     column: $table.pointsDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get assignedToMemberIdHlc => $composableBuilder(
+    column: $table.assignedToMemberIdHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assignedToMemberIdDeviceId => $composableBuilder(
+    column: $table.assignedToMemberIdDeviceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11233,6 +13328,11 @@ class $$TasksSyncTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get negotiatedPoints => $composableBuilder(
     column: $table.negotiatedPoints,
     builder: (column) => column,
@@ -11240,6 +13340,11 @@ class $$TasksSyncTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get assignedToMemberId => $composableBuilder(
+    column: $table.assignedToMemberId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get claimedByMemberIds => $composableBuilder(
     column: $table.claimedByMemberIds,
@@ -11259,11 +13364,31 @@ class $$TasksSyncTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<Uint8List> get pointsHlc =>
       $composableBuilder(column: $table.pointsHlc, builder: (column) => column);
 
   GeneratedColumn<String> get pointsDeviceId => $composableBuilder(
     column: $table.pointsDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get assignedToMemberIdHlc => $composableBuilder(
+    column: $table.assignedToMemberIdHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get assignedToMemberIdDeviceId => $composableBuilder(
+    column: $table.assignedToMemberIdDeviceId,
     builder: (column) => column,
   );
 
@@ -11311,14 +13436,21 @@ class $$TasksSyncTableTableManager
                 Value<String> houseId = const Value.absent(),
                 Value<String> cycleId = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<int> negotiatedPoints = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> assignedToMemberId = const Value.absent(),
                 Value<String> claimedByMemberIds = const Value.absent(),
                 Value<Uint8List> updatedAtHlc = const Value.absent(),
                 Value<Uint8List?> titleHlc = const Value.absent(),
                 Value<String?> titleDeviceId = const Value.absent(),
+                Value<Uint8List?> descriptionHlc = const Value.absent(),
+                Value<String?> descriptionDeviceId = const Value.absent(),
                 Value<Uint8List?> pointsHlc = const Value.absent(),
                 Value<String?> pointsDeviceId = const Value.absent(),
+                Value<Uint8List?> assignedToMemberIdHlc = const Value.absent(),
+                Value<String?> assignedToMemberIdDeviceId =
+                    const Value.absent(),
                 Value<Uint8List?> statusHlc = const Value.absent(),
                 Value<String?> statusDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -11327,14 +13459,20 @@ class $$TasksSyncTableTableManager
                 houseId: houseId,
                 cycleId: cycleId,
                 title: title,
+                description: description,
                 negotiatedPoints: negotiatedPoints,
                 status: status,
+                assignedToMemberId: assignedToMemberId,
                 claimedByMemberIds: claimedByMemberIds,
                 updatedAtHlc: updatedAtHlc,
                 titleHlc: titleHlc,
                 titleDeviceId: titleDeviceId,
+                descriptionHlc: descriptionHlc,
+                descriptionDeviceId: descriptionDeviceId,
                 pointsHlc: pointsHlc,
                 pointsDeviceId: pointsDeviceId,
+                assignedToMemberIdHlc: assignedToMemberIdHlc,
+                assignedToMemberIdDeviceId: assignedToMemberIdDeviceId,
                 statusHlc: statusHlc,
                 statusDeviceId: statusDeviceId,
                 rowid: rowid,
@@ -11345,14 +13483,21 @@ class $$TasksSyncTableTableManager
                 required String houseId,
                 required String cycleId,
                 required String title,
+                Value<String> description = const Value.absent(),
                 required int negotiatedPoints,
                 required String status,
+                Value<String> assignedToMemberId = const Value.absent(),
                 Value<String> claimedByMemberIds = const Value.absent(),
                 required Uint8List updatedAtHlc,
                 Value<Uint8List?> titleHlc = const Value.absent(),
                 Value<String?> titleDeviceId = const Value.absent(),
+                Value<Uint8List?> descriptionHlc = const Value.absent(),
+                Value<String?> descriptionDeviceId = const Value.absent(),
                 Value<Uint8List?> pointsHlc = const Value.absent(),
                 Value<String?> pointsDeviceId = const Value.absent(),
+                Value<Uint8List?> assignedToMemberIdHlc = const Value.absent(),
+                Value<String?> assignedToMemberIdDeviceId =
+                    const Value.absent(),
                 Value<Uint8List?> statusHlc = const Value.absent(),
                 Value<String?> statusDeviceId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -11361,14 +13506,20 @@ class $$TasksSyncTableTableManager
                 houseId: houseId,
                 cycleId: cycleId,
                 title: title,
+                description: description,
                 negotiatedPoints: negotiatedPoints,
                 status: status,
+                assignedToMemberId: assignedToMemberId,
                 claimedByMemberIds: claimedByMemberIds,
                 updatedAtHlc: updatedAtHlc,
                 titleHlc: titleHlc,
                 titleDeviceId: titleDeviceId,
+                descriptionHlc: descriptionHlc,
+                descriptionDeviceId: descriptionDeviceId,
                 pointsHlc: pointsHlc,
                 pointsDeviceId: pointsDeviceId,
+                assignedToMemberIdHlc: assignedToMemberIdHlc,
+                assignedToMemberIdDeviceId: assignedToMemberIdDeviceId,
                 statusHlc: statusHlc,
                 statusDeviceId: statusDeviceId,
                 rowid: rowid,
@@ -11396,6 +13547,778 @@ typedef $$TasksSyncTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $TasksSyncTable, TasksSyncData>,
       ),
       TasksSyncData,
+      PrefetchHooks Function()
+    >;
+typedef $$PrivilegesSyncTableCreateCompanionBuilder =
+    PrivilegesSyncCompanion Function({
+      required String privilegeId,
+      required String houseId,
+      required String cycleId,
+      required String name,
+      required String description,
+      required int pointCost,
+      required String status,
+      required String usageMode,
+      required Uint8List updatedAtHlc,
+      Value<Uint8List?> nameHlc,
+      Value<String?> nameDeviceId,
+      Value<Uint8List?> descriptionHlc,
+      Value<String?> descriptionDeviceId,
+      Value<Uint8List?> pointCostHlc,
+      Value<String?> pointCostDeviceId,
+      Value<Uint8List?> statusHlc,
+      Value<String?> statusDeviceId,
+      Value<int> rowid,
+    });
+typedef $$PrivilegesSyncTableUpdateCompanionBuilder =
+    PrivilegesSyncCompanion Function({
+      Value<String> privilegeId,
+      Value<String> houseId,
+      Value<String> cycleId,
+      Value<String> name,
+      Value<String> description,
+      Value<int> pointCost,
+      Value<String> status,
+      Value<String> usageMode,
+      Value<Uint8List> updatedAtHlc,
+      Value<Uint8List?> nameHlc,
+      Value<String?> nameDeviceId,
+      Value<Uint8List?> descriptionHlc,
+      Value<String?> descriptionDeviceId,
+      Value<Uint8List?> pointCostHlc,
+      Value<String?> pointCostDeviceId,
+      Value<Uint8List?> statusHlc,
+      Value<String?> statusDeviceId,
+      Value<int> rowid,
+    });
+
+class $$PrivilegesSyncTableFilterComposer
+    extends Composer<_$AppDatabase, $PrivilegesSyncTable> {
+  $$PrivilegesSyncTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get houseId => $composableBuilder(
+    column: $table.houseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pointCost => $composableBuilder(
+    column: $table.pointCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get usageMode => $composableBuilder(
+    column: $table.usageMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get updatedAtHlc => $composableBuilder(
+    column: $table.updatedAtHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get nameHlc => $composableBuilder(
+    column: $table.nameHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nameDeviceId => $composableBuilder(
+    column: $table.nameDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get pointCostHlc => $composableBuilder(
+    column: $table.pointCostHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pointCostDeviceId => $composableBuilder(
+    column: $table.pointCostDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get statusHlc => $composableBuilder(
+    column: $table.statusHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PrivilegesSyncTableOrderingComposer
+    extends Composer<_$AppDatabase, $PrivilegesSyncTable> {
+  $$PrivilegesSyncTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get houseId => $composableBuilder(
+    column: $table.houseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pointCost => $composableBuilder(
+    column: $table.pointCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usageMode => $composableBuilder(
+    column: $table.usageMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get updatedAtHlc => $composableBuilder(
+    column: $table.updatedAtHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get nameHlc => $composableBuilder(
+    column: $table.nameHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nameDeviceId => $composableBuilder(
+    column: $table.nameDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get pointCostHlc => $composableBuilder(
+    column: $table.pointCostHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pointCostDeviceId => $composableBuilder(
+    column: $table.pointCostDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get statusHlc => $composableBuilder(
+    column: $table.statusHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PrivilegesSyncTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PrivilegesSyncTable> {
+  $$PrivilegesSyncTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get houseId =>
+      $composableBuilder(column: $table.houseId, builder: (column) => column);
+
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pointCost =>
+      $composableBuilder(column: $table.pointCost, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get usageMode =>
+      $composableBuilder(column: $table.usageMode, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get updatedAtHlc => $composableBuilder(
+    column: $table.updatedAtHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get nameHlc =>
+      $composableBuilder(column: $table.nameHlc, builder: (column) => column);
+
+  GeneratedColumn<String> get nameDeviceId => $composableBuilder(
+    column: $table.nameDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get descriptionHlc => $composableBuilder(
+    column: $table.descriptionHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get descriptionDeviceId => $composableBuilder(
+    column: $table.descriptionDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get pointCostHlc => $composableBuilder(
+    column: $table.pointCostHlc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get pointCostDeviceId => $composableBuilder(
+    column: $table.pointCostDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get statusHlc =>
+      $composableBuilder(column: $table.statusHlc, builder: (column) => column);
+
+  GeneratedColumn<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => column,
+  );
+}
+
+class $$PrivilegesSyncTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PrivilegesSyncTable,
+          PrivilegesSyncData,
+          $$PrivilegesSyncTableFilterComposer,
+          $$PrivilegesSyncTableOrderingComposer,
+          $$PrivilegesSyncTableAnnotationComposer,
+          $$PrivilegesSyncTableCreateCompanionBuilder,
+          $$PrivilegesSyncTableUpdateCompanionBuilder,
+          (
+            PrivilegesSyncData,
+            BaseReferences<
+              _$AppDatabase,
+              $PrivilegesSyncTable,
+              PrivilegesSyncData
+            >,
+          ),
+          PrivilegesSyncData,
+          PrefetchHooks Function()
+        > {
+  $$PrivilegesSyncTableTableManager(
+    _$AppDatabase db,
+    $PrivilegesSyncTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PrivilegesSyncTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PrivilegesSyncTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PrivilegesSyncTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> privilegeId = const Value.absent(),
+                Value<String> houseId = const Value.absent(),
+                Value<String> cycleId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int> pointCost = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> usageMode = const Value.absent(),
+                Value<Uint8List> updatedAtHlc = const Value.absent(),
+                Value<Uint8List?> nameHlc = const Value.absent(),
+                Value<String?> nameDeviceId = const Value.absent(),
+                Value<Uint8List?> descriptionHlc = const Value.absent(),
+                Value<String?> descriptionDeviceId = const Value.absent(),
+                Value<Uint8List?> pointCostHlc = const Value.absent(),
+                Value<String?> pointCostDeviceId = const Value.absent(),
+                Value<Uint8List?> statusHlc = const Value.absent(),
+                Value<String?> statusDeviceId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivilegesSyncCompanion(
+                privilegeId: privilegeId,
+                houseId: houseId,
+                cycleId: cycleId,
+                name: name,
+                description: description,
+                pointCost: pointCost,
+                status: status,
+                usageMode: usageMode,
+                updatedAtHlc: updatedAtHlc,
+                nameHlc: nameHlc,
+                nameDeviceId: nameDeviceId,
+                descriptionHlc: descriptionHlc,
+                descriptionDeviceId: descriptionDeviceId,
+                pointCostHlc: pointCostHlc,
+                pointCostDeviceId: pointCostDeviceId,
+                statusHlc: statusHlc,
+                statusDeviceId: statusDeviceId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String privilegeId,
+                required String houseId,
+                required String cycleId,
+                required String name,
+                required String description,
+                required int pointCost,
+                required String status,
+                required String usageMode,
+                required Uint8List updatedAtHlc,
+                Value<Uint8List?> nameHlc = const Value.absent(),
+                Value<String?> nameDeviceId = const Value.absent(),
+                Value<Uint8List?> descriptionHlc = const Value.absent(),
+                Value<String?> descriptionDeviceId = const Value.absent(),
+                Value<Uint8List?> pointCostHlc = const Value.absent(),
+                Value<String?> pointCostDeviceId = const Value.absent(),
+                Value<Uint8List?> statusHlc = const Value.absent(),
+                Value<String?> statusDeviceId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivilegesSyncCompanion.insert(
+                privilegeId: privilegeId,
+                houseId: houseId,
+                cycleId: cycleId,
+                name: name,
+                description: description,
+                pointCost: pointCost,
+                status: status,
+                usageMode: usageMode,
+                updatedAtHlc: updatedAtHlc,
+                nameHlc: nameHlc,
+                nameDeviceId: nameDeviceId,
+                descriptionHlc: descriptionHlc,
+                descriptionDeviceId: descriptionDeviceId,
+                pointCostHlc: pointCostHlc,
+                pointCostDeviceId: pointCostDeviceId,
+                statusHlc: statusHlc,
+                statusDeviceId: statusDeviceId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PrivilegesSyncTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PrivilegesSyncTable,
+      PrivilegesSyncData,
+      $$PrivilegesSyncTableFilterComposer,
+      $$PrivilegesSyncTableOrderingComposer,
+      $$PrivilegesSyncTableAnnotationComposer,
+      $$PrivilegesSyncTableCreateCompanionBuilder,
+      $$PrivilegesSyncTableUpdateCompanionBuilder,
+      (
+        PrivilegesSyncData,
+        BaseReferences<_$AppDatabase, $PrivilegesSyncTable, PrivilegesSyncData>,
+      ),
+      PrivilegesSyncData,
+      PrefetchHooks Function()
+    >;
+typedef $$PrivilegeRedemptionEventsTableCreateCompanionBuilder =
+    PrivilegeRedemptionEventsCompanion Function({
+      required String redemptionId,
+      required String houseId,
+      required String memberId,
+      required String privilegeId,
+      required String cycleId,
+      required int pointCost,
+      required String status,
+      required Uint8List hlc,
+      Value<Uint8List?> statusHlc,
+      Value<String?> statusDeviceId,
+      Value<int> rowid,
+    });
+typedef $$PrivilegeRedemptionEventsTableUpdateCompanionBuilder =
+    PrivilegeRedemptionEventsCompanion Function({
+      Value<String> redemptionId,
+      Value<String> houseId,
+      Value<String> memberId,
+      Value<String> privilegeId,
+      Value<String> cycleId,
+      Value<int> pointCost,
+      Value<String> status,
+      Value<Uint8List> hlc,
+      Value<Uint8List?> statusHlc,
+      Value<String?> statusDeviceId,
+      Value<int> rowid,
+    });
+
+class $$PrivilegeRedemptionEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $PrivilegeRedemptionEventsTable> {
+  $$PrivilegeRedemptionEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get redemptionId => $composableBuilder(
+    column: $table.redemptionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get houseId => $composableBuilder(
+    column: $table.houseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pointCost => $composableBuilder(
+    column: $table.pointCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get statusHlc => $composableBuilder(
+    column: $table.statusHlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PrivilegeRedemptionEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PrivilegeRedemptionEventsTable> {
+  $$PrivilegeRedemptionEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get redemptionId => $composableBuilder(
+    column: $table.redemptionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get houseId => $composableBuilder(
+    column: $table.houseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pointCost => $composableBuilder(
+    column: $table.pointCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get statusHlc => $composableBuilder(
+    column: $table.statusHlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PrivilegeRedemptionEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PrivilegeRedemptionEventsTable> {
+  $$PrivilegeRedemptionEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get redemptionId => $composableBuilder(
+    column: $table.redemptionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get houseId =>
+      $composableBuilder(column: $table.houseId, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
+  GeneratedColumn<String> get privilegeId => $composableBuilder(
+    column: $table.privilegeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<int> get pointCost =>
+      $composableBuilder(column: $table.pointCost, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get statusHlc =>
+      $composableBuilder(column: $table.statusHlc, builder: (column) => column);
+
+  GeneratedColumn<String> get statusDeviceId => $composableBuilder(
+    column: $table.statusDeviceId,
+    builder: (column) => column,
+  );
+}
+
+class $$PrivilegeRedemptionEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PrivilegeRedemptionEventsTable,
+          PrivilegeRedemptionEvent,
+          $$PrivilegeRedemptionEventsTableFilterComposer,
+          $$PrivilegeRedemptionEventsTableOrderingComposer,
+          $$PrivilegeRedemptionEventsTableAnnotationComposer,
+          $$PrivilegeRedemptionEventsTableCreateCompanionBuilder,
+          $$PrivilegeRedemptionEventsTableUpdateCompanionBuilder,
+          (
+            PrivilegeRedemptionEvent,
+            BaseReferences<
+              _$AppDatabase,
+              $PrivilegeRedemptionEventsTable,
+              PrivilegeRedemptionEvent
+            >,
+          ),
+          PrivilegeRedemptionEvent,
+          PrefetchHooks Function()
+        > {
+  $$PrivilegeRedemptionEventsTableTableManager(
+    _$AppDatabase db,
+    $PrivilegeRedemptionEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PrivilegeRedemptionEventsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$PrivilegeRedemptionEventsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PrivilegeRedemptionEventsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> redemptionId = const Value.absent(),
+                Value<String> houseId = const Value.absent(),
+                Value<String> memberId = const Value.absent(),
+                Value<String> privilegeId = const Value.absent(),
+                Value<String> cycleId = const Value.absent(),
+                Value<int> pointCost = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<Uint8List> hlc = const Value.absent(),
+                Value<Uint8List?> statusHlc = const Value.absent(),
+                Value<String?> statusDeviceId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivilegeRedemptionEventsCompanion(
+                redemptionId: redemptionId,
+                houseId: houseId,
+                memberId: memberId,
+                privilegeId: privilegeId,
+                cycleId: cycleId,
+                pointCost: pointCost,
+                status: status,
+                hlc: hlc,
+                statusHlc: statusHlc,
+                statusDeviceId: statusDeviceId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String redemptionId,
+                required String houseId,
+                required String memberId,
+                required String privilegeId,
+                required String cycleId,
+                required int pointCost,
+                required String status,
+                required Uint8List hlc,
+                Value<Uint8List?> statusHlc = const Value.absent(),
+                Value<String?> statusDeviceId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PrivilegeRedemptionEventsCompanion.insert(
+                redemptionId: redemptionId,
+                houseId: houseId,
+                memberId: memberId,
+                privilegeId: privilegeId,
+                cycleId: cycleId,
+                pointCost: pointCost,
+                status: status,
+                hlc: hlc,
+                statusHlc: statusHlc,
+                statusDeviceId: statusDeviceId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PrivilegeRedemptionEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PrivilegeRedemptionEventsTable,
+      PrivilegeRedemptionEvent,
+      $$PrivilegeRedemptionEventsTableFilterComposer,
+      $$PrivilegeRedemptionEventsTableOrderingComposer,
+      $$PrivilegeRedemptionEventsTableAnnotationComposer,
+      $$PrivilegeRedemptionEventsTableCreateCompanionBuilder,
+      $$PrivilegeRedemptionEventsTableUpdateCompanionBuilder,
+      (
+        PrivilegeRedemptionEvent,
+        BaseReferences<
+          _$AppDatabase,
+          $PrivilegeRedemptionEventsTable,
+          PrivilegeRedemptionEvent
+        >,
+      ),
+      PrivilegeRedemptionEvent,
       PrefetchHooks Function()
     >;
 typedef $$TaskClaimEventsTableCreateCompanionBuilder =
@@ -13004,6 +15927,13 @@ class $AppDatabaseManager {
       $$CyclesSyncTableTableManager(_db, _db.cyclesSync);
   $$TasksSyncTableTableManager get tasksSync =>
       $$TasksSyncTableTableManager(_db, _db.tasksSync);
+  $$PrivilegesSyncTableTableManager get privilegesSync =>
+      $$PrivilegesSyncTableTableManager(_db, _db.privilegesSync);
+  $$PrivilegeRedemptionEventsTableTableManager get privilegeRedemptionEvents =>
+      $$PrivilegeRedemptionEventsTableTableManager(
+        _db,
+        _db.privilegeRedemptionEvents,
+      );
   $$TaskClaimEventsTableTableManager get taskClaimEvents =>
       $$TaskClaimEventsTableTableManager(_db, _db.taskClaimEvents);
   $$AuditLogAppendOnlyTableTableManager get auditLogAppendOnly =>

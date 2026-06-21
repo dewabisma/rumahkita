@@ -4,16 +4,21 @@ import 'package:drift/drift.dart';
 import 'package:rumah/data/local/app_database.dart';
 import 'package:rumah/data/repositories/drift_house_repositories.dart';
 import 'package:rumah/domain/entities/cycle.dart';
-import 'package:rumah/domain/entities/privilege_template.dart';
+import 'package:rumah/domain/entities/house_privilege.dart';
+import 'package:rumah/domain/entities/privilege_redemption.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/handover_step.dart';
 import 'package:rumah/domain/enums/member_status.dart';
+import 'package:rumah/domain/enums/privilege_status.dart';
+import 'package:rumah/domain/enums/privilege_usage_mode.dart';
+import 'package:rumah/domain/enums/redemption_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/domain/repositories/ceremony_repository.dart';
 import 'package:rumah/sync/ceremony_guardian.dart';
 import 'package:rumah/sync/handover_cycle_helpers.dart';
 import 'package:rumah/sync/hlc.dart';
+import 'package:rumah/sync/privilege_redeem_ids.dart';
 import 'package:rumah/sync/sync_operation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -162,8 +167,10 @@ class DriftCeremonyRepository implements CeremonyRepository {
     required String houseId,
     required String cycleId,
     required String title,
+    required String description,
     required int points,
     required String actorMemberId,
+    String assignedToMemberId = '',
   }) async {
     final taskId = _uuid.v4();
     final createOp = _sync.opFactory.taskCreate(
@@ -172,7 +179,9 @@ class DriftCeremonyRepository implements CeremonyRepository {
       taskId: taskId,
       cycleId: cycleId,
       title: title,
+      description: description,
       negotiatedPoints: points,
+      assignedToMemberId: assignedToMemberId,
     );
     await _emitWithRulesBump(
       houseId: houseId,
@@ -208,6 +217,27 @@ class DriftCeremonyRepository implements CeremonyRepository {
   }
 
   @override
+  Future<void> updateTaskDescription({
+    required String houseId,
+    required String taskId,
+    required String description,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.taskFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      taskId: taskId,
+      field: 'description',
+      value: description,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
   Future<void> updateTaskPoints({
     required String houseId,
     required String taskId,
@@ -220,6 +250,27 @@ class DriftCeremonyRepository implements CeremonyRepository {
       taskId: taskId,
       field: 'negotiated_points',
       value: points,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
+  Future<void> updateTaskAssignee({
+    required String houseId,
+    required String taskId,
+    required String assignedToMemberId,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.taskFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      taskId: taskId,
+      field: 'assigned_to_member_id',
+      value: assignedToMemberId,
     );
     await _emitWithRulesBump(
       houseId: houseId,
@@ -249,23 +300,239 @@ class DriftCeremonyRepository implements CeremonyRepository {
   }
 
   @override
-  Future<void> updatePrivilegeTemplates({
+  Future<HousePrivilege> addPrivilege({
     required String houseId,
-    required Map<String, PrivilegeTemplate> templates,
+    required String cycleId,
+    required String name,
+    required String description,
+    required int pointCost,
     required String actorMemberId,
   }) async {
-    final jsonMap = {
-      for (final entry in templates.entries) entry.key: entry.value.toJson(),
-    };
-    final templatesOp = _sync.opFactory.housePrivilegeTemplatesUpdate(
+    final privilegeId = _uuid.v4();
+    final createOp = _sync.opFactory.privilegeCreate(
       opId: _uuid.v4(),
       houseId: houseId,
-      templatesJson: jsonMap,
+      privilegeId: privilegeId,
+      cycleId: cycleId,
+      name: name,
+      description: description,
+      pointCost: pointCost,
     );
     await _emitWithRulesBump(
       houseId: houseId,
       senderMemberId: actorMemberId,
-      ops: [templatesOp],
+      ops: [createOp],
+    );
+    final row = await (_db.select(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .getSingle();
+    return _toPrivilege(row);
+  }
+
+  @override
+  Future<void> updatePrivilegeName({
+    required String houseId,
+    required String privilegeId,
+    required String name,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.privilegeFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      privilegeId: privilegeId,
+      field: 'name',
+      value: name,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
+  Future<void> updatePrivilegeDescription({
+    required String houseId,
+    required String privilegeId,
+    required String description,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.privilegeFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      privilegeId: privilegeId,
+      field: 'description',
+      value: description,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
+  Future<void> updatePrivilegePointCost({
+    required String houseId,
+    required String privilegeId,
+    required int pointCost,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.privilegeFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      privilegeId: privilegeId,
+      field: 'point_cost',
+      value: pointCost,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
+  Future<void> archivePrivilege({
+    required String houseId,
+    required String privilegeId,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.privilegeFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      privilegeId: privilegeId,
+      field: 'status',
+      value: PrivilegeStatus.archived.wireValue,
+    );
+    await _emitWithRulesBump(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
+    );
+  }
+
+  @override
+  Future<PrivilegeRedemption> redeemPrivilege({
+    required String houseId,
+    required String cycleId,
+    required String privilegeId,
+    required String memberId,
+  }) async {
+    final cycleRow = await (_db.select(_db.cyclesSync)
+          ..where((t) => t.cycleId.equals(cycleId)))
+        .getSingleOrNull();
+    if (cycleRow == null ||
+        cycleRow.status != CycleStatus.active.wireValue) {
+      throw StateError('No active cycle');
+    }
+    final privilegeRow = await (_db.select(_db.privilegesSync)
+          ..where((t) => t.privilegeId.equals(privilegeId)))
+        .getSingleOrNull();
+    if (privilegeRow == null) {
+      throw StateError('Privilege not found');
+    }
+    if (privilegeRow.status != PrivilegeStatus.active.wireValue ||
+        privilegeRow.cycleId != cycleId) {
+      throw StateError('Privilege not available');
+    }
+    final memberRow = await (_db.select(_db.housematesSync)
+          ..where((t) => t.memberId.equals(memberId)))
+        .getSingleOrNull();
+    if (memberRow == null) {
+      throw StateError('Member not found');
+    }
+    final pointCost = privilegeRow.pointCost;
+    if (memberRow.lifetimeScore < pointCost) {
+      throw StateError('Insufficient points balance');
+    }
+    final redemptionId = privilegeRedemptionId(
+      houseId: houseId,
+      memberId: memberId,
+      privilegeId: privilegeId,
+      cycleId: cycleId,
+    );
+    final existingRedemption = await (_db.select(_db.privilegeRedemptionEvents)
+          ..where((t) => t.redemptionId.equals(redemptionId)))
+        .getSingleOrNull();
+    if (existingRedemption != null) {
+      if (existingRedemption.status == RedemptionStatus.active.wireValue) {
+        throw StateError('Privilege already redeemed');
+      }
+      if (existingRedemption.status != RedemptionStatus.consumed.wireValue ||
+          privilegeRow.usageMode != PrivilegeUsageMode.oneShot.wireValue) {
+        throw StateError('Privilege not available for re-redeem');
+      }
+    }
+    final reasonRef = privilegeRedeemReasonRef(redemptionId);
+    final priorPurchases = await (_db.select(_db.scoreEvents)
+          ..where(
+            (t) =>
+                t.memberId.equals(memberId) &
+                t.reasonRef.equals(reasonRef),
+          ))
+        .get();
+    final purchaseIndex = priorPurchases.length;
+    final redemptionOp = _sync.opFactory.privilegeRedemptionCreate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      redemptionId: redemptionId,
+      memberId: memberId,
+      privilegeId: privilegeId,
+      cycleId: cycleId,
+      pointCost: pointCost,
+    );
+    final scoreEventId = privilegeRedeemScoreEventId(
+      houseId: houseId,
+      memberId: memberId,
+      redemptionId: redemptionId,
+      purchaseIndex: purchaseIndex,
+    );
+    final scoreOp = _sync.opFactory.scoreEventAppend(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      eventId: scoreEventId,
+      memberId: memberId,
+      delta: -pointCost,
+      reasonRef: privilegeRedeemReasonRef(redemptionId),
+    );
+    await _emit(
+      houseId: houseId,
+      senderMemberId: memberId,
+      ops: [redemptionOp, scoreOp],
+      requiredAppliedOpIds: [redemptionOp.opId, scoreOp.opId],
+    );
+    final row = await (_db.select(_db.privilegeRedemptionEvents)
+          ..where((t) => t.redemptionId.equals(redemptionId)))
+        .getSingle();
+    final scoreRow = await (_db.select(_db.scoreEvents)
+          ..where((t) => t.eventId.equals(scoreEventId)))
+        .getSingleOrNull();
+    if (scoreRow == null) {
+      throw CeremonyOperationException('redemption score event not applied');
+    }
+    return _toRedemption(row);
+  }
+
+  @override
+  Future<void> consumeRedemption({
+    required String houseId,
+    required String redemptionId,
+    required String actorMemberId,
+  }) async {
+    final updateOp = _sync.opFactory.privilegeRedemptionFieldUpdate(
+      opId: _uuid.v4(),
+      houseId: houseId,
+      redemptionId: redemptionId,
+      field: 'status',
+      value: RedemptionStatus.consumed.wireValue,
+      from: RedemptionStatus.active.wireValue,
+      actorMemberId: actorMemberId,
+    );
+    await _emit(
+      houseId: houseId,
+      senderMemberId: actorMemberId,
+      ops: [updateOp],
     );
   }
 
@@ -311,15 +578,26 @@ class DriftCeremonyRepository implements CeremonyRepository {
     required String houseId,
     required String? senderMemberId,
     required List<SyncOperation> ops,
+    List<String>? requiredAppliedOpIds,
   }) async {
     final settings =
         await (_db.select(_db.localUserSettings)).getSingleOrNull();
-    await _sync.emitLocalOps(
+    final result = await _sync.emitLocalOps(
       houseId: houseId,
       tailscaleNodeKey: settings?.tailscaleNodeId ?? 'local-node',
       senderMemberId: senderMemberId,
       ops: ops,
     );
+    if (result.rejectedOpIds.isNotEmpty) {
+      throw CeremonyOperationException(result.error ?? 'merge rejected');
+    }
+    if (requiredAppliedOpIds != null) {
+      for (final opId in requiredAppliedOpIds) {
+        if (!result.appliedOpIds.contains(opId)) {
+          throw CeremonyOperationException('operation not applied: $opId');
+        }
+      }
+    }
   }
 
   Future<int> _currentRulesVersion(String houseId) async {
@@ -400,16 +678,62 @@ class DriftCeremonyRepository implements CeremonyRepository {
       houseId: row.houseId,
       cycleId: row.cycleId,
       title: row.title,
+      description: row.description,
       negotiatedPoints: row.negotiatedPoints,
       status: TaskStatus.fromWire(row.status),
+      assignedToMemberId: row.assignedToMemberId,
       claimedByMemberIds: claimed.cast<String>(),
       updatedAtHlc: row.updatedAtHlc,
+    );
+  }
+
+  static HousePrivilege _toPrivilege(PrivilegesSyncData row) {
+    return HousePrivilege(
+      privilegeId: row.privilegeId,
+      houseId: row.houseId,
+      cycleId: row.cycleId,
+      name: row.name,
+      description: row.description,
+      pointCost: row.pointCost,
+      status: PrivilegeStatus.fromWire(row.status),
+      usageMode: PrivilegeUsageMode.fromWire(row.usageMode),
+      updatedAtHlc: row.updatedAtHlc,
+    );
+  }
+
+  static PrivilegeRedemption _toRedemption(PrivilegeRedemptionEvent row) {
+    return PrivilegeRedemption(
+      redemptionId: row.redemptionId,
+      houseId: row.houseId,
+      memberId: row.memberId,
+      privilegeId: row.privilegeId,
+      cycleId: row.cycleId,
+      pointCost: row.pointCost,
+      status: RedemptionStatus.fromWire(row.status),
+      hlc: row.hlc,
     );
   }
 
   static Cycle cycleFromRow(CyclesSyncData row) => _toCycle(row);
 
   static Task taskFromRow(TasksSyncData row) => _toTask(row);
+
+  static HousePrivilege privilegeFromRow(PrivilegesSyncData row) =>
+      _toPrivilege(row);
+
+  static PrivilegeRedemption redemptionFromRow(
+    PrivilegeRedemptionEvent row,
+  ) =>
+      _toRedemption(row);
+}
+
+class CeremonyOperationException implements Exception {
+  CeremonyOperationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 /// Returns the guardian from the most recently completed cycle, if any.
@@ -628,6 +952,28 @@ Future<void> tryActivateCycleIfReady({
       to: CycleStatus.active.wireValue,
     ),
   );
+
+  final taskRows = await (db.select(db.tasksSync)
+        ..where((t) => t.cycleId.equals(cycleId)))
+      .get();
+  for (final task in taskRows) {
+    final assignee = task.assignedToMemberId;
+    if (assignee.isEmpty || !activeIds.contains(assignee)) {
+      continue;
+    }
+    if (TaskStatus.fromWire(task.status) == TaskStatus.archived) {
+      continue;
+    }
+    ops.add(
+      sync.opFactory.taskClaim(
+        opId: idGen.v4(),
+        houseId: houseId,
+        eventId: 'assignment:${task.taskId}:$assignee',
+        taskId: task.taskId,
+        memberId: assignee,
+      ),
+    );
+  }
 
   final settings =
       await (db.select(db.localUserSettings)).getSingleOrNull();

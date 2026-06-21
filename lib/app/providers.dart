@@ -22,7 +22,8 @@ import 'package:rumah/sync/ceremony_merge_side_effect_handler.dart';
 import 'package:rumah/sync/handover_merge_side_effect_handler.dart';
 import 'package:rumah/sync/hlc.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
-import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
+import 'package:rumah/sync/privilege_cycle_merge_side_effect_handler.dart';
+import 'package:rumah/sync/privilege_redeem_merge_side_effect_handler.dart';
 import 'package:rumah/sync/removal_merge_side_effect_handler.dart';
 import 'package:rumah/sync/tailscale_acl_merge_side_effect_handler.dart';
 import 'package:rumah/sync/join_credential.dart';
@@ -175,7 +176,10 @@ Future<AppState> createAppState({
   final mergeEngine = MergeEngine(db);
   final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
   final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
-  final privilegeTierSideEffectHandler = PrivilegeTierMergeSideEffectHandler(
+  final privilegeCycleSideEffectHandler = PrivilegeCycleMergeSideEffectHandler(
+    db,
+  );
+  final privilegeRedeemSideEffectHandler = PrivilegeRedeemMergeSideEffectHandler(
     db,
   );
   final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
@@ -186,7 +190,8 @@ Future<AppState> createAppState({
   final sideEffectHandler = CompositeMergeSideEffectHandler([
     ceremonySideEffectHandler,
     handoverSideEffectHandler,
-    privilegeTierSideEffectHandler,
+    privilegeCycleSideEffectHandler,
+    privilegeRedeemSideEffectHandler,
     removalSideEffectHandler,
     tailscaleAclSideEffectHandler,
   ]);
@@ -198,7 +203,8 @@ Future<AppState> createAppState({
     sideEffectHandler: sideEffectHandler,
   );
   ceremonySideEffectHandler.bindSync(syncWriteCoordinator);
-  privilegeTierSideEffectHandler.bindSync(syncWriteCoordinator);
+  privilegeCycleSideEffectHandler.bindSync(syncWriteCoordinator);
+  privilegeRedeemSideEffectHandler.bindSync(syncWriteCoordinator);
   removalSideEffectHandler.bindSync(syncWriteCoordinator);
   final joinCredentialService = JoinCredentialService();
   final tailscaleAdminApi = await createTailscaleAdminApi(

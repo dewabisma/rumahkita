@@ -89,6 +89,38 @@ class ScoreChanged extends MergeSideEffect {
   final List<int> hlc;
 }
 
+class DraftingCycleCreated extends MergeSideEffect {
+  const DraftingCycleCreated({
+    required this.houseId,
+    required this.cycleId,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String cycleId;
+  final List<int> hlc;
+}
+
+class PrivilegeRedeemed extends MergeSideEffect {
+  const PrivilegeRedeemed({
+    required this.houseId,
+    required this.redemptionId,
+    required this.memberId,
+    required this.privilegeId,
+    required this.privilegeName,
+    required this.pointCost,
+    required this.hlc,
+  });
+
+  final String houseId;
+  final String redemptionId;
+  final String memberId;
+  final String privilegeId;
+  final String privilegeName;
+  final int pointCost;
+  final List<int> hlc;
+}
+
 class ProposalCreated extends MergeSideEffect {
   const ProposalCreated({
     required this.houseId,

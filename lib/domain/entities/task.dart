@@ -6,8 +6,10 @@ class Task {
     required this.houseId,
     required this.cycleId,
     required this.title,
+    required this.description,
     required this.negotiatedPoints,
     required this.status,
+    required this.assignedToMemberId,
     required this.claimedByMemberIds,
     required this.updatedAtHlc,
   });
@@ -16,10 +18,13 @@ class Task {
   final String houseId;
   final String cycleId;
   final String title;
+  final String description;
   final int negotiatedPoints;
   final TaskStatus status;
+  final String assignedToMemberId;
   final List<String> claimedByMemberIds;
   final List<int> updatedAtHlc;
 
   bool get isArchived => status == TaskStatus.archived;
+  bool get isAssigned => assignedToMemberId.isNotEmpty;
 }

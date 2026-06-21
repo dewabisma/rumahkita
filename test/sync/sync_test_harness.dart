@@ -28,7 +28,8 @@ import 'package:rumah/sync/join_credential.dart';
 import 'package:rumah/sync/merge_context.dart';
 import 'package:rumah/sync/merge_engine.dart';
 import 'package:rumah/sync/merge_side_effect.dart';
-import 'package:rumah/sync/privilege_tier_merge_side_effect_handler.dart';
+import 'package:rumah/sync/privilege_cycle_merge_side_effect_handler.dart';
+import 'package:rumah/sync/privilege_redeem_merge_side_effect_handler.dart';
 import 'package:rumah/sync/removal_merge_side_effect_handler.dart';
 import 'package:rumah/sync/sync_op_factory.dart';
 import 'package:rumah/sync/sync_operation.dart';
@@ -48,7 +49,8 @@ class SyncTestHarness {
     required this.joinCredentialService,
   required this.sideEffectHandler,
   required this.handoverSideEffectHandler,
-  required this.privilegeTierSideEffectHandler,
+  required this.privilegeCycleSideEffectHandler,
+  required this.privilegeRedeemSideEffectHandler,
   required this.removalSideEffectHandler,
   required this.removalRepository,
   required this.localSettingsRepository,
@@ -67,7 +69,8 @@ class SyncTestHarness {
   final JoinCredentialService joinCredentialService;
   final MergeSideEffectHandler sideEffectHandler;
   final HandoverMergeSideEffectHandler handoverSideEffectHandler;
-  final PrivilegeTierMergeSideEffectHandler privilegeTierSideEffectHandler;
+  final PrivilegeCycleMergeSideEffectHandler privilegeCycleSideEffectHandler;
+  final PrivilegeRedeemMergeSideEffectHandler privilegeRedeemSideEffectHandler;
   final RemovalMergeSideEffectHandler removalSideEffectHandler;
   final RemovalRepository removalRepository;
   final DriftLocalSettingsRepository localSettingsRepository;
@@ -90,13 +93,16 @@ class SyncTestHarness {
     final mergeEngine = MergeEngine(db);
     final ceremonySideEffectHandler = CeremonyMergeSideEffectHandler(db);
     final handoverSideEffectHandler = HandoverMergeSideEffectHandler(db);
-    final privilegeTierSideEffectHandler =
-        PrivilegeTierMergeSideEffectHandler(db);
+    final privilegeCycleSideEffectHandler =
+        PrivilegeCycleMergeSideEffectHandler(db);
+    final privilegeRedeemSideEffectHandler =
+        PrivilegeRedeemMergeSideEffectHandler(db);
     final removalSideEffectHandler = RemovalMergeSideEffectHandler(db);
     final sideEffectHandler = CompositeMergeSideEffectHandler([
       ceremonySideEffectHandler,
       handoverSideEffectHandler,
-      privilegeTierSideEffectHandler,
+      privilegeCycleSideEffectHandler,
+      privilegeRedeemSideEffectHandler,
       removalSideEffectHandler,
     ]);
     final syncCoordinator = SyncWriteCoordinator(
@@ -107,7 +113,8 @@ class SyncTestHarness {
       sideEffectHandler: sideEffectHandler,
     );
     ceremonySideEffectHandler.bindSync(syncCoordinator);
-    privilegeTierSideEffectHandler.bindSync(syncCoordinator);
+    privilegeCycleSideEffectHandler.bindSync(syncCoordinator);
+    privilegeRedeemSideEffectHandler.bindSync(syncCoordinator);
     removalSideEffectHandler.bindSync(syncCoordinator);
     final joinCredentialService = JoinCredentialService();
     final houseRepository = DriftHouseRepository(
@@ -145,7 +152,8 @@ class SyncTestHarness {
       joinCredentialService: joinCredentialService,
       sideEffectHandler: sideEffectHandler,
       handoverSideEffectHandler: handoverSideEffectHandler,
-      privilegeTierSideEffectHandler: privilegeTierSideEffectHandler,
+      privilegeCycleSideEffectHandler: privilegeCycleSideEffectHandler,
+      privilegeRedeemSideEffectHandler: privilegeRedeemSideEffectHandler,
       removalSideEffectHandler: removalSideEffectHandler,
       removalRepository: removalRepository,
       localSettingsRepository: localSettingsRepository,
@@ -200,8 +208,15 @@ class SyncTestHarness {
       syncCoordinator.buildMergeContext(houseId);
 
   Future<MergeResult> apply(SyncOperation op, String houseId) async {
+    return applyBatch([op], houseId);
+  }
+
+  Future<MergeResult> applyBatch(
+    List<SyncOperation> ops,
+    String houseId,
+  ) async {
     final ctx = await contextFor(houseId);
-    final result = await mergeEngine.applyOps([op], ctx);
+    final result = await mergeEngine.applyOps(ops, ctx);
     await sideEffectHandler.handle(result.sideEffects);
     return result;
   }
@@ -305,6 +320,7 @@ class SyncTestHarness {
     required String eventId,
     required String memberId,
     required int delta,
+    String? reasonRef,
   }) {
     return SyncOperation(
       opId: opId,
@@ -313,7 +329,12 @@ class SyncTestHarness {
       originDeviceId: deviceId,
       actorMemberId: memberId,
       hlc: base64Encode(hlcService.toBytes(hlcService.now())),
-      payload: {'event_id': eventId, 'member_id': memberId, 'delta': delta},
+      payload: {
+        'event_id': eventId,
+        'member_id': memberId,
+        'delta': delta,
+        if (reasonRef != null) 'reason_ref': reasonRef,
+      },
     );
   }
 
@@ -418,6 +439,69 @@ class SyncTestHarness {
             updatedAtHlc: hlcService.toBytes(hlcService.now()),
           ),
         );
+  }
+
+  Future<void> seedPrivilege({
+    required String houseId,
+    required String privilegeId,
+    required String cycleId,
+    String status = 'active',
+    int pointCost = 20,
+    String name = 'Test perk',
+    String usageMode = 'durable',
+  }) async {
+    await db.into(db.privilegesSync).insert(
+          PrivilegesSyncCompanion.insert(
+            privilegeId: privilegeId,
+            houseId: houseId,
+            cycleId: cycleId,
+            name: name,
+            description: 'A test perk',
+            pointCost: pointCost,
+            status: status,
+            usageMode: usageMode,
+            updatedAtHlc: hlcService.toBytes(hlcService.now()),
+          ),
+        );
+  }
+
+  SyncOperation privilegeCreate({
+    required String opId,
+    required String houseId,
+    required String privilegeId,
+    required String cycleId,
+    String name = 'New perk',
+    int pointCost = 15,
+  }) {
+    return opFactory.privilegeCreate(
+      opId: opId,
+      houseId: houseId,
+      privilegeId: privilegeId,
+      cycleId: cycleId,
+      name: name,
+      description: 'Description',
+      pointCost: pointCost,
+    );
+  }
+
+  SyncOperation privilegeRedemptionCreate({
+    required String opId,
+    required String houseId,
+    required String redemptionId,
+    required String memberId,
+    required String privilegeId,
+    required String cycleId,
+    required int pointCost,
+  }) {
+    return opFactory.privilegeRedemptionCreate(
+      opId: opId,
+      houseId: houseId,
+      redemptionId: redemptionId,
+      memberId: memberId,
+      privilegeId: privilegeId,
+      cycleId: cycleId,
+      pointCost: pointCost,
+    );
   }
 
   Future<void> seedHousemate({

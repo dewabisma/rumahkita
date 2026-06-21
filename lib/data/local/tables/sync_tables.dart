@@ -125,20 +125,65 @@ class TasksSync extends Table {
   TextColumn get houseId => text()();
   TextColumn get cycleId => text()();
   TextColumn get title => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
   IntColumn get negotiatedPoints => integer()();
   TextColumn get status => text()();
+  TextColumn get assignedToMemberId => text().withDefault(const Constant(''))();
   TextColumn get claimedByMemberIds =>
       text().withDefault(const Constant('[]'))();
   BlobColumn get updatedAtHlc => blob()();
   BlobColumn get titleHlc => blob().nullable()();
   TextColumn get titleDeviceId => text().nullable()();
+  BlobColumn get descriptionHlc => blob().nullable()();
+  TextColumn get descriptionDeviceId => text().nullable()();
   BlobColumn get pointsHlc => blob().nullable()();
   TextColumn get pointsDeviceId => text().nullable()();
+  BlobColumn get assignedToMemberIdHlc => blob().nullable()();
+  TextColumn get assignedToMemberIdDeviceId => text().nullable()();
   BlobColumn get statusHlc => blob().nullable()();
   TextColumn get statusDeviceId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {taskId};
+}
+
+class PrivilegesSync extends Table {
+  TextColumn get privilegeId => text()();
+  TextColumn get houseId => text()();
+  TextColumn get cycleId => text()();
+  TextColumn get name => text()();
+  TextColumn get description => text()();
+  IntColumn get pointCost => integer()();
+  TextColumn get status => text()();
+  TextColumn get usageMode => text()();
+  BlobColumn get updatedAtHlc => blob()();
+  BlobColumn get nameHlc => blob().nullable()();
+  TextColumn get nameDeviceId => text().nullable()();
+  BlobColumn get descriptionHlc => blob().nullable()();
+  TextColumn get descriptionDeviceId => text().nullable()();
+  BlobColumn get pointCostHlc => blob().nullable()();
+  TextColumn get pointCostDeviceId => text().nullable()();
+  BlobColumn get statusHlc => blob().nullable()();
+  TextColumn get statusDeviceId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {privilegeId};
+}
+
+class PrivilegeRedemptionEvents extends Table {
+  TextColumn get redemptionId => text()();
+  TextColumn get houseId => text()();
+  TextColumn get memberId => text()();
+  TextColumn get privilegeId => text()();
+  TextColumn get cycleId => text()();
+  IntColumn get pointCost => integer()();
+  TextColumn get status => text()();
+  BlobColumn get hlc => blob()();
+  BlobColumn get statusHlc => blob().nullable()();
+  TextColumn get statusDeviceId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {redemptionId};
 }
 
 class TaskClaimEvents extends Table {

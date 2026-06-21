@@ -37,9 +37,16 @@ class TaskCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(task.title, style: text.sectionTitle),
+            if (task.description.isNotEmpty) ...[
+              SizedBox(height: spacing.radiusSmall / 2),
+              Text(
+                task.description,
+                style: text.body?.copyWith(color: colors.textSecondary),
+              ),
+            ],
             SizedBox(height: spacing.radiusSmall / 2),
             Text(
-              '${task.negotiatedPoints} points',
+              'Worth ${task.negotiatedPoints} points',
               style: text.bodySmall?.copyWith(color: colors.textSecondary),
             ),
             if (isClaimedByLocal) ...[

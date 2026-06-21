@@ -39,3 +39,10 @@ When appending, use the next `MEM-###` ID and this structure:
 - **Do instead:** Use mobile-native patterns: **modal bottom sheets / action sheets** for a short list of actions, or **navigate to a dedicated screen** when options need forms or more context. Reserve dropdowns for desktop/web layouts only.
 - **Context:** All Flutter presentation code — app bars, overflow menus, settings, destructive actions.
 - **Source:** user
+
+### MEM-004 — 2026-06-21
+- **Category:** ui, styling
+- **Mistake:** Placed low-contrast text on tinted surfaces — e.g. `colors.active` (Sunny Butter accent) on `colors.activeSurface`, making callouts hard to read.
+- **Do instead:** Always pair surface tokens with their designated on-surface text tokens (`textOnSunnyButter`, `textOnSproutGreen`, `textOnDroopingLeafBrown`) or `textPrimary`/`textSecondary` on neutral surfaces. Aim for comfortable readability (≥ 4.5:1 contrast); never reuse a semantic accent color as body text on its matching surface.
+- **Context:** All Flutter presentation code — callouts, cards, banners, badges, and any tinted background.
+- **Source:** user

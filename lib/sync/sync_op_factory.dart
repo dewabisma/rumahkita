@@ -293,6 +293,8 @@ class SyncOpFactory {
     required String cycleId,
     required String title,
     required int negotiatedPoints,
+    String description = '',
+    String assignedToMemberId = '',
     String status = 'open',
   }) {
     return SyncOperation(
@@ -305,7 +307,9 @@ class SyncOpFactory {
         'task_id': taskId,
         'cycle_id': cycleId,
         'title': title,
+        'description': description,
         'negotiated_points': negotiatedPoints,
+        'assigned_to_member_id': assignedToMemberId,
         'status': status,
       },
     );
@@ -325,6 +329,111 @@ class SyncOpFactory {
       originDeviceId: deviceId,
       hlc: _encodeHlc(),
       payload: {'task_id': taskId, 'field': field, 'value': value},
+    );
+  }
+
+  SyncOperation privilegeCreate({
+    required String opId,
+    required String houseId,
+    required String privilegeId,
+    required String cycleId,
+    required String name,
+    required String description,
+    required int pointCost,
+    String status = 'active',
+    String usageMode = 'durable',
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.privilegeCreate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'privilege_id': privilegeId,
+        'cycle_id': cycleId,
+        'name': name,
+        'description': description,
+        'point_cost': pointCost,
+        'status': status,
+        'usage_mode': usageMode,
+      },
+    );
+  }
+
+  SyncOperation privilegeFieldUpdate({
+    required String opId,
+    required String houseId,
+    required String privilegeId,
+    required String field,
+    required Object value,
+    String? from,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.privilegeFieldUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      hlc: _encodeHlc(),
+      payload: {
+        'privilege_id': privilegeId,
+        'field': field,
+        'value': value,
+        if (from != null) 'from': from,
+      },
+    );
+  }
+
+  SyncOperation privilegeRedemptionCreate({
+    required String opId,
+    required String houseId,
+    required String redemptionId,
+    required String memberId,
+    required String privilegeId,
+    required String cycleId,
+    required int pointCost,
+    String status = 'active',
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.privilegeRedemptionCreate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: memberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'redemption_id': redemptionId,
+        'member_id': memberId,
+        'privilege_id': privilegeId,
+        'cycle_id': cycleId,
+        'point_cost': pointCost,
+        'status': status,
+      },
+    );
+  }
+
+  SyncOperation privilegeRedemptionFieldUpdate({
+    required String opId,
+    required String houseId,
+    required String redemptionId,
+    required String field,
+    required Object value,
+    String? from,
+    String? actorMemberId,
+  }) {
+    return SyncOperation(
+      opId: opId,
+      opType: SyncOpType.privilegeRedemptionFieldUpdate.wireValue,
+      houseId: houseId,
+      originDeviceId: deviceId,
+      actorMemberId: actorMemberId,
+      hlc: _encodeHlc(),
+      payload: {
+        'redemption_id': redemptionId,
+        'field': field,
+        'value': value,
+        if (from != null) 'from': from,
+      },
     );
   }
 

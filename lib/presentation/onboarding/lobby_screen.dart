@@ -111,7 +111,9 @@ class LobbyScreen extends ConsumerWidget {
                       padding: EdgeInsets.all(spacing.radiusCard),
                       child: Text(
                         'Ceremony in progress — review and accept house rules together.',
-                        style: text.body?.copyWith(color: colors.active),
+                        style: text.body?.copyWith(
+                          color: colors.textOnSunnyButter,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),

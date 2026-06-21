@@ -9,14 +9,14 @@ import 'package:rumah/presentation/onboarding/onboarding_providers.dart'
     show housematesProvider, localMemberProvider;
 import 'package:rumah/theme/app_colors.dart';
 
-final privilegeCrossingAuditProvider =
+final privilegeRedeemAuditProvider =
     StreamProvider.family<List<AuditLogEntry>, String>((ref, houseId) {
   final db = ref.watch(databaseProvider);
   final query = db.select(db.auditLogAppendOnly)
     ..where(
       (t) =>
           t.houseId.equals(houseId) &
-          t.action.equals('privilege_tier_crossing'),
+          t.action.equals('privilege_redeemed'),
     );
   return query.watch().map(
     (rows) => rows
@@ -35,36 +35,24 @@ final privilegeCrossingAuditProvider =
   );
 });
 
-String crossingSnackBarMessage({
+String redeemSnackBarMessage({
   required Map<String, dynamic> payload,
   required String? localMemberId,
   required String? localNickname,
   required Map<String, String> nicknameByMemberId,
 }) {
-  final templateName = payload['template_name'] as String? ?? 'A perk';
-  final direction = payload['direction'] as String? ?? '';
+  final privilegeName = payload['privilege_name'] as String? ?? 'A perk';
+  final pointCost = payload['point_cost'] as int? ?? 0;
   final memberId = payload['member_id'] as String?;
   final isLocal = memberId != null && memberId == localMemberId;
   final who = isLocal ? 'You' : (nicknameByMemberId[memberId] ?? 'A housemate');
 
-  return switch (direction) {
-    'unlocked' => isLocal
-        ? 'You unlocked $templateName!'
-        : '$who unlocked $templateName.',
-    'locked' => isLocal
-        ? '$templateName is resting for now — keep earning points.'
-        : '$who\'s $templateName is resting for now.',
-    'penalty_applied' => isLocal
-        ? '$templateName is in effect — your score dipped below the threshold.'
-        : '$who has $templateName in effect.',
-    'penalty_cleared' => isLocal
-        ? '$templateName cleared — nice recovery!'
-        : '$who cleared $templateName.',
-    _ => '$who had a perk change.',
-  };
+  return isLocal
+      ? 'You redeemed $privilegeName for $pointCost points.'
+      : '$who redeemed $privilegeName.';
 }
 
-/// Shows gentle snackbars when privilege tier crossings are recorded.
+/// Shows gentle snackbars when privilege redemptions are recorded.
 class PrivilegeNotificationListener extends ConsumerStatefulWidget {
   const PrivilegeNotificationListener({
     super.key,
@@ -88,7 +76,7 @@ class _PrivilegeNotificationListenerState
   @override
   Widget build(BuildContext context) {
     final colors = context.themeColors;
-    ref.listen(privilegeCrossingAuditProvider(widget.houseId), (prev, next) {
+    ref.listen(privilegeRedeemAuditProvider(widget.houseId), (prev, next) {
       final entries = next.asData?.value;
       if (entries == null) {
         return;
@@ -114,7 +102,7 @@ class _PrivilegeNotificationListenerState
           continue;
         }
         final payload = jsonDecode(notes) as Map<String, dynamic>;
-        final message = crossingSnackBarMessage(
+        final message = redeemSnackBarMessage(
           payload: payload,
           localMemberId: localMember?.memberId,
           localNickname: localMember?.nickname,

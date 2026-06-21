@@ -1,14 +1,19 @@
-/// Computed privilege tier state for a member at a given score.
+import 'package:rumah/domain/entities/house_privilege.dart';
+import 'package:rumah/domain/entities/privilege_redemption.dart';
+import 'package:rumah/domain/enums/privilege_usage_mode.dart';
+
+/// Runtime privilege view for a member: owned redemption + catalog item.
 class PrivilegeState {
   const PrivilegeState({
-    required this.templateId,
-    required this.name,
-    required this.isActive,
-    required this.isPenalty,
+    required this.privilege,
+    required this.redemption,
   });
 
-  final String templateId;
-  final String name;
-  final bool isActive;
-  final bool isPenalty;
+  final HousePrivilege privilege;
+  final PrivilegeRedemption redemption;
+
+  String get privilegeId => privilege.privilegeId;
+  String get name => privilege.name;
+  bool get isOneShot => privilege.usageMode == PrivilegeUsageMode.oneShot;
+  bool get isActive => redemption.isActive;
 }

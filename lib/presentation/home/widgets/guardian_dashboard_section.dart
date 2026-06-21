@@ -311,27 +311,19 @@ class _ScoreboardRow extends ConsumerWidget {
               children: activeStates
                   .map(
                     (state) {
-                      final isPenalty = state.isPenalty && state.isActive;
-                      final background = isPenalty
-                          ? colors.cautionSurface
-                          : colors.successSurface;
-                      final foreground = isPenalty
-                          ? colors.droopingLeafBrown
-                          : colors.sproutGreen;
-
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: background,
+                          color: colors.successSurface,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           state.name,
                           style: text.bodySmall?.copyWith(
-                            color: foreground,
+                            color: colors.textOnSproutGreen,
                             fontSize: 11,
                           ),
                         ),

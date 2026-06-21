@@ -1,14 +1,13 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rumah/app/providers.dart';
 import 'package:rumah/data/repositories/drift_ceremony_repository.dart';
 import 'package:rumah/domain/entities/cycle.dart';
-import 'package:rumah/domain/entities/privilege_template.dart';
+import 'package:rumah/domain/entities/house_privilege.dart';
 import 'package:rumah/domain/entities/task.dart';
 import 'package:rumah/domain/enums/cycle_status.dart';
 import 'package:rumah/domain/enums/member_status.dart';
+import 'package:rumah/domain/enums/privilege_status.dart';
 import 'package:rumah/domain/enums/task_status.dart';
 import 'package:rumah/presentation/onboarding/onboarding_providers.dart';
 
@@ -157,32 +156,17 @@ final _cycleByIdProvider = StreamProvider.family<Cycle?, String>(
   },
 );
 
-final privilegeTemplatesProvider =
-    StreamProvider.family<Map<String, PrivilegeTemplate>, String>(
-  (ref, houseId) {
+final privilegesForCycleProvider =
+    StreamProvider.family<List<HousePrivilege>, String>(
+  (ref, cycleId) {
     final db = ref.watch(databaseProvider);
-    final query = db.select(db.houseSync)
-      ..where((t) => t.houseId.equals(houseId));
+    final query = db.select(db.privilegesSync)
+      ..where((t) => t.cycleId.equals(cycleId));
     return query.watch().map((rows) {
-      if (rows.isEmpty) {
-        return PrivilegeTemplate.defaultsMap();
-      }
-      final raw = rows.first.privilegeTemplates;
-      if (raw == '{}' || raw.isEmpty) {
-        return PrivilegeTemplate.defaultsMap();
-      }
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      final templates = <String, PrivilegeTemplate>{};
-      for (final entry in decoded.entries) {
-        templates[entry.key] = PrivilegeTemplate.fromJson(
-          Map<String, dynamic>.from(entry.value as Map),
-        );
-      }
-      final defaults = PrivilegeTemplate.defaultsMap();
-      for (final entry in defaults.entries) {
-        templates.putIfAbsent(entry.key, () => entry.value);
-      }
-      return templates;
+      return rows
+          .where((r) => r.status != PrivilegeStatus.archived.wireValue)
+          .map(DriftCeremonyRepository.privilegeFromRow)
+          .toList();
     });
   },
 );
